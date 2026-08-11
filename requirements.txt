@@ -1,0 +1,7 @@
+geopandas
+jupyterlab
+matplotlib
+numpy
+pandas
+pyarrow
+s3fs
