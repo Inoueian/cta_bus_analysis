@@ -1,18 +1,17 @@
 # TODO
 
-Last updated: 2026-08-10
+Last updated: 2026-09-15
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
 
 ## Now
 
-- [ ] Verify actual column names in a real `trips_<PID>_full.parquet` and map them to the run-level view schema in ADR-003
 - [ ] Pick the web-app stack (Streamlit vs. Dash vs. FastAPI + React vs. Flask + templates); log the choice as an ADR in DECISIONS.md
 - [ ] Decide data-access strategy: cache Mansueto parquet files locally vs. read from CloudFront on demand
 
 ## Next
 
-- [ ] Data ingestion: build the run-level view by unioning `trips_<PID>_full.parquet` across all Patterns of each route, normalizing columns per ADR-003
+- [ ] Data ingestion: build the run-level view by unioning `trips_<PID>_full.parquet` across all Patterns of each route, normalizing Mansueto columns (`unique_trip_vehicle_day` → `run_id`, `bus_stop_time` → `arrival_time`, etc.) and joining `direction` from GTFS/pattern metadata per vault `canonical-data-views`
 - [ ] Build the stop-level view (route -> direction -> stop_id -> arrival-time list) by grouping the run-level view; this also drives the frontend route/direction/stop dropdowns
 - [ ] Backend: wait-time distribution — read from the stop-level view for (route, direction, start_stop), filter by day_of_week / time_of_day
 - [ ] Backend: travel-time distribution — read from the run-level view, filter to runs that visited both start_stop and end_stop, compute pairwise deltas
@@ -32,4 +31,5 @@ Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
 
 ## Done
 
+- [x] Verify Mansueto `trips_<PID>_full.parquet` columns and trip IDs (route 66 / PID 6662; mapping in knowledge-vault `canonical-data-views` and `scripts/verify_parquet.py`) (2026-09-15)
 - [x] Archive initial iteration onto `legacy` branch (2026-08-10)
