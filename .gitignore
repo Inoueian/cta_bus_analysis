@@ -143,6 +143,9 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# Cached Mansueto parquets (large, re-downloadable)
+data/
+
 # Pyre type checker
 .pyre/
 
