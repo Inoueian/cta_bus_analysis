@@ -1,0 +1,401 @@
+{
+  "candidate_routes": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "X4",
+    "6",
+    "7",
+    "10",
+    "J14",
+    "26",
+    "28",
+    "125",
+    "126",
+    "143",
+    "146",
+    "147",
+    "148",
+    "151",
+    "157"
+  ],
+  "corridor": {
+    "description": "Michigan Ave downtown Roosevelt to Delaware",
+    "lat_south": 41.865,
+    "lat_north": 41.902,
+    "delaware_stpids": [
+      "1097",
+      "1128"
+    ],
+    "roosevelt_stpids": [
+      "1591",
+      "15362",
+      "17084",
+      "1580"
+    ]
+  },
+  "stops": [
+    {
+      "stpid": "1591",
+      "stpnm": "Michigan & Roosevelt",
+      "lat": 41.866781,
+      "lon": -87.624256000001,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 5
+    },
+    {
+      "stpid": "1580",
+      "stpnm": "Michigan & Roosevelt",
+      "lat": 41.867930000001,
+      "lon": -87.624018,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "1590",
+      "stpnm": "Michigan & 11th Street",
+      "lat": 41.868891000001,
+      "lon": -87.62424,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 5
+    },
+    {
+      "stpid": "1581",
+      "stpnm": "Michigan & 11th Street",
+      "lat": 41.869098,
+      "lon": -87.623969999999,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "1589",
+      "stpnm": "Michigan & 9th Street",
+      "lat": 41.870345,
+      "lon": -87.624272999998,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 5
+    },
+    {
+      "stpid": "1582",
+      "stpnm": "Michigan & 9th Street",
+      "lat": 41.870393,
+      "lon": -87.623987,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "1583",
+      "stpnm": "Michigan & 8th Street",
+      "lat": 41.871727999999,
+      "lon": -87.624017999999,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "1588",
+      "stpnm": "Michigan & 8th Street",
+      "lat": 41.872029000001,
+      "lon": -87.624317000001,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 5
+    },
+    {
+      "stpid": "1584",
+      "stpnm": "Michigan & Balbo",
+      "lat": 41.873444,
+      "lon": -87.624107000001,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "1587",
+      "stpnm": "Michigan & Balbo",
+      "lat": 41.87376,
+      "lon": -87.624351999998,
+      "routes": "1,3,4,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 5
+    },
+    {
+      "stpid": "1586",
+      "stpnm": "Michigan & Harrison",
+      "lat": 41.874702,
+      "lon": -87.624385000001,
+      "routes": "1,26,28,3,4,J14,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 8
+    },
+    {
+      "stpid": "14485",
+      "stpnm": "Michigan & Ida B Wells Drive",
+      "lat": 41.875527000001,
+      "lon": -87.624129999999,
+      "routes": "1,26,28,3,4,6,J14,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 15
+    },
+    {
+      "stpid": "73",
+      "stpnm": "Michigan & Van Buren/Ida B. Wells",
+      "lat": 41.876359999999,
+      "lon": -87.624426000002,
+      "routes": "1,126,143,147,26,28,3,4,7,J14,X4",
+      "rtdirs": "Eastbound,Southbound",
+      "n_patterns": 18
+    },
+    {
+      "stpid": "75",
+      "stpnm": "Michigan & Van Buren",
+      "lat": 41.876566000001,
+      "lon": -87.624128,
+      "routes": "1,126,28,7",
+      "rtdirs": "Northbound,Westbound",
+      "n_patterns": 10
+    },
+    {
+      "stpid": "76",
+      "stpnm": "Michigan & Jackson",
+      "lat": 41.878025999999,
+      "lon": -87.624129999999,
+      "routes": "143,26,3,4,6,J14,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 13
+    },
+    {
+      "stpid": "1110",
+      "stpnm": "Michigan & Jackson",
+      "lat": 41.87847,
+      "lon": -87.624474,
+      "routes": "143,147,26,3,4,J14,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 9
+    },
+    {
+      "stpid": "18396",
+      "stpnm": "Michigan & Monroe",
+      "lat": 41.880379999999,
+      "lon": -87.624493,
+      "routes": "143,147,148,151,26,3,4,J14,X4",
+      "rtdirs": "Southbound",
+      "n_patterns": 12
+    },
+    {
+      "stpid": "15241",
+      "stpnm": "Michigan & Monroe",
+      "lat": 41.880454000001,
+      "lon": -87.624200999999,
+      "routes": "143,26,3,4,6,J14,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 13
+    },
+    {
+      "stpid": "2188",
+      "stpnm": "Michigan & Madison",
+      "lat": 41.882448,
+      "lon": -87.624145,
+      "routes": "143,26,3,4,6,X4",
+      "rtdirs": "Northbound",
+      "n_patterns": 11
+    },
+    {
+      "stpid": "1106",
+      "stpnm": "Michigan & Washington",
+      "lat": 41.883477999999,
+      "lon": -87.624567,
+      "routes": "143,147,148,151,157,26,3,4,X4",
+      "rtdirs": "Southbound,Westbound",
+      "n_patterns": 11
+    },
+    {
+      "stpid": "1105",
+      "stpnm": "Michigan & Lake/Randolph",
+      "lat": 41.885079000001,
+      "lon": -87.624650999999,
+      "routes": "143,147,148,151,157,26,3,4,X4",
+      "rtdirs": "Northbound,Southbound,Westbound",
+      "n_patterns": 12
+    },
+    {
+      "stpid": "1119",
+      "stpnm": "Michigan & Randolph",
+      "lat": 41.885131999999,
+      "lon": -87.624334,
+      "routes": "143,147,151,157,26,3,6",
+      "rtdirs": "Eastbound,Northbound",
+      "n_patterns": 10
+    },
+    {
+      "stpid": "1120",
+      "stpnm": "Michigan & South Water",
+      "lat": 41.886527999999,
+      "lon": -87.624407,
+      "routes": "143,147,151,157,26,3,6",
+      "rtdirs": "Eastbound,Northbound",
+      "n_patterns": 11
+    },
+    {
+      "stpid": "18791",
+      "stpnm": "Michigan & South Water",
+      "lat": 41.887045,
+      "lon": -87.624384,
+      "routes": "146,148",
+      "rtdirs": "Northbound",
+      "n_patterns": 9
+    },
+    {
+      "stpid": "1104",
+      "stpnm": "Michigan & South Water",
+      "lat": 41.88713,
+      "lon": -87.624723000001,
+      "routes": "143,147,148,151,157,26,3,4,X4",
+      "rtdirs": "Northbound,Southbound,Westbound",
+      "n_patterns": 12
+    },
+    {
+      "stpid": "1121",
+      "stpnm": "Michigan & E. Wacker",
+      "lat": 41.887877,
+      "lon": -87.624423999999,
+      "routes": "151,157,2,26,3,6",
+      "rtdirs": "Eastbound,Northbound",
+      "n_patterns": 10
+    },
+    {
+      "stpid": "1122",
+      "stpnm": "Michigan & Hubbard (Tribune Bldg.)",
+      "lat": 41.889902999999,
+      "lon": -87.624001999999,
+      "routes": "143,146,147,148,151,157,2,26,3",
+      "rtdirs": "Eastbound,Northbound",
+      "n_patterns": 21
+    },
+    {
+      "stpid": "1103",
+      "stpnm": "Michigan & Hubbard (Wrigley Bldg.)",
+      "lat": 41.889919000001,
+      "lon": -87.624258000002,
+      "routes": "143,146,147,148,151,157,2,26,3",
+      "rtdirs": "Southbound,Westbound",
+      "n_patterns": 17
+    },
+    {
+      "stpid": "1102",
+      "stpnm": "Michigan & Illinois",
+      "lat": 41.891235,
+      "lon": -87.624308999999,
+      "routes": "143,146,147,148,151,157,2,26,3",
+      "rtdirs": "Southbound,Westbound",
+      "n_patterns": 17
+    },
+    {
+      "stpid": "1123",
+      "stpnm": "Michigan & Grand",
+      "lat": 41.891668000001,
+      "lon": -87.624012000002,
+      "routes": "143,146,147,148,151,157,2,26,3",
+      "rtdirs": "Eastbound,Northbound",
+      "n_patterns": 21
+    },
+    {
+      "stpid": "1101",
+      "stpnm": "Michigan & Ohio",
+      "lat": 41.892696999999,
+      "lon": -87.62435,
+      "routes": "143,146,147,148,151,157,2,26,3",
+      "rtdirs": "Southbound,Westbound",
+      "n_patterns": 17
+    },
+    {
+      "stpid": "1124",
+      "stpnm": "Michigan & Ontario",
+      "lat": 41.893189,
+      "lon": -87.624075000001,
+      "routes": "125,143,146,147,148,151,26,3",
+      "rtdirs": "Northbound",
+      "n_patterns": 20
+    },
+    {
+      "stpid": "1100",
+      "stpnm": "Michigan & Erie",
+      "lat": 41.894381,
+      "lon": -87.624402,
+      "routes": "125,143,146,147,148,151,26,3",
+      "rtdirs": "Southbound",
+      "n_patterns": 15
+    },
+    {
+      "stpid": "1125",
+      "stpnm": "Michigan & Huron",
+      "lat": 41.894823000001,
+      "lon": -87.624081999999,
+      "routes": "125,143,146,147,148,151,26,3",
+      "rtdirs": "Northbound",
+      "n_patterns": 20
+    },
+    {
+      "stpid": "14488",
+      "stpnm": "Michigan & Superior",
+      "lat": 41.895913999999,
+      "lon": -87.624406,
+      "routes": "125,143,146,147,148,151,26,3",
+      "rtdirs": "Southbound",
+      "n_patterns": 15
+    },
+    {
+      "stpid": "1126",
+      "stpnm": "Michigan & Chicago",
+      "lat": 41.896575000001,
+      "lon": -87.624130999999,
+      "routes": "125,26,3",
+      "rtdirs": "Northbound",
+      "n_patterns": 6
+    },
+    {
+      "stpid": "1098",
+      "stpnm": "Michigan & Pearson",
+      "lat": 41.897772000001,
+      "lon": -87.624236999999,
+      "routes": "125,143,146,147,148,151",
+      "rtdirs": "Southbound",
+      "n_patterns": 13
+    },
+    {
+      "stpid": "1127",
+      "stpnm": "Michigan & Chestnut",
+      "lat": 41.898145000001,
+      "lon": -87.623981000002,
+      "routes": "143,146,147,148,151",
+      "rtdirs": "Northbound",
+      "n_patterns": 14
+    },
+    {
+      "stpid": "1097",
+      "stpnm": "Michigan & Delaware",
+      "lat": 41.899393000001,
+      "lon": -87.624250999999,
+      "routes": "143,146,147,148,151",
+      "rtdirs": "Southbound",
+      "n_patterns": 12
+    },
+    {
+      "stpid": "1128",
+      "stpnm": "Michigan & Delaware/Walton",
+      "lat": 41.899489,
+      "lon": -87.624012999999,
+      "routes": "143,146,147,148,151",
+      "rtdirs": "Northbound",
+      "n_patterns": 14
+    }
+  ],
+  "patterns_fetched": 97
+}
