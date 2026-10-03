@@ -8,6 +8,16 @@ Riders in Chicago plan trips with almost no visibility into how reliable a given
 
 The primary audience is Chicago transit riders and researchers who want a distributional view of service, not just a schedule.
 
+## Roadmap
+
+1. **Phase 1 — Routes 8, 65, & 66.** Build the data ingestion pipeline and compute wait-time and travel-time distributions for three routes affected by current construction, using scripts and exploratory notebooks.
+2. **Phase 2 — Static web app for all routes.** Extend ingestion to all (or most) CTA bus routes, pick a web-app stack, and deploy as a static dataset served on a webpage.
+3. **Phase 3 — Scheduled refresh and extras.** Add automated data updates from the Mansueto bucket, derived metrics (excess wait, reliability scores), community-area rollups, and shareable URLs.
+
+See [TODO.md](TODO.md) for the detailed breakdown of each phase.
+
+**Side quests (notebook-driven):** DLSD express timing and Michigan Avenue bus-lane baseline analysis are in progress alongside Phase 1. They use the same Mansueto data and Bus Tracker helpers as the main pipeline; see [TODO.md](TODO.md) for status.
+
 ## Principles
 
 - **No unreviewed LLM output reaches users.** Anything a rider sees in the app — especially written explanations — must be reviewed by a human at some point. Computed numerical output is not covered; only LLM-generated or LLM-paraphrased text. See [ADR-002](DECISIONS.md).
@@ -17,20 +27,29 @@ The primary audience is Chicago transit riders and researchers who want a distri
 ### Prerequisites
 
 - Python 3.11+
-- Web-app stack: TBD (see the open item under "Now" in [TODO.md](TODO.md))
+- Web-app stack: TBD (see **Phase 2** in [TODO.md](TODO.md))
 - Internet access to reach the CTA Stop Watch CloudFront bucket
+- For notebooks that call the CTA Bus Tracker API: copy `.env.example` to `.env` and set your API key (`.env` is gitignored)
 
 ### Install
 
+For exploratory notebooks and tests today (no pinned `requirements.txt` yet):
+
 ```
-# TBD once stack is chosen
+python3 -m venv env
+source env/bin/activate
+pip install pandas numpy pytest jupyterlab matplotlib python-dotenv
 ```
 
 ### Run
 
 ```
-# TBD once stack is chosen
+source env/bin/activate
+jupyter lab notebooks/
+pytest
 ```
+
+The static web app install and run commands are still TBD until Phase 2 stack is chosen.
 
 ## Project Layout
 
@@ -39,11 +58,23 @@ The primary audience is Chicago transit riders and researchers who want a distri
 ├── README.md
 ├── TODO.md
 ├── DECISIONS.md
+├── .env.example   # Bus Tracker API key template (copy to .env)
+├── scripts/       # data verification, caching, summaries
+│   ├── verify_parquet.py
+│   ├── cache_dlsd_parquets.py
+│   └── dlsd_weekday_friday_summary.py
+├── notebooks/     # exploratory analysis and side-quest notebooks
+│   ├── cta_api.py                  # shared Bus Tracker + Mansueto URL helpers
+│   ├── dlsd_run_quality.py         # DLSD rush plot guards and stats
+│   ├── *_snapshot.json             # frozen stop/boundary lists (e.g. Michigan Ave, DLSD)
+│   └── …
+├── data/          # local Mansueto parquet and API cache (gitignored)
+├── tests/         # pytest unit tests (mocked, no network)
 ├── .gitignore
 └── env/           # local virtualenv (gitignored)
 ```
 
-Additional directories (`backend/`, `frontend/`, `data/`, `notebooks/`) will be added as the app scaffolding lands.
+Additional directories (`backend/`, `frontend/`) will be added once the web-app stack is chosen.
 
 ## Data Source
 
@@ -62,3 +93,4 @@ Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are pres
 
 - [TODO.md](TODO.md) — active work and backlog
 - [DECISIONS.md](DECISIONS.md) — architecture decision log
+- Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs)
