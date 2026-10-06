@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta_api import BASE, parquet_url
+from cta_bus.cta_api import BASE, parquet_url
 
 PARQUET_COLS = [
     "bus_stop_time",
@@ -42,8 +42,60 @@ def local_parquet_path(
 
 
 def load_dlsd_boundaries(path: Path | None = None) -> dict[str, dict]:
-    path = path or Path(__file__).resolve().parent / "dlsd_boundaries_snapshot.json"
+    path = path or repo_root() / "notebooks" / "dlsd_boundaries_snapshot.json"
     return json.loads(path.read_text())
+
+
+def _entry_exit_runs(
+    df: pd.DataFrame, entry_stpid: str, exit_stpid: str
+) -> pd.DataFrame:
+    """One row per trip that visits both the entry and exit stop."""
+    entries = (
+        df[df["stpid"] == entry_stpid]
+        .groupby("unique_trip_vehicle_day", as_index=False)
+        .agg(
+            entry_time=("bus_stop_time", "min"),
+            entry_sequence=("stop_sequence", "min"),
+            entry_speed_mph=("speed_mph", "first"),
+            entry_seg=("seg_combined", "first"),
+        )
+    )
+    exits = (
+        df[df["stpid"] == exit_stpid]
+        .groupby("unique_trip_vehicle_day", as_index=False)
+        .agg(
+            exit_time=("bus_stop_time", "max"),
+            exit_sequence=("stop_sequence", "max"),
+            exit_speed_mph=("speed_mph", "first"),
+            exit_seg=("seg_combined", "first"),
+        )
+    )
+    return entries.merge(exits, on="unique_trip_vehicle_day", how="inner")
+
+
+def _bracket_times(df: pd.DataFrame, runs: pd.DataFrame) -> pd.DataFrame:
+    """Per run: time at the stop just before entry and just after exit (NaT if absent)."""
+    trip_bounds = runs[["unique_trip_vehicle_day", "entry_sequence", "exit_sequence"]]
+    visits = df[["unique_trip_vehicle_day", "stop_sequence", "bus_stop_time"]].merge(
+        trip_bounds, on="unique_trip_vehicle_day", how="inner"
+    )
+    pre = (
+        visits[visits["stop_sequence"] == visits["entry_sequence"] - 1]
+        .groupby("unique_trip_vehicle_day")["bus_stop_time"]
+        .min()
+        .rename("pre_dlsd_time")
+    )
+    post = (
+        visits[visits["stop_sequence"] == visits["exit_sequence"] + 1]
+        .groupby("unique_trip_vehicle_day")["bus_stop_time"]
+        .max()
+        .rename("post_dlsd_time")
+    )
+    return (
+        trip_bounds[["unique_trip_vehicle_day"]]
+        .join(pre, on="unique_trip_vehicle_day")
+        .join(post, on="unique_trip_vehicle_day")
+    )
 
 
 def build_dlsd_runs(
@@ -54,7 +106,6 @@ def build_dlsd_runs(
 ) -> pd.DataFrame:
     """One row per trip with entry/exit times, sequences, and bracket stops."""
     frames = []
-    bracket_frames = []
 
     for pid, info in dlsd_boundaries.items():
         pid = str(pid)
@@ -71,30 +122,10 @@ def build_dlsd_runs(
         df["pid"] = df["pid"].astype(float).astype(int).astype(str)
         df = df.sort_values(["unique_trip_vehicle_day", "stop_sequence"])
 
-        entry_rows = df[df["stpid"] == entry_stpid].copy()
-        exit_rows = df[df["stpid"] == exit_stpid].copy()
-        if entry_rows.empty or exit_rows.empty:
+        runs = _entry_exit_runs(df, entry_stpid, exit_stpid)
+        if runs.empty:
             continue
 
-        entries = (
-            entry_rows.groupby("unique_trip_vehicle_day", as_index=False)
-            .agg(
-                entry_time=("bus_stop_time", "min"),
-                entry_sequence=("stop_sequence", "min"),
-                entry_speed_mph=("speed_mph", "first"),
-                entry_seg=("seg_combined", "first"),
-            )
-        )
-        exits = (
-            exit_rows.groupby("unique_trip_vehicle_day", as_index=False)
-            .agg(
-                exit_time=("bus_stop_time", "max"),
-                exit_sequence=("stop_sequence", "max"),
-                exit_speed_mph=("speed_mph", "first"),
-                exit_seg=("seg_combined", "first"),
-            )
-        )
-        runs = entries.merge(exits, on="unique_trip_vehicle_day", how="inner")
         runs["pid"] = pid
         runs["route"] = info["route"]
         runs["rtdir"] = info["rtdir"]
@@ -108,39 +139,11 @@ def build_dlsd_runs(
         runs["same_ping_interval_proxy"] = (
             runs["entry_speed_mph"] == runs["exit_speed_mph"]
         ) & runs["entry_speed_mph"].notna()
-
-        # Bracket: stop before entry and after exit on same trip
-        bracket_rows = []
-        for trip_id, trip_df in df.groupby("unique_trip_vehicle_day"):
-            ent = trip_df[trip_df["stpid"] == entry_stpid]
-            ex = trip_df[trip_df["stpid"] == exit_stpid]
-            if ent.empty or ex.empty:
-                continue
-            ent_seq = int(ent["stop_sequence"].min())
-            ex_seq = int(ex["stop_sequence"].max())
-            pre = trip_df[trip_df["stop_sequence"] == ent_seq - 1]
-            post = trip_df[trip_df["stop_sequence"] == ex_seq + 1]
-            bracket_rows.append(
-                {
-                    "unique_trip_vehicle_day": trip_id,
-                    "pre_dlsd_time": pre["bus_stop_time"].min()
-                    if len(pre)
-                    else pd.NaT,
-                    "post_dlsd_time": post["bus_stop_time"].max()
-                    if len(post)
-                    else pd.NaT,
-                }
-            )
-        brackets = pd.DataFrame(bracket_rows)
-        brackets["pid"] = pid
-        bracket_frames.append(brackets)
-        frames.append(runs)
+        frames.append(
+            runs.merge(_bracket_times(df, runs), on="unique_trip_vehicle_day", how="left")
+        )
 
     dlsd_runs = pd.concat(frames, ignore_index=True)
-    brackets_all = pd.concat(bracket_frames, ignore_index=True)
-    dlsd_runs = dlsd_runs.merge(
-        brackets_all, on=["unique_trip_vehicle_day", "pid"], how="left"
-    )
     dlsd_runs["bracket_minutes"] = (
         dlsd_runs["post_dlsd_time"] - dlsd_runs["pre_dlsd_time"]
     ).dt.total_seconds() / 60.0

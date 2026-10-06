@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-10-02
+Last updated: 2026-10-06
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
 
@@ -62,10 +62,11 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 
 ## Done
 
+- [x] Refactor: shared helpers moved into installable `cta_bus` package (`pyproject.toml`), `sys.path` hacks removed, `build_dlsd_runs` vectorized with tests (2026-10-06)
 - [x] Archive initial iteration onto `legacy` branch (2026-08-10)
 - [x] Verify Mansueto `trips_<PID>_full.parquet` columns and trip IDs (route 66 / PID 6662; mapping in knowledge-vault `canonical-data-views` and `scripts/verify_parquet.py`) (2026-09-15)
 - [x] New notebook: stop discovery for routes 134, 135, 136, 143, 148 — identify DLSD boundary stops (entry/exit per pattern) via Bus Tracker API (`notebooks/dlsd_stop_discovery_rush_routes.ipynb`; 11 PIDs merged into `dlsd_boundaries_snapshot.json`) (2026-09-24)
-- [x] Rush hour sample exploration + plot guard helpers (`notebooks/dlsd_rush_sample_counts.ipynb`, `valid_rush_plot_cells` / `hour_dlsd_stats` in `notebooks/dlsd_run_quality.py`; tests in `tests/test_dlsd_run_quality.py`) (2026-09-24)
+- [x] Rush hour sample exploration + plot guard helpers (`notebooks/dlsd_rush_sample_counts.ipynb`, `valid_rush_plot_cells` / `hour_dlsd_stats` in `cta_bus/dlsd_run_quality.py`; tests in `tests/test_dlsd_run_quality.py`) (2026-09-24)
 - [x] Set rush plot gate: `MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY = 30` + `valid_rush_plot_cells()` (weekday targets; Friday reuses; vault `dlsd-rush-hour-min-sample`) (2026-09-24)
 - [x] Build `dlsd_runs` for rush routes via extended `dlsd_boundaries_snapshot.json` + local `data/mansueto/` cache (same `build_dlsd_runs` as 146/147) (2026-09-24)
 - [x] Data-availability guard: `valid_rush_plot_cells` + `hour_dlsd_stats(..., valid_cells=...)` for rush plots (wire into comparison notebook when built) (2026-09-24)

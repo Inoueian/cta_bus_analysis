@@ -33,12 +33,12 @@ See [TODO.md](TODO.md) for the detailed breakdown of each phase.
 
 ### Install
 
-For exploratory notebooks and tests today (no pinned `requirements.txt` yet):
+Installs the shared `cta_bus` package (editable) plus notebook and test tools; dependencies are declared in `pyproject.toml`:
 
 ```
 python3 -m venv env
 source env/bin/activate
-pip install pandas numpy pytest jupyterlab matplotlib python-dotenv
+pip install -e ".[dev]"
 ```
 
 ### Run
@@ -59,13 +59,16 @@ The static web app install and run commands are still TBD until Phase 2 stack is
 ├── TODO.md
 ├── DECISIONS.md
 ├── .env.example   # Bus Tracker API key template (copy to .env)
+├── pyproject.toml # package metadata and dependencies
+├── cta_bus/       # shared, importable helpers (pip install -e .)
+│   ├── cta_api.py                  # Bus Tracker + Mansueto URL helpers
+│   └── dlsd_run_quality.py         # DLSD run construction, rush plot guards and stats
 ├── scripts/       # data verification, caching, summaries
 │   ├── verify_parquet.py
 │   ├── cache_dlsd_parquets.py
 │   └── dlsd_weekday_friday_summary.py
 ├── notebooks/     # exploratory analysis and side-quest notebooks
-│   ├── cta_api.py                  # shared Bus Tracker + Mansueto URL helpers
-│   ├── dlsd_run_quality.py         # DLSD rush plot guards and stats
+│   ├── cta_analysis.mplstyle       # shared plot style
 │   ├── *_snapshot.json             # frozen stop/boundary lists (e.g. Michigan Ave, DLSD)
 │   └── …
 ├── data/          # local Mansueto parquet and API cache (gitignored)
