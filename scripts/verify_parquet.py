@@ -11,8 +11,7 @@ import sys
 
 import pandas as pd
 
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
-RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
+from cta_bus.cta_api import RT_TO_PID_URL, parquet_url
 
 # ADR-003 assumed names -> verified Mansueto columns (PID 6662, route 66, 2026-09-15)
 EXPECTED_MAPPING = {
@@ -35,10 +34,6 @@ def pids_for_route(route: str) -> list[str]:
     if not pids:
         raise SystemExit(f"No PIDs found for route {route} in {RT_TO_PID_URL}")
     return pids
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
 
 
 def verify(df: pd.DataFrame, pid: str, route: str) -> None:

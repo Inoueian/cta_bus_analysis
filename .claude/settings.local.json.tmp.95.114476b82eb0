@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Add characterization tests for build_dlsd_runs and add_quality_flags *)",
+      "Bash(git commit -q -m 'Move shared helpers into installable cta_bus package and drop sys.path hacks *)",
+      "Bash(git commit -q -m 'Import Mansueto URL helpers and parquet columns from cta_bus in scripts *)",
+      "Bash(git push *)"
+    ]
+  }
+}
