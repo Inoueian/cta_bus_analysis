@@ -19,7 +19,7 @@ Read before planning: `README.md` (overview, data model), `TODO.md` (active work
 
 - Minimum code that solves the problem. No speculative features, abstractions for single-use code, or unrequested configurability.
 - Data-validity guards are not speculative here. Mansueto data has real quirks (missing routes, non-consecutive stop sequences, implausible durations); keep checks like `analysis_ok`.
-- In exploratory notebook cells, move fast; apply the strict rules to code in `notebooks/*.py` and `scripts/`.
+- In exploratory notebook cells, move fast; apply the strict rules to code in `cta_bus/` and `scripts/`.
 
 ## 3. Surgical Changes
 
@@ -31,19 +31,19 @@ Read before planning: `README.md` (overview, data model), `TODO.md` (active work
 ## 4. Goal-Driven Execution
 
 - Turn tasks into verifiable goals, then loop until verified.
-- Logic in `notebooks/*.py` and `scripts/`: write or update a pytest test first (bug fix = a test that reproduces it).
+- Logic in `cta_bus/` and `scripts/`: write or update a pytest test first (bug fix = a test that reproduces it).
 - Notebook results: verify with numbers (row counts, date ranges, sanity checks), not just "it ran".
 - For multi-step tasks, state a short plan with a check per step.
 
 ## Commands
 
     python3 -m venv env && source env/bin/activate
-    pip install pandas numpy pyarrow pytest jupyterlab matplotlib python-dotenv
+    pip install -e ".[dev]"    # installs the cta_bus package + deps from pyproject.toml
     pytest                      # mocked unit tests, no network
     jupyter lab notebooks/
     python scripts/<name>.py    # run from the repo root
 
-`notebooks/cta_api.py` and `notebooks/dlsd_run_quality.py` are shared helpers imported via `sys.path` (scripts) and `tests/conftest.py` (tests).
+Shared helpers live in the `cta_bus` package (`cta_bus/cta_api.py`, `cta_bus/dlsd_run_quality.py`); import them as `from cta_bus.cta_api import ...`. Do not add `sys.path` hacks. `tests/conftest.py` only exists so tests can import `scripts`.
 
 ## Data
 

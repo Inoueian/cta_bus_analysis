@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -10,11 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-NOTEBOOKS = Path(__file__).resolve().parent.parent / "notebooks"
-if str(NOTEBOOKS) not in sys.path:
-    sys.path.insert(0, str(NOTEBOOKS))
-
-from dlsd_run_quality import (  # noqa: E402
+from cta_bus.dlsd_run_quality import (
     ALL_DAY_DLSD_ROUTES,
     MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY,
     RUSH_ROUTES,
@@ -31,7 +26,7 @@ from dlsd_run_quality import (  # noqa: E402
 
 
 def test_module_imports():
-    import dlsd_run_quality  # noqa: F401
+    from cta_bus import dlsd_run_quality  # noqa: F401
 
 
 def test_local_parquet_path_cache_variant():
@@ -39,7 +34,7 @@ def test_local_parquet_path_cache_variant():
         "6582", prefer_local=False, cache_variant="last365d"
     )
     cached = (
-        NOTEBOOKS.parent / "data" / "mansueto" / "trips_6582_last365d.parquet"
+        Path(__file__).resolve().parent.parent / "data" / "mansueto" / "trips_6582_last365d.parquet"
     )
     resolved = local_parquet_path(
         "6582", prefer_local=True, cache_variant="last365d"
@@ -266,7 +261,7 @@ def built_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> pd.DataFrame:
     path = tmp_path / "trips_100.parquet"
     pd.DataFrame(rows).to_parquet(path)
     monkeypatch.setattr(
-        "dlsd_run_quality.local_parquet_path", lambda pid, **kwargs: path
+        "cta_bus.dlsd_run_quality.local_parquet_path", lambda pid, **kwargs: path
     )
     boundaries = {
         "100": {

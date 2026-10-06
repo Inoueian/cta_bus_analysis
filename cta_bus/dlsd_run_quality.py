@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta_api import BASE, parquet_url
+from cta_bus.cta_api import BASE, parquet_url
 
 PARQUET_COLS = [
     "bus_stop_time",
@@ -42,7 +42,7 @@ def local_parquet_path(
 
 
 def load_dlsd_boundaries(path: Path | None = None) -> dict[str, dict]:
-    path = path or Path(__file__).resolve().parent / "dlsd_boundaries_snapshot.json"
+    path = path or repo_root() / "notebooks" / "dlsd_boundaries_snapshot.json"
     return json.loads(path.read_text())
 
 

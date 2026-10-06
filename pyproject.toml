@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cta-bus-analysis"
+version = "0.1.0"
+description = "CTA bus wait and travel time analysis on Mansueto StopWatch data"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas",
+    "numpy",
+    "pyarrow",
+    "matplotlib",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "jupyterlab"]
+
+[tool.setuptools]
+packages = ["cta_bus"]
