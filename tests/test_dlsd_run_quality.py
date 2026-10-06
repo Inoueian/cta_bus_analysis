@@ -18,6 +18,8 @@ from dlsd_run_quality import (  # noqa: E402
     ALL_DAY_DLSD_ROUTES,
     MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY,
     RUSH_ROUTES,
+    add_quality_flags,
+    build_dlsd_runs,
     day_slice_mask,
     hour_dlsd_stats,
     hour_run_counts,
@@ -229,3 +231,109 @@ def test_routes_for_day_slice():
     assert routes_for_day_slice("weekday") == RUSH_ROUTES | ALL_DAY_DLSD_ROUTES
     assert routes_for_day_slice("mon_fri") == RUSH_ROUTES | ALL_DAY_DLSD_ROUTES
     assert MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY == 30
+
+
+def _stop_row(trip: str, stpid: str, seq: int, time: str, speed: float = 20.0) -> dict:
+    return {
+        "bus_stop_time": pd.Timestamp(f"2026-07-07 {time}"),
+        "unique_trip_vehicle_day": trip,
+        "stpid": stpid,
+        "pid": 100.0,
+        "stop_sequence": seq,
+        "speed_mph": speed,
+        "seg_combined": f"seg{seq}",
+    }
+
+
+@pytest.fixture
+def built_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> pd.DataFrame:
+    """dlsd_runs for one synthetic PID (entry stop E, exit stop X, 1 mile apart)."""
+    rows = [
+        # t_ok: consecutive entry/exit, 10 min, with a stop before and after
+        _stop_row("t_ok", "P", 4, "08:00"),
+        _stop_row("t_ok", "E", 5, "08:02"),
+        _stop_row("t_ok", "X", 6, "08:12"),
+        _stop_row("t_ok", "N", 7, "08:14"),
+        # t_gap: exit is 3 stops after entry (not consecutive)
+        _stop_row("t_gap", "E", 5, "09:00"),
+        _stop_row("t_gap", "X", 8, "09:10"),
+        # t_reversed: exit time earlier than entry time
+        _stop_row("t_reversed", "E", 5, "10:10"),
+        _stop_row("t_reversed", "X", 6, "10:05"),
+        # t_noexit: never reaches exit stop, so no run row
+        _stop_row("t_noexit", "E", 5, "11:00"),
+    ]
+    path = tmp_path / "trips_100.parquet"
+    pd.DataFrame(rows).to_parquet(path)
+    monkeypatch.setattr(
+        "dlsd_run_quality.local_parquet_path", lambda pid, **kwargs: path
+    )
+    boundaries = {
+        "100": {
+            "route": "146",
+            "rtdir": "Southbound",
+            "entry_stpid": "E",
+            "exit_stpid": "X",
+            "hop_feet": 5280.0,
+        }
+    }
+    return build_dlsd_runs(boundaries).set_index("unique_trip_vehicle_day")
+
+
+def test_build_dlsd_runs_one_row_per_trip_with_both_stops(built_runs):
+    assert set(built_runs.index) == {"t_ok", "t_gap", "t_reversed"}
+
+
+def test_build_dlsd_runs_duration_and_speed(built_runs):
+    run = built_runs.loc["t_ok"]
+    assert run["dlsd_minutes"] == pytest.approx(10.0)
+    assert run["dlsd_miles"] == pytest.approx(1.0)
+    assert run["implied_dlsd_mph"] == pytest.approx(6.0)
+    assert run["dlsd_minutes_bin"] == 10.0
+    assert (run["route"], run["rtdir"], run["pid"]) == ("146", "Southbound", "100")
+    assert run["same_ping_interval_proxy"]
+
+
+def test_build_dlsd_runs_bracket_times(built_runs):
+    ok = built_runs.loc["t_ok"]
+    assert ok["pre_dlsd_time"] == pd.Timestamp("2026-07-07 08:00")
+    assert ok["post_dlsd_time"] == pd.Timestamp("2026-07-07 08:14")
+    assert ok["bracket_minutes"] == pytest.approx(14.0)
+    gap = built_runs.loc["t_gap"]
+    assert pd.isna(gap["pre_dlsd_time"])
+    assert pd.isna(gap["post_dlsd_time"])
+    assert pd.isna(gap["bracket_minutes"])
+
+
+def test_build_dlsd_runs_time_features(built_runs):
+    run = built_runs.loc["t_ok"]
+    assert run["hour"] == 8
+    assert run["day_of_week"] == 1  # Tuesday
+    assert run["is_weekday"]
+
+
+def test_build_dlsd_runs_quality_flags(built_runs):
+    assert built_runs.loc["t_ok", "analysis_ok"]
+    assert not built_runs.loc["t_ok", "legacy_drop"]
+    gap = built_runs.loc["t_gap"]
+    assert not gap["ok_consecutive"] and not gap["analysis_ok"]
+    reversed_run = built_runs.loc["t_reversed"]
+    assert not reversed_run["ok_time_order"] and not reversed_run["analysis_ok"]
+    assert reversed_run["dlsd_minutes"] == pytest.approx(-5.0)
+    assert reversed_run["legacy_drop"]
+
+
+def test_add_quality_flags_missing_times_not_ok():
+    df = pd.DataFrame(
+        {
+            "entry_time": [pd.Timestamp("2026-07-07 08:00"), pd.NaT],
+            "exit_time": [pd.Timestamp("2026-07-07 08:10"), pd.Timestamp("2026-07-07 08:10")],
+            "entry_sequence": [5, 5],
+            "exit_sequence": [6, 6],
+            "dlsd_minutes": [10.0, np.nan],
+        }
+    )
+    out = add_quality_flags(df)
+    assert out["analysis_ok"].tolist() == [True, False]
+    assert out["ok_times_present"].tolist() == [True, False]
+    assert not out["legacy_drop"].iloc[1]  # NaN minutes compare False both ways
