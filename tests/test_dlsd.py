@@ -1,44 +1,36 @@
-"""Tests for notebooks/dlsd_run_quality.py hour masking helpers."""
+"""Tests for cta_bus.analysis.dlsd hour masking helpers."""
 
 from __future__ import annotations
 
-import sys
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-NOTEBOOKS = Path(__file__).resolve().parent.parent / "notebooks"
-if str(NOTEBOOKS) not in sys.path:
-    sys.path.insert(0, str(NOTEBOOKS))
-
-from dlsd_run_quality import (  # noqa: E402
+from cta_bus.analysis.dlsd import (
     ALL_DAY_DLSD_ROUTES,
     MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY,
     RUSH_ROUTES,
     day_slice_mask,
     hour_dlsd_stats,
     hour_run_counts,
-    local_parquet_path,
-    parquet_url,
     routes_for_day_slice,
     valid_rush_plot_cells,
 )
+from cta_bus.mansueto import local_parquet_path, parquet_url
+from cta_bus.paths import MANSUETO_CACHE_DIR
 
 
 def test_module_imports():
-    import dlsd_run_quality  # noqa: F401
+    import cta_bus.analysis.dlsd  # noqa: F401
 
 
 def test_local_parquet_path_cache_variant():
     assert parquet_url("6582") == local_parquet_path(
         "6582", prefer_local=False, cache_variant="last365d"
     )
-    cached = (
-        NOTEBOOKS.parent / "data" / "mansueto" / "trips_6582_last365d.parquet"
-    )
+    cached = MANSUETO_CACHE_DIR / "trips_6582_last365d.parquet"
     resolved = local_parquet_path(
         "6582", prefer_local=True, cache_variant="last365d"
     )

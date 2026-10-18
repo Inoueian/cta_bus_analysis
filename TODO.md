@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-10-02
+Last updated: 2026-10-18
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
 
@@ -27,7 +27,7 @@ Side-quest: Lake Shore Drive express segment timing for all-day routes 146 & 147
 
 ## Michigan Ave Bus Lane Analysis
 
-Side-quest: measure current bus speed on the downtown Michigan Avenue corridor (Roosevelt to Delaware) ahead of the new northbound dedicated bus lane (Roosevelt to Wacker). This establishes a before-picture and may inform what to build in later phases. Initial v1 uses candidate routes present in Mansueto `rt_to_pid.csv` (route **10** excluded until refinement below). The corridor stop list is frozen in `notebooks/michigan_ave_stops_snapshot.json` (40 on-avenue stops after side-street exclusions). Vault: `michigan-ave-bus-lane-segment`, `michigan-ave-corridor-stops-snapshot`, `cta-holiday-schedule-filtering`.
+Side-quest: measure current bus speed on the downtown Michigan Avenue corridor (Roosevelt to Delaware) ahead of the new northbound dedicated bus lane (Roosevelt to Wacker). This establishes a before-picture and may inform what to build in later phases. Initial v1 uses candidate routes present in Mansueto `rt_to_pid.csv` (route **10** excluded until refinement below). The corridor stop list is frozen in `reference/michigan_ave_stops_snapshot.json` (40 on-avenue stops after side-street exclusions). Vault: `michigan-ave-bus-lane-segment`, `michigan-ave-corridor-stops-snapshot`, `cta-holiday-schedule-filtering`.
 
 ### Now
 
@@ -65,7 +65,7 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 - [x] Archive initial iteration onto `legacy` branch (2026-08-10)
 - [x] Verify Mansueto `trips_<PID>_full.parquet` columns and trip IDs (route 66 / PID 6662; mapping in knowledge-vault `canonical-data-views` and `scripts/verify_parquet.py`) (2026-09-15)
 - [x] New notebook: stop discovery for routes 134, 135, 136, 143, 148 — identify DLSD boundary stops (entry/exit per pattern) via Bus Tracker API (`notebooks/dlsd_stop_discovery_rush_routes.ipynb`; 11 PIDs merged into `dlsd_boundaries_snapshot.json`) (2026-09-24)
-- [x] Rush hour sample exploration + plot guard helpers (`notebooks/dlsd_rush_sample_counts.ipynb`, `valid_rush_plot_cells` / `hour_dlsd_stats` in `notebooks/dlsd_run_quality.py`; tests in `tests/test_dlsd_run_quality.py`) (2026-09-24)
+- [x] Rush hour sample exploration + plot guard helpers (`notebooks/dlsd_rush_sample_counts.ipynb`, `valid_rush_plot_cells` / `hour_dlsd_stats` in `src/cta_bus/analysis/dlsd.py`; tests in `tests/test_dlsd.py`) (2026-09-24)
 - [x] Set rush plot gate: `MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY = 30` + `valid_rush_plot_cells()` (weekday targets; Friday reuses; vault `dlsd-rush-hour-min-sample`) (2026-09-24)
 - [x] Build `dlsd_runs` for rush routes via extended `dlsd_boundaries_snapshot.json` + local `data/mansueto/` cache (same `build_dlsd_runs` as 146/147) (2026-09-24)
 - [x] Data-availability guard: `valid_rush_plot_cells` + `hour_dlsd_stats(..., valid_cells=...)` for rush plots (wire into comparison notebook when built) (2026-09-24)
@@ -73,4 +73,5 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 - [x] Solo pane for route 147 (Foster / Marine Drive northern exit) (`notebooks/dlsd_express_comparison_plots.ipynb`) (2026-10-02)
 - [x] Add 95th-percentile line/band to DLSD duration-by-hour plots (worst-case alongside median and IQR) (`notebooks/dlsd_express_comparison_plots.ipynb`) (2026-10-02)
 - [x] Add day-of-week views: Friday-only and weekend, alongside existing weekday (`notebooks/dlsd_express_comparison_plots.ipynb`) (2026-10-02)
-- [x] Michigan Ave stop discovery: 40 on-avenue stops Roosevelt→Delaware; §4.5 side-street exclusions; `notebooks/michigan_ave_stops_snapshot.json` (`notebooks/michigan_ave_stop_discovery.ipynb`) (2026-10-02)
+- [x] Michigan Ave stop discovery: 40 on-avenue stops Roosevelt→Delaware; §4.5 side-street exclusions; `reference/michigan_ave_stops_snapshot.json` (`notebooks/michigan_ave_stop_discovery.ipynb`) (2026-10-02)
+- [x] Package shared helpers as `cta_bus` (`src/cta_bus/`, `pyproject.toml`); dedupe Mansueto URL/column constants into `cta_bus.mansueto`; move snapshot JSONs to `reference/` (2026-10-18)

@@ -6,28 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
 
 import pandas as pd
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-BOUNDARIES_PATH = REPO_ROOT / "notebooks" / "dlsd_boundaries_snapshot.json"
-DATA_DIR = REPO_ROOT / "data" / "mansueto"
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
+from cta_bus.mansueto import PARQUET_COLS, parquet_url
+from cta_bus.paths import MANSUETO_CACHE_DIR as DATA_DIR
+from cta_bus.paths import REFERENCE_DIR
 
-COLS = [
-    "bus_stop_time",
-    "unique_trip_vehicle_day",
-    "stpid",
-    "pid",
-    "stop_sequence",
-    "speed_mph",
-    "seg_combined",
-]
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
+BOUNDARIES_PATH = REFERENCE_DIR / "dlsd_boundaries_snapshot.json"
 
 
 def load_pids() -> list[str]:
@@ -45,7 +31,7 @@ def cache_pid(pid: str, days: int, force: bool) -> tuple[str, int, int] | None:
     url = parquet_url(pid)
     print(f"  Downloading {pid} from CloudFront ...")
     try:
-        df = pd.read_parquet(url, columns=COLS)
+        df = pd.read_parquet(url, columns=PARQUET_COLS)
     except Exception as exc:
         print(f"  ERROR pid={pid}: {exc}", file=sys.stderr)
         return None

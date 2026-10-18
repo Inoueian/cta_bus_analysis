@@ -8,41 +8,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta_api import BASE, parquet_url
-
-PARQUET_COLS = [
-    "bus_stop_time",
-    "unique_trip_vehicle_day",
-    "stpid",
-    "pid",
-    "stop_sequence",
-    "speed_mph",
-    "seg_combined",
-]
-
-
-def repo_root() -> Path:
-    return Path(__file__).resolve().parent.parent
-
-
-def local_parquet_path(
-    pid: str,
-    *,
-    prefer_local: bool = True,
-    cache_variant: str = "last30d",
-) -> str | Path:
-    """Prefer cached file under data/mansueto/ when prefer_local (e.g. last30d, last365d)."""
-    if prefer_local:
-        cached = (
-            repo_root() / "data" / "mansueto" / f"trips_{pid}_{cache_variant}.parquet"
-        )
-        if cached.is_file():
-            return cached
-    return parquet_url(pid)
+from cta_bus.mansueto import PARQUET_COLS, local_parquet_path
+from cta_bus.paths import REFERENCE_DIR
 
 
 def load_dlsd_boundaries(path: Path | None = None) -> dict[str, dict]:
-    path = path or Path(__file__).resolve().parent / "dlsd_boundaries_snapshot.json"
+    path = path or REFERENCE_DIR / "dlsd_boundaries_snapshot.json"
     return json.loads(path.read_text())
 
 
