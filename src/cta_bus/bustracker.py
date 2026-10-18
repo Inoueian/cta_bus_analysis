@@ -1,4 +1,4 @@
-"""CTA Bus Tracker API and Mansueto CloudFront helpers for notebooks.
+"""CTA Bus Tracker API client.
 
 Daily Bus Tracker budget uses America/Chicago calendar dates (default cap 10,000
 live requests/day per API key). Use ``getpatterns`` disk cache to avoid repeat calls.
@@ -18,16 +18,15 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from cta_bus.paths import API_CACHE_DIR, repo_root
+
 CHICAGO = ZoneInfo("America/Chicago")
 
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
-RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
 CTA_API_BASE = "http://www.ctabustracker.com/bustime/api/v3"
 
 CTA_API_MIN_INTERVAL_SEC = 0.25
 CTA_API_DAILY_WARN = 9_500
 CTA_API_DAILY_MAX = 10_000
-CLOUDFRONT_MIN_INTERVAL_SEC = 0.1
 
 CTA_API_MAX_RETRIES = 3
 CTA_API_RETRY_BASE_SEC = 2.0
@@ -35,15 +34,10 @@ CTA_API_RETRY_BASE_SEC = 2.0
 LAST_CTA_REQUEST_URL: str | None = None
 
 _last_api_call_monotonic: float = 0.0
-_last_cloudfront_call_monotonic: float = 0.0
-
-
-def repo_root() -> Path:
-    return Path(__file__).resolve().parent.parent
 
 
 def api_cache_dir() -> Path:
-    return repo_root() / "data" / "cta_api_cache"
+    return API_CACHE_DIR
 
 
 def load_dotenv(env_path: Path | None = None) -> None:
@@ -124,15 +118,6 @@ def _throttle_api() -> None:
     _last_api_call_monotonic = time.monotonic()
 
 
-def _throttle_cloudfront() -> None:
-    global _last_cloudfront_call_monotonic
-    now = time.monotonic()
-    elapsed = now - _last_cloudfront_call_monotonic
-    if _last_cloudfront_call_monotonic > 0 and elapsed < CLOUDFRONT_MIN_INTERVAL_SEC:
-        time.sleep(CLOUDFRONT_MIN_INTERVAL_SEC - elapsed)
-    _last_cloudfront_call_monotonic = time.monotonic()
-
-
 def _is_retryable_cta_message(msg: str) -> bool:
     lower = str(msg).lower()
     return any(token in lower for token in ("limit", "rate", "busy", "overload"))
@@ -140,20 +125,6 @@ def _is_retryable_cta_message(msg: str) -> bool:
 
 def _is_retryable_http(code: int) -> bool:
     return code in (429, 503)
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
-
-
-def parquet_http_status(pid: str) -> int:
-    _throttle_cloudfront()
-    req = urllib.request.Request(parquet_url(pid), method="HEAD")
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            return resp.status
-    except urllib.error.HTTPError as exc:
-        return exc.code
 
 
 def cta_api_get(
