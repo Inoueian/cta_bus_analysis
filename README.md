@@ -16,7 +16,7 @@ The primary audience is Chicago transit riders and researchers who want a distri
 
 See [TODO.md](TODO.md) for the detailed breakdown of each phase.
 
-**Side quests (notebook-driven):** DLSD express timing and Michigan Avenue bus-lane baseline analysis are in progress alongside Phase 1. They use the same Mansueto data and Bus Tracker helpers as the main pipeline; see [TODO.md](TODO.md) for status.
+**Side quests (notebook-driven):** DLSD express comparison plots are largely complete. Michigan Avenue bus-lane baseline work has finished stop discovery, route identification (**45** kept patterns in `notebooks/michigan_ave_kept_pids.json`), and the segment view (`notebooks/michigan_ave_segment_view.ipynb` → `data/michigan_ave/segment_view.parquet`). Open Michigan work: segment-view QA (route 151 PIDs 14130/14132, backwards-time sampling) and speed plots — see [TODO.md](TODO.md). Both side quests use the same Mansueto data and Bus Tracker helpers as the main pipeline.
 
 ## Principles
 
@@ -61,11 +61,14 @@ The static web app install and run commands are still TBD until Phase 2 stack is
 ├── .env.example   # Bus Tracker API key template (copy to .env)
 ├── scripts/       # data verification, caching, summaries
 │   ├── verify_parquet.py
-│   ├── cache_dlsd_parquets.py
+│   ├── cache_dlsd_parquets.py      # DLSD or Michigan PID parquets (--source michigan)
 │   └── dlsd_weekday_friday_summary.py
 ├── notebooks/     # exploratory analysis and side-quest notebooks
 │   ├── cta_api.py                  # shared Bus Tracker + Mansueto URL helpers
 │   ├── dlsd_run_quality.py         # DLSD rush plot guards and stats
+│   ├── michigan_ave_segment.py     # Michigan corridor segment + timing helpers
+│   ├── michigan_ave_route_identification.ipynb
+│   ├── michigan_ave_kept_pids.json # patterns with median corridor time ≥ 5 min
 │   ├── *_snapshot.json             # frozen stop/boundary lists (e.g. Michigan Ave, DLSD)
 │   └── …
 ├── data/          # local Mansueto parquet and API cache (gitignored)
@@ -93,4 +96,4 @@ Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are pres
 
 - [TODO.md](TODO.md) — active work and backlog
 - [DECISIONS.md](DECISIONS.md) — architecture decision log
-- Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs)
+- Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs). Michigan bus-lane scope and methodology: `michigan-ave-bus-lane-segment`; segment view and check: `michigan-ave-segment-view`; **148 SB PID 6402** local pattern hand trim: `michigan-ave-6402-pattern-trim`.
