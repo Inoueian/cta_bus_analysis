@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cache last N days of Mansueto parquets for DLSD pattern IDs."""
+"""Cache last N days of Mansueto parquets for DLSD or Michigan Ave pattern IDs."""
 
 from __future__ import annotations
 
@@ -12,8 +12,10 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BOUNDARIES_PATH = REPO_ROOT / "notebooks" / "dlsd_boundaries_snapshot.json"
+MICHIGAN_STOPS_PATH = REPO_ROOT / "notebooks" / "michigan_ave_stops_snapshot.json"
 DATA_DIR = REPO_ROOT / "data" / "mansueto"
 BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
+RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
 
 COLS = [
     "bus_stop_time",
@@ -30,9 +32,27 @@ def parquet_url(pid: str) -> str:
     return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
 
 
-def load_pids() -> list[str]:
+def load_dlsd_pids() -> list[str]:
     data = json.loads(BOUNDARIES_PATH.read_text())
     return sorted(data.keys(), key=lambda x: int(x))
+
+
+def load_michigan_pids() -> list[str]:
+    snapshot = json.loads(MICHIGAN_STOPS_PATH.read_text())
+    candidates = [str(r) for r in snapshot["candidate_routes"]]
+    rt_df = pd.read_csv(RT_TO_PID_URL)
+    rt_df["rt"] = rt_df["rt"].astype(str)
+    rt_df["pid"] = rt_df["pid"].astype(str)
+    pids = rt_df.loc[rt_df["rt"].isin(candidates), "pid"].unique().tolist()
+    return sorted(pids, key=lambda x: int(x))
+
+
+def load_pids(source: str) -> list[str]:
+    if source == "dlsd":
+        return load_dlsd_pids()
+    if source == "michigan":
+        return load_michigan_pids()
+    raise ValueError(f"unknown source: {source}")
 
 
 def cache_pid(pid: str, days: int, force: bool) -> tuple[str, int, int] | None:
@@ -65,6 +85,12 @@ def cache_pid(pid: str, days: int, force: bool) -> tuple[str, int, int] | None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--source",
+        choices=("dlsd", "michigan"),
+        default="dlsd",
+        help="PID list: DLSD boundaries snapshot or Michigan candidate routes (default: dlsd)",
+    )
+    parser.add_argument(
         "--days",
         type=int,
         default=30,
@@ -77,11 +103,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not BOUNDARIES_PATH.is_file():
+    if args.source == "dlsd" and not BOUNDARIES_PATH.is_file():
         raise SystemExit(f"Missing {BOUNDARIES_PATH}")
+    if args.source == "michigan" and not MICHIGAN_STOPS_PATH.is_file():
+        raise SystemExit(f"Missing {MICHIGAN_STOPS_PATH}")
 
-    pids = load_pids()
-    print(f"Caching {len(pids)} PIDs -> {DATA_DIR} (last {args.days} days)")
+    pids = load_pids(args.source)
+    print(f"Caching {len(pids)} PIDs ({args.source}) -> {DATA_DIR} (last {args.days} days)")
 
     total_rows = 0
     total_bytes = 0
@@ -94,9 +122,15 @@ def main() -> None:
         ok += 1
         total_rows += rows
         total_bytes += size
-        print(f"  {pid}: {rows:,} rows, {size / 1e6:.1f} MB -> {DATA_DIR.name}/trips_{pid}_last{args.days}d.parquet")
+        print(
+            f"  {pid}: {rows:,} rows, {size / 1e6:.1f} MB -> "
+            f"{DATA_DIR.name}/trips_{pid}_last{args.days}d.parquet"
+        )
 
-    print(f"\nDone: {ok}/{len(pids)} files, {total_rows:,} rows, {total_bytes / 1e6:.1f} MB total")
+    print(
+        f"\nDone: {ok}/{len(pids)} files, {total_rows:,} rows, "
+        f"{total_bytes / 1e6:.1f} MB total"
+    )
 
 
 if __name__ == "__main__":
