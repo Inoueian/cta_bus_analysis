@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-10-02
+Last updated: 2026-10-03
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
 
@@ -31,12 +31,10 @@ Side-quest: measure current bus speed on the downtown Michigan Avenue corridor (
 
 ### Now
 
-- [ ] Route identification: determine which bus routes serve the Michigan Ave segment between Roosevelt and Delaware. Filter to routes where the median per-run time on the segment is at least 5 minutes (to exclude routes that barely touch Michigan Ave). Validate system-map candidates against Mansueto data after §2 patterns in the discovery notebook.
+- [ ] Segment-view QA — route **151** NB PIDs **14130** and **14132**: `last30d` cache exists but neither PID appears in `data/michigan_ave/segment_view.parquet` (no corridor stop rows). Drop from `notebooks/michigan_ave_kept_pids.json` or fix the filter (vault `michigan-ave-segment-view`).
+- [ ] Segment-view QA — sample **137** trips with backwards observed `bus_stop_time` vs latitude `seq_index` (likely ~5 min imputation vs sequence order; QA flag, not auto-drop until sampled; vault `michigan-ave-segment-view`).
 
 ### Next
-
-- [ ] Data collection: cache Mansueto parquet files for all Michigan Ave routes identified above; build a Michigan Ave segment view (arrival times at each Michigan Ave stop, per run)
-- [ ] Speed plots: for every consecutive pair of Michigan Ave stops, plot median and IQR travel time (implied speed) by hour of day. Slice by all-days, Mon–Thu, Friday, Sat–Sun. Consider adding 5th-percentile line (worst-case slow).
 - [ ] Route 10 / Mansueto catalog gap (refinement): confirm route **10** is absent from CloudFront `rt_to_pid.csv` (not a `10.0` string mismatch). If missing, discover PIDs via Bus Tracker (`getpatterns` / route lookup per vault `cta-bus-tracker-api`), add route 10 to Michigan Ave analysis, and document whether Mansueto parquets exist or route 10 is API-only (`notebooks/michigan_ave_stop_discovery.ipynb`; vault `rt-to-pid-missing-parquet`). Defer until initial speed plots look reasonable.
 - [ ] Holiday schedule filtering (cross-cutting): define a holiday calendar for CTA (or at minimum US federal holidays) and exclude holiday dates from weekday/weekend slices. This also applies retroactively to the DLSD analysis.
 
@@ -74,3 +72,8 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 - [x] Add 95th-percentile line/band to DLSD duration-by-hour plots (worst-case alongside median and IQR) (`notebooks/dlsd_express_comparison_plots.ipynb`) (2026-10-02)
 - [x] Add day-of-week views: Friday-only and weekend, alongside existing weekday (`notebooks/dlsd_express_comparison_plots.ipynb`) (2026-10-02)
 - [x] Michigan Ave stop discovery: 40 on-avenue stops Roosevelt→Delaware; §4.5 side-street exclusions; `notebooks/michigan_ave_stops_snapshot.json` (`notebooks/michigan_ave_stop_discovery.ipynb`) (2026-10-02)
+- [x] Michigan Ave 30-day Mansueto cache for candidate PIDs (`scripts/cache_dlsd_parquets.py --source michigan --days 30`) (2026-10-03)
+- [x] Michigan Ave route identification: longest corridor segment from cached `getpatterns`; median ≥5 min filter; endpoint coverage diagnostic → **12 routes / 45 PIDs** (`notebooks/michigan_ave_route_identification.ipynb`, `notebooks/michigan_ave_segment.py`, `notebooks/michigan_ave_kept_pids.json`) (2026-10-03)
+- [x] Michigan Ave 148 SB PID 6402: local `getpatterns` hand trim (four Michigan stops after Hubbard removed); Delaware→Hubbard median qualifies; added to kept list — knowledge-vault `michigan-ave-6402-pattern-trim` (2026-10-03)
+- [x] Michigan Ave segment view: NB/SB latitude sequences, per-trip `(unique_trip_vehicle_day, stpid)` rows with flanking-mean `speed_mph` gap fill (`notebooks/michigan_ave_segment.py`, `notebooks/michigan_ave_segment_view.ipynb` → `data/michigan_ave/segment_view.parquet`; vault `michigan-ave-segment-view`); check passed for **6402** — zero rows at trimmed stops `1104`–`1106`, `18396` (2026-10-03)
+- [x] Michigan Ave corridor speed plots: slow-hour diagnostic + latitude corridor charts (minutes/mile, dual mph axis); DLSD-leak stops excluded; Mon–Thu / Friday / weekend (`notebooks/michigan_ave_speed_plots.ipynb`, `slowest_hours` / `corridor_stop_min_per_mile_stats` in `notebooks/michigan_ave_segment.py`; vault `michigan-ave-slow-hour-corridor-plots`) (2026-10-03)
