@@ -81,7 +81,7 @@ Additional directories (`backend/`, `frontend/`) will be added once the web-app 
 
 ## Data Source
 
-Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
+Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). From 2026-09-28 onward, raw ~60-second bus positions also come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
 
 ### Data Model
 
@@ -94,6 +94,8 @@ Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are pres
 
 ## Documentation
 
+- [CLAUDE.md](CLAUDE.md) — agent and contributor guide: conventions, rules, how to work from specs
+- [specs/](specs/) — one spec per unit of work (`specs/TEMPLATE.md`)
 - [TODO.md](TODO.md) — active work and backlog
 - [DECISIONS.md](DECISIONS.md) — architecture decision log
 - Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs). Michigan bus-lane scope and methodology: `michigan-ave-bus-lane-segment`; segment view and check: `michigan-ave-segment-view`; **148 SB PID 6402** local pattern hand trim: `michigan-ave-6402-pattern-trim`.

@@ -1,20 +1,33 @@
 # TODO
 
-Last updated: 2026-10-03
+Last updated: 2026-11-03
 
-Active work and backlog for the CTA Bus Wait & Travel Time Explorer.
+Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial items get a spec in `specs/` (template: `specs/TEMPLATE.md`) before implementation; see [CLAUDE.md](CLAUDE.md).
+
+## Foundation
+
+Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two data sources) and [ADR-005](DECISIONS.md) (package + DuckDB).
+
+- [ ] Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network). Spec: `specs/package-migration.md` (to write).
+- [ ] Archive adapter → run-level view (ADR-004). Spec: `specs/archive-adapter.md` (ready).
+- [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write).
+- [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
+- [ ] Fixtures under `tests/fixtures/`: one archive day filtered to the Michigan kept PIDs, `getpatterns` JSON for those PIDs, one small Mansueto parquet.
+- [ ] Migrate the durable knowledge-vault notes cited in README/TODO into `docs/` (agents cannot read the vault). Start with: `canonical-data-views`, `cta-bus-tracker-api`, `cta-holiday-schedule-filtering`, `michigan-ave-segment-view`, `mansueto-imputed-stop-times`.
 
 ## Phase 1: Routes 8, 65, & 66
 
-Analyze three routes affected by current construction. Build the data ingestion pipeline and compute distributions via scripts and exploratory notebooks — no web app yet. Data access strategy for this phase: download and cache Mansueto parquet files locally.
+Analyze three routes affected by current construction. Build the data ingestion pipeline and compute distributions via scripts and exploratory notebooks — no web app yet. Data access strategy for this phase: local caches of Mansueto parquets and archive day files (ADR-004).
 
 ### Now
 
 - [ ] EDA notebook: explore Mansueto parquet data for routes 8, 65, & 66 — verify schema consistency across routes, check data volumes and date ranges, visualize arrival patterns and headways (`notebooks/eda_routes_8_65_66.ipynb`)
-- [ ] Data ingestion for routes 8, 65, & 66: build the run-level view by unioning `trips_<PID>_full.parquet` across all Patterns of each route, normalizing Mansueto columns (`unique_trip_vehicle_day` → `run_id`, `bus_stop_time` → `arrival_time`, etc.) and joining `direction` from GTFS/pattern metadata per vault `canonical-data-views`
+- [ ] Run-level view for routes 8, 65, & 66 from both adapters (Foundation items above); cross-check overlapping days (2026-09-28 onward). Routes 8 and 66 had fall-2026 construction detours (route 8 on Division near Halsted per the cta-bus-speed-scorecard study): record detour dates in `docs/` so they can be flagged.
 - [ ] Build the stop-level view for routes 8, 65, & 66 (route → direction → stop_id → arrival-time list) by grouping the run-level view
 
 ### Next
+
+Each item gets a spec with acceptance tests on the fixture day before implementation.
 
 - [ ] Wait-time distribution — compute from the stop-level view for (route, direction, start_stop), filter by day_of_week / time_of_day
 - [ ] Travel-time distribution — from the run-level view, filter to runs that visited both start_stop and end_stop, compute pairwise deltas
@@ -31,12 +44,14 @@ Side-quest: measure current bus speed on the downtown Michigan Avenue corridor (
 
 ### Now
 
-- [ ] Segment-view QA — route **151** NB PIDs **14130** and **14132**: `last30d` cache exists but neither PID appears in `data/michigan_ave/segment_view.parquet` (no corridor stop rows). Drop from `notebooks/michigan_ave_kept_pids.json` or fix the filter (vault `michigan-ave-segment-view`).
-- [ ] Segment-view QA — sample **137** trips with backwards observed `bus_stop_time` vs latitude `seq_index` (likely ~5 min imputation vs sequence order; QA flag, not auto-drop until sampled; vault `michigan-ave-segment-view`).
+- [ ] Before-picture dataset: run-level view for the kept PIDs over every archive day before the NB lane opens (archive adapter, Foundation), stored as parquet with its QA table. A one-day prototype (2026-10-29) reproduced the Mansueto corridor medians within 1% and resolved a ~20-minute southbound incident north of the river around 10:25 AM.
+- [ ] Pattern catalog refresh against the archive: the Oct-3 kept list misses patterns running daily in late October (route **6** PID **7107** to 79th/South Shore, ~100 trips/day; four route **4** PIDs 28326–28329; route **147** PID **839**). Re-run route identification on archive days and update `notebooks/michigan_ave_kept_pids.json`.
+- [ ] Segment-view QA — route **151** NB PIDs **14130** and **14132**: `last30d` cache exists but neither PID appears in `data/michigan_ave/segment_view.parquet` (no corridor stop rows). Re-run the segment view on the archive adapter first; if the PIDs appear there, close this as a Mansueto-only caveat, otherwise drop from `notebooks/michigan_ave_kept_pids.json` or fix the filter (vault `michigan-ave-segment-view`).
+- [ ] Segment-view QA — sample **137** trips with backwards observed `bus_stop_time` vs latitude `seq_index` (likely ~5 min imputation vs sequence order). Re-run on the archive adapter first; expected to disappear by construction (arrival times are interpolated along monotone `pdist`). Keep as a Mansueto-only QA flag if so (vault `michigan-ave-segment-view`).
 
 ### Next
-- [ ] Route 10 / Mansueto catalog gap (refinement): confirm route **10** is absent from CloudFront `rt_to_pid.csv` (not a `10.0` string mismatch). If missing, discover PIDs via Bus Tracker (`getpatterns` / route lookup per vault `cta-bus-tracker-api`), add route 10 to Michigan Ave analysis, and document whether Mansueto parquets exist or route 10 is API-only (`notebooks/michigan_ave_stop_discovery.ipynb`; vault `rt-to-pid-missing-parquet`). Defer until initial speed plots look reasonable.
-- [ ] Holiday schedule filtering (cross-cutting): define a holiday calendar for CTA (or at minimum US federal holidays) and exclude holiday dates from weekday/weekend slices. This also applies retroactively to the DLSD analysis.
+- [ ] Route 10 / Mansueto catalog gap (refinement): confirm route **10** is absent from CloudFront `rt_to_pid.csv` (not a `10.0` string mismatch). If missing, discover PIDs via Bus Tracker (`getpatterns` / route lookup per vault `cta-bus-tracker-api`), add route 10 to Michigan Ave analysis, and document whether Mansueto parquets exist or route 10 is API-only (`notebooks/michigan_ave_stop_discovery.ipynb`; vault `rt-to-pid-missing-parquet`). Route 10 is present in the archive (pattern 29277 seen 2026-10-29). Defer until initial speed plots look reasonable.
+- [ ] Holiday schedule filtering: moved to the Foundation calendar module.
 
 ## Phase 2: Static web app for all routes
 
@@ -52,8 +67,8 @@ Pick a web-app stack, extend ingestion to all (or most) CTA bus routes, and depl
 
 Scheduled data updates, richer metrics, and polish features that go beyond the initial static snapshot.
 
-- [ ] Scheduled refresh from the Mansueto bucket (respecting the ~14-day upstream lag documented in the knowledge-vault note `cta-stop-watch-freshness-check`)
-- [ ] Add derived metrics: excess wait vs. scheduled headway, on-time reliability score
+- [ ] Scheduled refresh: nightly ingest of new archive days (checksum-verified, `known_gaps` recorded) plus periodic Mansueto backfill for history (Mansueto has a ~14-day upstream lag per the knowledge-vault note `cta-stop-watch-freshness-check`; the archive exports nightly)
+- [ ] Add derived metrics: excess wait vs. scheduled headway, on-time reliability score. Handle: join GTFS trips on (`sched_start_date`, `sched_start_sec`, `pid` → shape/direction), which the archive carries on every row
 - [ ] Community-area rollups (mirror what the Mansueto dashboard does, but interactive)
 - [ ] Compare weekday-vs-weekend distributions side by side
 - [ ] Persist and share URLs for a chosen route+stop+time combination

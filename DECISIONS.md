@@ -10,6 +10,62 @@ Statuses:
 
 ---
 
+## ADR-005: Importable package + DuckDB for position-scale data
+Date: 2026-11-03
+Status: Accepted
+
+### Context
+
+Logic currently lives in `notebooks/*.py` and is imported through `sys.path` hacks from notebooks
+and tests. The new position archive is ~1M rows per day, ~30M per month; pandas-only processing
+of consecutive-fix pairs at that scale is slow and memory-bound. The scorecard project showed that
+DuckDB handles a full month in about a minute on a laptop and that SQL stages are easy to review.
+
+### Decision
+
+Create an importable package `cta/` (adapters, cleaning, imputation, views, calendar, QA). Scripts
+and notebooks call into it; tests import it directly. Use DuckDB for ingestion and for any stage
+over ~1M rows; functions return pandas DataFrames so notebooks stay pandas-native. Add
+`requirements.txt` and a CI workflow running `pytest` with no network.
+
+### Consequences
+
+One-time migration of the three notebook helper modules. Agents get a stable import surface and a
+test harness, which is what spec-driven work needs. DuckDB becomes a hard dependency.
+
+---
+
+## ADR-004: Add the Transit Alerts position archive as a second source; keep Mansueto for history
+Date: 2026-11-03
+Status: Accepted (amends ADR-001; does not supersede it)
+
+### Context
+
+The Chicago Transit Alerts archive (collected by chicago-transit-insights) publishes every CTA bus
+position at ~60 s (30 s from 2026-11-01) as daily, checksummed files, from 2026-09-28 onward,
+nightly. Mansueto provides imputed stop arrivals from ~5 min pings with history to ~2022 and a
+~2 week lag. A one-day prototype reproduced the Mansueto corridor medians on Michigan Ave within
+1% from the archive, and resolved a 20-minute southbound incident that 5-minute pings would smear.
+The archive has no stop events, so using it means owning the stop-imputation step ADR-001 avoided.
+
+### Decision
+
+Consume both. The archive is the primary source for all dates it covers; Mansueto is the source for
+earlier dates and for long-run drift. Each source has an adapter that emits the ADR-003 run-level
+view with a `source` column. Stop pdist comes from Bus Tracker `getpatterns`. Cleaning rules are
+adopted from the MIT-licensed cta-bus-speed-scorecard pipeline (dedup, trip key, gap/snap filters)
+with attribution; the terminal trim and pattern-length filters are not adopted for stop-level views.
+
+### Consequences
+
+We own an imputation step and its QA, but at 5–10× the resolution of Mansueto's. Freshness improves
+from ~2 weeks to ~1 day, which makes Phase 3 scheduled refresh realistic. Risk: the archive is run by
+one volunteer and has had quota outages; the ingest must verify checksums and record gaps, and the
+Mansueto adapter stays maintained as the fallback. Overlapping days (Sep 28 onward) are used as a
+standing cross-check between sources.
+
+---
+
 ## ADR-003: Two canonical data views — run-level and stop-level
 Date: 2026-08-10
 Status: Accepted
