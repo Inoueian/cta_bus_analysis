@@ -34,7 +34,7 @@ needs_getpatterns = pytest.mark.skipif(
 )
 
 MIN_RUN_STOP_ROWS = 16_000  # spec acceptance: prototype produced 16,740
-MAX_MEDIAN_RATIO_DEVIATION = 0.10  # spec acceptance: within 10% of the Mansueto median
+MAX_MEDIAN_RATIO_DEVIATION = 0.20  # ADR-006: one-day medians vs a 30-day Mansueto median; 10% failed 3 of 17 pids
 MIN_RUNS_FOR_RATIO = 30
 
 
@@ -112,13 +112,6 @@ def test_run_level_row_count_and_no_duplicates(run_level):
 
 
 @needs_getpatterns
-@pytest.mark.xfail(
-    strict=True,
-    reason="spec bound (10% per pid, one day vs 30-day Mansueto median) is not met on the fixture day: "
-    "4524 (147 NB) 1.12, 8119 (26 SB) 0.86, 19378 (4 NB) 0.88 of the Mansueto median; the other 14 pids with "
-    ">= 30 runs are within 10% and the median ratio over 43 pids is 0.985. Owner to revisit the bound "
-    "(docs/2026-11-03-archive-adapter-qa.md).",
-)
 def test_corridor_minutes_match_mansueto_medians(run_level):
     notebooks = REPO / "notebooks"
     if str(notebooks) not in sys.path:

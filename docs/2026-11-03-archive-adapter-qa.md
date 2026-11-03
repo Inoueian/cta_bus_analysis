@@ -84,10 +84,10 @@ in `michigan_ave_kept_pids.json`, patterns with ≥ 30 runs on the day:
 Median ratio 0.970 over these 17, 0.985 over all 43 patterns with a result. Three patterns are
 outside the spec's 10% bound; 4524 and 19378 were already at 1.11 and 0.87 in the prototype table
 the spec cites, so the bound was set too tight for one day against a 30-day median taken a month
-earlier (Mansueto window ended ~2026-10-03). `test_corridor_minutes_match_mansueto_medians` is
-`xfail(strict=True)` with this reason; the threshold stays as the spec states it until the owner
-revisits it (options: widen to 15%, compare against the Mansueto distribution of daily medians, or
-compare same-day archive vs Mansueto once the Mansueto adapter exists).
+earlier (Mansueto window ended ~2026-10-03). The owner widened the bound to 20% the same day
+(ADR-006); `test_corridor_minutes_match_mansueto_medians` passes with every pattern inside it. A
+same-day archive vs Mansueto comparison, once the Mansueto adapter exists, is the place to look for
+systematic bias that a 20% bound would not catch.
 
 Two patterns have view rows but no run with both corridor endpoints: 4512 (143 SB, 0 of its runs)
 and 1054 (3 NB, did not run). Worth a look when the catalog refresh item runs.

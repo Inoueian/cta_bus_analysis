@@ -9,7 +9,6 @@ Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial
 Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two data sources) and [ADR-005](DECISIONS.md) (package + DuckDB).
 
 - [ ] Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network). Spec: `specs/package-migration.md` (draft; owner to mark ready).
-- [ ] Archive adapter → run-level view (ADR-004). Spec: `specs/archive-adapter.md` (in progress, 2026-11-03: `cta/archive.py`, `cta/patterns.py`, `cta/calendar.py`, `cta/views.py`, `scripts/archive_run_level.py`; getpatterns fixture committed; 8 of 9 acceptance items pass, the per-pid 10% Mansueto-median bound fails on 3 of 17 patterns and is `xfail` pending an owner decision on the bound; see `docs/2026-11-03-archive-adapter-qa.md`).
 - [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write).
 - [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
 - [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), ~~`getpatterns` JSON for those PIDs~~ (done 2026-11-03: `tests/fixtures/getpatterns/`, 45 files), one small Mansueto parquet.
@@ -75,6 +74,7 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 
 ## Done
 
+- [x] Archive adapter → run-level view (ADR-004): `cta/archive.py`, `cta/patterns.py`, `cta/calendar.py`, `cta/views.py`, `scripts/archive_run_level.py`, fixtures for 2026-10-29 and the 45 kept PIDs; validation tolerance set by ADR-006 (`specs/archive-adapter.md`, `docs/2026-11-03-archive-adapter-qa.md`) (2026-11-03)
 - [x] Archive initial iteration onto `legacy` branch (2026-08-10)
 - [x] Verify Mansueto `trips_<PID>_full.parquet` columns and trip IDs (route 66 / PID 6662; mapping in knowledge-vault `canonical-data-views` and `scripts/verify_parquet.py`) (2026-09-15)
 - [x] New notebook: stop discovery for routes 134, 135, 136, 143, 148 — identify DLSD boundary stops (entry/exit per pattern) via Bus Tracker API (`notebooks/dlsd_stop_discovery_rush_routes.ipynb`; 11 PIDs merged into `dlsd_boundaries_snapshot.json`) (2026-09-24)
