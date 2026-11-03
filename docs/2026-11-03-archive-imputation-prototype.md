@@ -71,13 +71,19 @@ pattern 1054 which did not run. With `getpatterns` pdist this gap goes away.
 
 ## Handoff: next session
 
+Project skills `/spec`, `/adr` and `/implement` exist under `.claude/skills/`; use them.
+
 1. Confirm `CTA_API_KEY` is present (do not print it), then make one `getpatterns` call through
    `notebooks/cta_api.py` for PID 6414 to verify the key and the daily budget counter.
-2. Implement `specs/archive-adapter.md` (status: ready). Start with the fixture: this day's file
-   filtered to the 45 kept PIDs, plus `getpatterns` JSON for those PIDs, under `tests/fixtures/`.
-3. The reference pipeline this builds on is the MIT-licensed
+2. `specs/package-migration.md` is a draft with two open questions; once the owner marks it
+   `ready`, run `/implement` on it first. It needs no key and it creates the `cta/` package that
+   the archive adapter's outputs are specified to live in.
+3. Then `/implement specs/archive-adapter.md` (status: ready). Start with the fixture: this day's
+   file filtered to the 45 kept PIDs, plus `getpatterns` JSON for those PIDs, under
+   `tests/fixtures/`. The day file's SHA-256 is in Setup above.
+4. The reference pipeline this builds on is the MIT-licensed
    https://github.com/MisterClean/cta-bus-speed-scorecard (`scripts/transit_archive.py` for ingest,
    `scripts/bus-speed-scorecard/scorecard.sql` steps 1–7 for cleaning). Clone it read-only; keep
    attribution when porting.
-4. Archive host: `https://data.chicagotransitalerts.app/positions/index.json`. Fetch with `curl`;
+5. Archive host: `https://data.chicagotransitalerts.app/positions/index.json`. Fetch with `curl`;
    Python `urllib` with its default User-Agent gets a 403.
