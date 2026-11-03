@@ -1,6 +1,6 @@
 # Spec: Transit Alerts archive adapter → run-level view
 
-Status: ready
+Status: in progress (2026-11-03, branch `claude/keen-hopper-te6y2f`: all stages, QA and 7 of 9 acceptance tests implemented; the two tests needing the getpatterns fixture skip until it is committed; see `docs/2026-11-03-archive-adapter-qa.md`)
 Owner: Satoru  ·  Date: 2026-11-03  ·  TODO item: Phase 1 "Data ingestion … build the run-level view" (second source)
 
 ## Question

@@ -9,10 +9,10 @@ Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial
 Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two data sources) and [ADR-005](DECISIONS.md) (package + DuckDB).
 
 - [ ] Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network). Spec: `specs/package-migration.md` (draft; owner to mark ready).
-- [ ] Archive adapter → run-level view (ADR-004). Spec: `specs/archive-adapter.md` (ready).
+- [ ] Archive adapter → run-level view (ADR-004). Spec: `specs/archive-adapter.md` (in progress, 2026-11-03: `cta/archive.py`, `cta/patterns.py`, `cta/calendar.py`, `cta/views.py`, `scripts/archive_run_level.py`; remaining: commit `tests/fixtures/getpatterns/` via `scripts/build_archive_fixtures.py --getpatterns` so the two skipped validation tests run; see `docs/2026-11-03-archive-adapter-qa.md`).
 - [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write).
-- [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
-- [ ] Fixtures under `tests/fixtures/`: one archive day filtered to the Michigan kept PIDs, `getpatterns` JSON for those PIDs, one small Mansueto parquet.
+- [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
+- [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), `getpatterns` JSON for those PIDs (blocked on Bus Tracker host access from the cloud environment; `scripts/build_archive_fixtures.py --getpatterns`), one small Mansueto parquet.
 - [ ] Migrate the durable knowledge-vault notes cited in README/TODO into `docs/` (agents cannot read the vault). Start with: `canonical-data-views`, `cta-bus-tracker-api`, `cta-holiday-schedule-filtering`, `michigan-ave-segment-view`, `mansueto-imputed-stop-times`.
 
 ## Phase 1: Routes 8, 65, & 66

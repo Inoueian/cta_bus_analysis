@@ -37,10 +37,11 @@ data/           local caches, gitignored
 docs/           durable notes migrated from the knowledge vault (data quirks, thresholds)
 ```
 
-This is the target layout (ADR-005). Until the Foundation items in TODO.md land, `cta/` and `docs/`
-do not exist and the importable helpers are `notebooks/cta_api.py`, `dlsd_run_quality.py` and
-`michigan_ave_segment.py`, imported via `sys.path` (see `tests/`). Move them into `cta/` as they are
-touched. Do not add new importable code under `notebooks/`.
+This is the target layout (ADR-005). `cta/` exists with the archive adapter (`archive.py`,
+`patterns.py`, `calendar.py`, `views.py`; importable from the repo root, `tests/conftest.py` puts it on
+`sys.path`). The legacy helpers `notebooks/cta_api.py`, `dlsd_run_quality.py` and
+`michigan_ave_segment.py` are still imported via `sys.path` until `specs/package-migration.md` moves
+them. Move them into `cta/` as they are touched. Do not add new importable code under `notebooks/`.
 
 ## Conventions
 

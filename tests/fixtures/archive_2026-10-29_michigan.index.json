@@ -1,0 +1,104 @@
+{
+ "title": "Fixture manifest: Transit Alerts bus archive day 2026-10-29 filtered to the 45 Michigan Ave kept PIDs",
+ "source_index_generated_at": "2026-11-02T08:40:01.484Z",
+ "timezone": "America/Chicago",
+ "source_day": {
+  "date": "2026-10-29",
+  "files": {
+   "bus": {
+    "path": "positions/bus/2026/10/2026-10-29.ndjson.gz",
+    "rows": 1083422,
+    "bytes": 39299129,
+    "sha256": "c0ec20986e19708f6e921765ccd0eea07a72261d2c651e314033115305577774"
+   }
+  }
+ },
+ "filter": {
+  "pids_file": "notebooks/michigan_ave_kept_pids.json",
+  "n_pids": 45
+ },
+ "known_gaps": [
+  {
+   "start": "2026-10-12T18:03-05:00",
+   "end": "2026-10-13T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-13T14:30-05:00",
+   "end": "2026-10-14T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-14T13:34-05:00",
+   "end": "2026-10-15T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-15T13:13-05:00",
+   "end": "2026-10-16T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-16T13:19-05:00",
+   "end": "2026-10-17T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-17T15:51-05:00",
+   "end": "2026-10-18T00:00-05:00",
+   "feeds": [
+    "bus"
+   ],
+   "note": "CTA Bus Tracker daily request limit hit; data unrecoverable"
+  },
+  {
+   "start": "2026-10-22T15:37-05:00",
+   "end": "2026-10-22T15:48-05:00",
+   "feeds": [
+    "bus",
+    "train",
+    "metra"
+   ],
+   "note": "No polls recorded"
+  },
+  {
+   "start": "2026-10-30T17:40-05:00",
+   "end": "2026-10-30T18:07-05:00",
+   "feeds": [
+    "bus",
+    "train",
+    "metra"
+   ],
+   "note": "No polls recorded"
+  }
+ ],
+ "days": [
+  {
+   "date": "2026-10-29",
+   "weekday": "Thu",
+   "files": {
+    "bus": {
+     "path": "archive_2026-10-29_michigan.ndjson.gz",
+     "rows": 118995,
+     "bytes": 3786483,
+     "sha256": "db3caae6bb6a6ddc643fe6e359a60fc0d08f66a518036c48489e5e3db1130e0e"
+    }
+   }
+  }
+ ]
+}
