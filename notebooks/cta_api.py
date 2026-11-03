@@ -22,7 +22,7 @@ CHICAGO = ZoneInfo("America/Chicago")
 
 BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
 RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
-CTA_API_BASE = "http://www.ctabustracker.com/bustime/api/v3"
+CTA_API_BASE = "https://www.ctabustracker.com/bustime/api/v3"
 
 CTA_API_MIN_INTERVAL_SEC = 0.25
 CTA_API_DAILY_WARN = 9_500
