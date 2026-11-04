@@ -39,8 +39,9 @@ Column mapping (ADR-003 "ingestion will confirm and adapt"): `run_id` = `unique_
 unchanged (ADR-003: preserve Mansueto's trip identifier); `route` = `rt`; `pattern_id` = `pid`;
 `stop_id` = `stpid`; `vehicle_id` = `vid`; `arrival_time` = `bus_stop_time`; `direction` =
 getpatterns `rtdir`; `stop_sequence_index` = getpatterns `seq` (not Mansueto `stop_sequence`, so
-both sources index stops identically); `service_date` = America/Chicago calendar date of the run's
-earliest `arrival_time`. `speed_mph`, `seg_combined`, `typ`, `p_stp_id` are not carried (rule 6).
+both sources index stops identically); `service_date` = the trailing `YYYY-MM-DD` of
+`unique_trip_vehicle_day` (Mansueto's own service day, e.g. `318414.038912802023-04-24`), falling
+back to the America/Chicago date of the run's earliest `arrival_time` when it does not parse. `speed_mph`, `seg_combined`, `typ`, `p_stp_id` are not carried (rule 6).
 
 ## Method
 
@@ -61,10 +62,11 @@ earliest `arrival_time`. `speed_mph`, `seg_combined`, `typ`, `p_stp_id` are not 
    `stop_not_in_pattern` (this is how the PID 6402 hand trim takes effect on Mansueto data too).
 5. Stage `order`: within a run, sorted by `seq`, a row whose `bus_stop_time` is earlier than the
    running maximum of the preceding rows is dropped with reason `nonmonotone_time` (the "backwards
-   `bus_stop_time`" quirk, TODO Michigan Now; 137 trips in the 30-day Michigan sample). See Open
-   questions for keep-and-flag instead.
-6. `service_date` per run as defined above; `calendar_flag` via `cta.calendar.calendar_flag` with
-   `index=None`. No terminal trim, no pattern-length filter, no minimum stops per run (ADR-004).
+   `bus_stop_time`" quirk, TODO Michigan Now; 137 trips in the 30-day Michigan sample). Dropping,
+   not flagging, was decided by the owner on 2026-11-04.
+6. `service_date` per run as defined above. The fixture builder asserts the embedded date equals the
+   Chicago date of the earliest arrival for at least 99% of runs (post-midnight trips are the expected
+   exceptions) and prints the rest; `calendar_flag` via `cta.calendar.calendar_flag` with `index=None`. No terminal trim, no pattern-length filter, no minimum stops per run (ADR-004).
 7. Assemble `RUN_LEVEL_COLUMNS` in the same sort order as the archive view; `bracket_gap_s` is NaN
    because Mansueto does not publish ping times (ping interval ~5 min; downstream code must treat
    NaN as "unknown", not 0).
@@ -106,7 +108,8 @@ Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
 - [ ] `run_level_from_mansueto(["18414","18415"], parquet_dir=fixtures, pattern_stops=<fixture>)`
       has columns exactly `RUN_LEVEL_COLUMNS`, `source == "mansueto"`, `bracket_gap_s` all NaN,
       zero (run_id, stop_id) duplicates, `direction` ∈ {Northbound, Southbound}, `service_date ==
-      "2026-07-27"` for every row, `calendar_flag == ""`.
+      "2026-07-27"` for every row, `calendar_flag == ""`; a run id with no parseable trailing date
+      (hand-built) gets the earliest-arrival date instead.
 - [ ] Analytic case: a hand-built 3-stop trip DataFrame with naive Chicago times on 2026-11-01
       01:30 (ambiguous) and 2026-11-01 03:00 yields one `dst_ambiguous_time` drop and the 03:00 row
       at 09:00 UTC; a second trip with a duplicate stop keeps the earlier time; a third with a
@@ -141,15 +144,10 @@ Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
 
 ## Open questions
 
-1. `nonmonotone_time`: drop (as specified) or keep and flag? Keeping needs a flag column the archive
-   view does not have, or a second "flags" table. Recommendation: drop; the count is in the QA table.
-2. `service_date` from the earliest arrival's Chicago date, or a 03:00 service-day cutoff to match
-   `sched_start_date` on the archive side for post-midnight trips? The trip id embeds a date
-   (`318414.038912802023-04-24`); if that is the service date, prefer parsing it. Recommendation:
-   check on the fixture, use the embedded date if it matches the archive convention.
-3. Should `stop_sequence_index` really be getpatterns `seq` rather than Mansueto `stop_sequence`
+1. Should `stop_sequence_index` really be getpatterns `seq` rather than Mansueto `stop_sequence`
    (ADR-003 says preserve upstream identifiers, but also wants both sources interchangeable)?
-4. Is a 2–5 MB 30-day fixture acceptable in the repo, or should the self-consistency test use a
+2. Is a 2–5 MB 30-day fixture acceptable in the repo, or should the self-consistency test use a
    smaller PID (fewer runs per day) with its own recorded median?
 
-Resolved 2026-11-04: `bus_stop_time` is tz-naive America/Chicago (was open question 1).
+Resolved 2026-11-04: `bus_stop_time` is tz-naive America/Chicago; `nonmonotone_time` rows are
+dropped; `service_date` is parsed from `unique_trip_vehicle_day` with the earliest-arrival fallback.
