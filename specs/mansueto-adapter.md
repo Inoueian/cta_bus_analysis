@@ -19,7 +19,7 @@ Mansueto pipeline's own numbers, and the cross-source check is deferred until th
 |---|---|---|---|
 | Per-pattern parquet | `cta.mansueto.parquet_url(pid)`; local copy `data/mansueto/trips_<pid>_full.parquet` | `seg_combined`, `typ`, `stop_sequence`, `bus_stop_time`, `speed_mph`, `unique_trip_vehicle_day`, `stpid`, `p_stp_id`, `vid`, `rt`, `pid` (11 columns; verified on PIDs 6662 and 18414) | 250–420 MB per busy PID, 9–15M rows, row groups not time-ordered; `bus_stop_time` tz-naive `timestamp[ns]` in America/Chicago wall time; `pid`/`stpid`/`vid`/`rt` strings (legacy code casts `pid` through float, accept both); no manifest or checksum upstream; some `rt_to_pid.csv` PIDs 404 (route 65 PIDs 7906/7907, `notebooks/eda_routes_8_65_66.ipynb` §6) |
 | Route → PID catalog | `cta.mansueto.RT_TO_PID_URL` (last modified 2025-01-16) | `rt`, `pid` | read as strings; route 10 absent (TODO Michigan Next) |
-| Pattern stops | `cta.bustracker.pattern_stops_table(pids, cache_dir)` | `pid`, `rtdir`, `seq`, `stpid`, `pdist_ft` | direction and `stop_sequence_index`, same as the archive adapter |
+| Pattern stops | `cta.bustracker.pattern_stops_table(pids, cache_dir)` | `pid`, `rtdir`, `seq`, `stpid`, `pdist_ft`, plus new `stop_rank` (dense 0-based rank of the stop within its pattern, by `seq` over `typ == 'S'` only) | direction and `stop_sequence_index`, same as the archive adapter |
 | Calendar | `cta.calendar.calendar_flag(service_date, index=None)` | `holiday:<name>` flags, same as the archive side | pass `index=None`: archive `known_gaps` are Transit Alerts outages, not Mansueto outages, so `known_gap_day` is never set here |
 | Legacy medians | `notebooks/michigan_ave_kept_pids.json` | per pid: `entry_stpid`, `exit_stpid`, `n_trips`, `median_minutes` | computed by `cta.michigan_ave_segment.median_segment_minutes_for_pid` on the 30 days before each file's `max(bus_stop_time)`, i.e. 2026-06-28 to 2026-07-28; the self-consistency target |
 
@@ -38,8 +38,10 @@ Mansueto pipeline's own numbers, and the cross-source check is deferred until th
 Column mapping (ADR-003 "ingestion will confirm and adapt"): `run_id` = `unique_trip_vehicle_day`
 unchanged (ADR-003: preserve Mansueto's trip identifier); `route` = `rt`; `pattern_id` = `pid`;
 `stop_id` = `stpid`; `vehicle_id` = `vid`; `arrival_time` = `bus_stop_time`; `direction` =
-getpatterns `rtdir`; `stop_sequence_index` = getpatterns `seq` (not Mansueto `stop_sequence`, so
-both sources index stops identically); `service_date` = the trailing `YYYY-MM-DD` of
+getpatterns `rtdir`; `stop_sequence_index` = getpatterns `stop_rank` (dense, 0 to n−1; not Mansueto
+`stop_sequence`, and not the gapped `seq`, which counts waypoints: PID 18414 has 105 stops and a last
+`seq` of 319). The archive adapter switches to `stop_rank` in the same change so both sources index
+stops identically and the `± 1` neighbour idiom in `cta.dlsd_run_quality` keeps working on either view; `service_date` = the trailing `YYYY-MM-DD` of
 `unique_trip_vehicle_day` (Mansueto's own service day, e.g. `318414.038912802023-04-24`), falling
 back to the America/Chicago date of the run's earliest `arrival_time` when it does not parse. `speed_mph`, `seg_combined`, `typ`, `p_stp_id` are not carried (rule 6).
 
@@ -57,7 +59,7 @@ back to the America/Chicago date of the run's earliest `arrival_time` when it do
 3. Stage `dedup`: one row per (run_id, stpid), keeping the earliest `bus_stop_time` (what
    `cta.michigan_ave_segment.interpolate_trip_corridor` does with `.first()` after sorting); reason
    `duplicate_stop_visit`. Zero in the probed row group; keep the stage so the count is visible.
-4. Stage `pattern_join`: inner join to `pattern_stops` on (`pid`, `stpid`) for `rtdir` and `seq`.
+4. Stage `pattern_join`: inner join to `pattern_stops` on (`pid`, `stpid`) for `rtdir` and `stop_rank`.
    Rows whose stop is not in the current getpatterns pattern are dropped with reason
    `stop_not_in_pattern` (this is how the PID 6402 hand trim takes effect on Mansueto data too).
 5. Stage `order`: within a run, sorted by `seq`, a row whose `bus_stop_time` is earlier than the
@@ -94,14 +96,16 @@ Fixtures to build (none exist), by `scripts/build_mansueto_fixtures.py`, which w
 SHA-256 and rows per fixture file). The builder refuses to write if any `max_bus_stop_time` differs
 from `MANSUETO_DATA_EDGE`, because the self-consistency target below assumes that window.
 
-- `tests/fixtures/mansueto_18414_last30d.parquet`: every row of `trips_18414_full.parquet` (route 3
-  NB) with `bus_stop_time >= max(bus_stop_time) − 30 days`, the exact cutoff of
-  `scripts/cache_dlsd_parquets.py`, all 11 columns verbatim. Estimated 200k rows, 2–5 MB.
+- `tests/fixtures/mansueto_6410_last30d.parquet`: every row of `trips_6410_full.parquet` (151 NB,
+  110 runs with both corridor endpoints in the window, 43 stops, recorded median 15.9 min) with
+  `bus_stop_time >= max(bus_stop_time) − 30 days`, the exact cutoff of `scripts/cache_dlsd_parquets.py`,
+  all 11 columns verbatim. Estimated 5–8k rows, under 300 KB. PID 18414 was rejected for this role:
+  ~3,000 runs × 105 stops at 27 bytes/row is ~8.5 MB, and a binary fixture is paid for on every rebuild.
 - `tests/fixtures/mansueto_2026-07-27_route3.parquet`: rows of 18414 and 18415 whose
   `bus_stop_time` falls on 2026-07-27 Chicago, the last full day. Estimated 13k rows.
 - `tests/fixtures/mansueto_rt_to_pid_route3.csv`: the two route 3 rows of `rt_to_pid.csv`.
 
-Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
+All three PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
 
 - [ ] `read_trips` on the one-day fixture returns the manifest row count, `pid` ∈ {"18414","18415"}
       as str, `bus_stop_time` tz-aware UTC, no drops.
@@ -118,7 +122,7 @@ Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
       rows_in − rows_out, and `rows_out` of each stage equals `rows_in` of the next.
 - [ ] Self-consistency: on the 30-day fixture, corridor minutes from the view (renamed to the legacy
       columns, as `tests/test_views_archive.py` does) through `cta.michigan_ave_segment.trip_segment_minutes`
-      with PID 18414's `entry_stpid`/`exit_stpid` have a median within
+      with PID 6410's `entry_stpid`/`exit_stpid` have a median within
       `MAX_SELF_CONSISTENCY_DEVIATION` of its `median_minutes` in `michigan_ave_kept_pids.json`, and
       a run count within 5% of its `n_trips` (unknown; measure, then pin).
 - [ ] Data edge: `data_edge` parses a committed 8 KB footer sample (`tests/fixtures/mansueto_18414_footer.bin`,
@@ -130,10 +134,16 @@ Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
       "30"; `fetch_parquet` is monkeypatched so no test touches the network.
 - [ ] `scripts/verify_parquet.py` and `scripts/cache_dlsd_parquets.py` still import and their tests pass
       after `pids_for_route` / `parquet_url` move into `cta.mansueto`.
+- [ ] Dense index on both adapters: `pattern_stops_table` on the getpatterns fixture gives `stop_rank`
+      0 to n−1 with no gaps for every pid; on the one-day fixture, `stop_sequence_index` is strictly
+      increasing with `arrival_time` within every run; `run_level_from_archive` on the archive fixture
+      day has `max(stop_sequence_index) < 130` for every pattern (it was up to 367 with `seq`), and
+      `tests/test_views_archive.py` still passes with the updated expectation.
 
 ## Out of scope
 
 - Changing `cta.dlsd_run_quality` or `cta.michigan_ave_segment` to consume the view (later item).
+- Any archive adapter change beyond swapping `seq` for `stop_rank` in `stop_sequence_index`.
 - Matching individual Mansueto runs to archive runs (vehicle + time alignment); no overlap exists.
 - Bridging the 2026-07-28 to 2026-09-27 hole; time series show it (ADR-007).
 - Stop-level view, wait/travel-time computations, EDA notebook findings.
@@ -144,10 +154,7 @@ Both PIDs already have getpatterns fixtures under `tests/fixtures/getpatterns/`.
 
 ## Open questions
 
-1. Should `stop_sequence_index` really be getpatterns `seq` rather than Mansueto `stop_sequence`
-   (ADR-003 says preserve upstream identifiers, but also wants both sources interchangeable)?
-2. Is a 2–5 MB 30-day fixture acceptable in the repo, or should the self-consistency test use a
-   smaller PID (fewer runs per day) with its own recorded median?
-
-Resolved 2026-11-04: `bus_stop_time` is tz-naive America/Chicago; `nonmonotone_time` rows are
-dropped; `service_date` is parsed from `unique_trip_vehicle_day` with the earliest-arrival fallback.
+None. Resolved 2026-11-04 by the owner: `bus_stop_time` is tz-naive America/Chicago;
+`nonmonotone_time` rows are dropped; `service_date` is parsed from `unique_trip_vehicle_day` with
+the earliest-arrival fallback; `stop_sequence_index` is the dense getpatterns `stop_rank` on both
+adapters; the 30-day self-consistency fixture is PID 6410, not 18414.
