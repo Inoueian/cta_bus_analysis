@@ -8,7 +8,6 @@ skip, with the reason, if it is ever missing.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -113,10 +112,7 @@ def test_run_level_row_count_and_no_duplicates(run_level):
 
 @needs_getpatterns
 def test_corridor_minutes_match_mansueto_medians(run_level):
-    notebooks = REPO / "notebooks"
-    if str(notebooks) not in sys.path:
-        sys.path.insert(0, str(notebooks))
-    from michigan_ave_segment import trip_segment_minutes  # noqa: E402  (moves to cta/ with package migration)
+    from cta.michigan_ave_segment import trip_segment_minutes
 
     kept = pd.DataFrame(json.loads(KEPT_PIDS.read_text())["pids"])
     kept["pid"] = kept["pid"].astype(str)

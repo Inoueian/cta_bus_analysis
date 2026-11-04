@@ -11,11 +11,10 @@ from pathlib import Path
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-NOTEBOOKS = REPO_ROOT / "notebooks"
-if str(NOTEBOOKS) not in sys.path:
-    sys.path.insert(0, str(NOTEBOOKS))
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-from dlsd_run_quality import (  # noqa: E402
+from cta.dlsd_run_quality import (  # noqa: E402
     ALL_DAY_DLSD_ROUTES,
     DEFAULT_PLOT_HOURS,
     RUSH_ROUTES,

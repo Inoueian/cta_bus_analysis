@@ -7,7 +7,7 @@ Two independent parts, each off by default:
                   is in --pids-file, and write tests/fixtures/archive_<day>_michigan.ndjson.gz plus a
                   manifest archive_<day>_michigan.index.json (rows, bytes, sha256, known_gaps) that
                   cta.archive.ingest_day verifies against. Deterministic gzip (mtime 0).
-  --getpatterns   Fetch Bus Tracker getpatterns for the same pids through notebooks/cta_api (uses the
+  --getpatterns   Fetch Bus Tracker getpatterns for the same pids through cta.cta_api (uses the
                   daily budget counter under data/cta_api_cache, cache hits cost nothing) and copy the
                   JSON into tests/fixtures/getpatterns/. Needs CTA_API_KEY in .env.
 
@@ -77,10 +77,7 @@ def build_day_fixture(day: str, index_location: str, raw_dir: Path, pids: list[s
 
 
 def build_getpatterns_fixture(pids: list[str]) -> None:
-    notebooks = REPO_ROOT / "notebooks"
-    if str(notebooks) not in sys.path:
-        sys.path.insert(0, str(notebooks))
-    import cta_api  # noqa: E402  (moves to cta/ with specs/package-migration.md)
+    from cta import cta_api
 
     cta_api.load_dotenv()
     cache_dir = cta_api.api_cache_dir()

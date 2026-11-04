@@ -1,6 +1,6 @@
 """Bus Tracker ``getpatterns`` stop lists, read from the on-disk cache (no network here).
 
-The cache files ``getpatterns_<pid>.json`` are written by ``notebooks/cta_api.batch_pattern_stops``
+The cache files ``getpatterns_<pid>.json`` are written by ``cta.cta_api.batch_pattern_stops``
 (moving to ``cta/`` with specs/package-migration.md), which owns the API key, budget and throttle.
 This module only parses them into the stop table the archive imputation needs (STOP_PDIST_SOURCE).
 """

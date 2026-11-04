@@ -1,24 +1,19 @@
-"""Tests for notebooks/cta_api.py."""
+"""Tests for cta/cta_api.py."""
 
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from unittest import mock
 
 import pandas as pd
 import pytest
 
-NOTEBOOKS = Path(__file__).resolve().parent.parent / "notebooks"
-if str(NOTEBOOKS) not in sys.path:
-    sys.path.insert(0, str(NOTEBOOKS))
-
-import cta_api  # noqa: E402
+from cta import cta_api
 
 
 def test_module_imports():
-    import cta_api as _m  # noqa: F401
+    from cta import cta_api as _m  # noqa: F401
 
 
 def test_parquet_url_basic():

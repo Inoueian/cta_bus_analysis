@@ -1,6 +1,6 @@
 # Spec: Move importable helpers into a `cta/` package, add CI
 
-Status: ready (open questions answered by the owner 2026-11-04; see below)
+Status: done (implemented 2026-11-04 on branch `claude/upbeat-knuth-6709xh`; open questions answered by the owner 2026-11-04, see below)
 Owner: Satoru  ·  Date: 2026-11-03  ·  TODO item: Foundation — "Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network)."
 
 ## Question
@@ -56,14 +56,21 @@ behaviour change, no new features.
 
 ## Acceptance tests
 
-- [ ] `pytest -q` passes with exactly the same number of tests as before the move (48 at spec time) and no test is skipped or xfailed.
-- [ ] `python -c "import cta.cta_api, cta.dlsd_run_quality, cta.michigan_ave_segment"` succeeds from the repo root with no `sys.path` manipulation.
-- [ ] `ls notebooks/*.py` lists nothing (no importable code under `notebooks/`, per CLAUDE.md).
-- [ ] New test `tests/test_package_layout.py`: (a) every module in `cta/` imports; (b) no `.ipynb` under `notebooks/` contains the string `"notebooks"` inside a `sys.path.insert` call; (c) `cta.michigan_ave_segment.repo_root()` equals the repo root.
-- [ ] `python scripts/dlsd_weekday_friday_summary.py -h` exits 0.
-- [ ] `pip install -e .` succeeds in a fresh venv (checked manually by the implementer; CI installs from `requirements.txt` only).
-- [ ] CI workflow runs on the PR and is green.
-- [ ] Report contains the QA table: for each of the three modules, old path absent, new path present, public-name set identical (compare `dir()` filtered to non-underscore names before and after).
+- [x] `pytest -q` passes with exactly the same number of tests as before the move (48 at spec time) and no test is skipped or xfailed.
+- [x] `python -c "import cta.cta_api, cta.dlsd_run_quality, cta.michigan_ave_segment"` succeeds from the repo root with no `sys.path` manipulation.
+- [x] `ls notebooks/*.py` lists nothing (no importable code under `notebooks/`, per CLAUDE.md).
+- [x] New test `tests/test_package_layout.py`: (a) every module in `cta/` imports; (b) no `.ipynb` under `notebooks/` contains the string `"notebooks"` inside a `sys.path.insert` call; (c) `cta.michigan_ave_segment.repo_root()` equals the repo root.
+- [x] `python scripts/dlsd_weekday_friday_summary.py -h` exits 0.
+- [x] `pip install -e .` succeeds in a fresh venv (checked manually by the implementer; CI installs from `requirements.txt` only).
+- [x] CI workflow runs on the PR and is green. (Run 1 on the branch push went green: https://github.com/Inoueian/cta_bus_analysis/actions/runs/41769962515)
+- [x] Report contains the QA table: for each of the three modules, old path absent, new path present, public-name set identical (compare `dir()` filtered to non-underscore names before and after).
+
+## Implementation notes (2026-11-04)
+
+- Baseline was 64 tests, not 48: the archive adapter landed between spec and implementation. After: 68 (64 + 4 in `tests/test_package_layout.py`), none skipped.
+- `load_dlsd_boundaries`, `stops_snapshot_path` and `kept_pids_path` located their JSON snapshots via `Path(__file__).parent`, which the spec's `repo_root()` note did not cover. They now resolve `repo_root() / "notebooks" / <file>`; the snapshots stay in `notebooks/` and the resolved paths are unchanged.
+- Two consumers the spec did not list were also updated: `tests/test_views_archive.py` and `scripts/build_archive_fixtures.py` (both had inline `notebooks/` path inserts marked for this spec).
+- `scripts/cache_dlsd_parquets.py` still duplicates `BASE`, `RT_TO_PID_URL` and `parquet_url` from `cta.cta_api` (left as specified).
 
 ## Out of scope
 

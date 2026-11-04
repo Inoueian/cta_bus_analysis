@@ -1,18 +1,13 @@
-"""Tests for notebooks/michigan_ave_segment.py."""
+"""Tests for cta/michigan_ave_segment.py."""
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-NOTEBOOKS = Path(__file__).resolve().parent.parent / "notebooks"
-if str(NOTEBOOKS) not in sys.path:
-    sys.path.insert(0, str(NOTEBOOKS))
-
-from michigan_ave_segment import (  # noqa: E402
+from cta.michigan_ave_segment import (
     DEFAULT_MIN_ENTRY_EXIT_SHARE,
     backwards_time_trip_keys,
     corridor_hourly_median_speed,
@@ -35,11 +30,11 @@ from michigan_ave_segment import (  # noqa: E402
     speed_quantiles_to_min_per_mile,
     trip_segment_minutes,
 )
-from michigan_ave_segment import CorridorSegment  # noqa: E402
+from cta.michigan_ave_segment import CorridorSegment
 
 
 def test_module_imports():
-    import michigan_ave_segment  # noqa: F401
+    from cta import michigan_ave_segment  # noqa: F401
 
 
 def _stops_df(rows: list[tuple[str, float, str]]) -> pd.DataFrame:

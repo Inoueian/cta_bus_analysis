@@ -9,8 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta_api import RT_TO_PID_URL, batch_pattern_stops
-from dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
+from cta.cta_api import RT_TO_PID_URL, batch_pattern_stops
+from cta.dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
 
 DEFAULT_MIN_MEDIAN_MINUTES = 5.0
 DEFAULT_MIN_ENTRY_EXIT_SHARE = 0.5
@@ -35,11 +35,11 @@ def repo_root() -> Path:
 
 
 def stops_snapshot_path() -> Path:
-    return Path(__file__).resolve().parent / "michigan_ave_stops_snapshot.json"
+    return repo_root() / "notebooks" / "michigan_ave_stops_snapshot.json"
 
 
 def kept_pids_path() -> Path:
-    return Path(__file__).resolve().parent / "michigan_ave_kept_pids.json"
+    return repo_root() / "notebooks" / "michigan_ave_kept_pids.json"
 
 
 def load_kept_pids_meta(path: Path | None = None) -> dict:
