@@ -1,6 +1,6 @@
 # Spec: Move importable helpers into a `cta/` package, add CI
 
-Status: draft
+Status: ready (open questions answered by the owner 2026-11-04; see below)
 Owner: Satoru  ·  Date: 2026-11-03  ·  TODO item: Foundation — "Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network)."
 
 ## Question
@@ -75,8 +75,14 @@ behaviour change, no new features.
 
 ## Open questions
 
+Both resolved by the owner on 2026-11-04.
+
 - Keep the module names (`cta.cta_api`, `cta.dlsd_run_quality`, `cta.michigan_ave_segment`) or
-  rename now to `cta.bustracker`, `cta.dlsd`, `cta.michigan`? Recommendation: keep now; rename in
-  the spec that first splits `cta_api.py` (the archive adapter will want a `cta.bustracker`).
-- Should CI also execute one notebook headlessly as a smoke test? Recommendation: not yet; the
-  notebooks need cached data under `data/`.
+  rename now to `cta.bustracker`, `cta.dlsd`, `cta.michigan`? **Keep now.** The migration is a pure
+  move. The rename happens in the spec that splits `cta_api.py` into `cta.bustracker` (Bus Tracker
+  client, budget, `getpatterns` cache; absorbs the cache reader in `cta/patterns.py`) and
+  `cta.mansueto` (CloudFront URL helpers). Queued in TODO.md under Foundation; spec to write.
+- Should CI also execute one notebook headlessly as a smoke test? **Not yet.** Seven of ten
+  notebooks read Mansueto parquets or derived tables under the gitignored `data/`, the other three
+  call the Bus Tracker API live, and CI has neither network nor `data/`. Revisit once a notebook
+  exists that runs entirely off `tests/fixtures/` (the archive adapter fixtures make that possible).
