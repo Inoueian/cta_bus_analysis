@@ -10,6 +10,42 @@ Statuses:
 
 ---
 
+## ADR-007: Mansueto StopWatch is a frozen history source until it resumes
+Date: 2026-11-04
+Status: Proposed (amends ADR-004; does not supersede it)
+
+### Context
+
+On 2026-11-04 the parquet footers of PIDs 18414, 18415 and 6414 all report `max(bus_stop_time)` on
+2026-07-28, and every probed file carries `Last-Modified` 2026-07-28 (`docs/2026-11-04-mansueto-data-edge.md`).
+The bucket has not been regenerated for over three months. The Transit Alerts archive starts
+2026-09-28, so no service day exists in both sources and the two months in between are covered by
+neither. ADR-004 assumed a ~2-week Mansueto lag, a standing cross-check on overlapping days, and
+Mansueto as the maintained fallback for freshness. The first and second are not available today and
+the third is weaker than stated.
+
+### Decision
+
+Treat Mansueto as a frozen history source with data edge `MANSUETO_DATA_EDGE = "2026-07-28"`
+(named constant in `cta.mansueto`, re-measured by `cta.mansueto.data_edge(pid)` and recorded in
+each download's `trips_<pid>_full.meta.json`). The archive is the only live source. The Mansueto
+adapter is still built (ADR-003 run-level view, `source='mansueto'`), but it is validated by
+same-source self-consistency against the legacy pipeline's recorded medians, not by a same-day
+archive comparison. The ADR-004 cross-check on overlapping days, the Phase 1 overlap cross-check and
+the Phase 3 Mansueto backfill are deferred until a re-measured data edge is later than 2026-09-28.
+
+### Consequences
+
+History back to 2022 remains usable for drift and for the DLSD and Michigan side quests, with
+2026-07-28 to 2026-09-27 as a known hole that every time series must show, not bridge. Systematic
+bias between sources cannot be measured yet; ADR-006's 20% bound stands as the only cross-source
+check. Phase 3 refresh rests entirely on the archive, which ADR-004 already flagged as a single
+volunteer's service. If Mansueto resumes, reopen this ADR: run the deferred cross-checks and revise
+`specs/mansueto-adapter.md`'s acceptance list. If it never resumes, a later ADR should retire the
+fallback language in ADR-004.
+
+---
+
 ## ADR-006: Cross-source validation tolerance is 20% on per-pattern corridor medians
 Date: 2026-11-03
 Status: Accepted

@@ -8,9 +8,9 @@ Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial
 
 Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two data sources) and [ADR-005](DECISIONS.md) (package + DuckDB).
 
-- [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write).
-- [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
-- [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), ~~`getpatterns` JSON for those PIDs~~ (done 2026-11-03: `tests/fixtures/getpatterns/`, 45 files), one small Mansueto parquet.
+- [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Mansueto is frozen at 2026-07-28 (ADR-007, `docs/2026-11-04-mansueto-data-edge.md`), so validation is same-source self-consistency, not a same-day archive comparison. Spec: `specs/mansueto-adapter.md` (ready).
+- [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness (read `MANSUETO_DATA_EDGE` and the per-pid `trips_<pid>_full.meta.json` the adapter spec defines; the source-coverage hole 2026-07-28 to 2026-09-27 belongs here too, ADR-007) and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
+- [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), ~~`getpatterns` JSON for those PIDs~~ (done 2026-11-03: `tests/fixtures/getpatterns/`, 45 files), one small Mansueto parquet (PID 6410 last-30-day window, under 300 KB, plus one day of route 3 PIDs 18414/18415; plan in `specs/mansueto-adapter.md`).
 - [ ] Migrate the durable knowledge-vault notes cited in README/TODO into `docs/` (agents cannot read the vault). Start with: `canonical-data-views`, `cta-bus-tracker-api`, `cta-holiday-schedule-filtering`, `michigan-ave-segment-view`, `mansueto-imputed-stop-times`.
 
 ## Phase 1: Routes 8, 65, & 66
@@ -19,8 +19,8 @@ Analyze three routes affected by current construction. Build the data ingestion 
 
 ### Now
 
-- [ ] EDA notebook: explore Mansueto parquet data for routes 8, 65, & 66 — verify schema consistency across routes, check data volumes and date ranges, visualize arrival patterns and headways (`notebooks/eda_routes_8_65_66.ipynb`)
-- [ ] Run-level view for routes 8, 65, & 66 from both adapters (Foundation items above); cross-check overlapping days (2026-09-28 onward). Routes 8 and 66 had fall-2026 construction detours (route 8 on Division near Halsted per the cta-bus-speed-scorecard study): record detour dates in `docs/` so they can be flagged.
+- [ ] EDA notebook: explore Mansueto parquet data for routes 8, 65, & 66 — verify schema consistency across routes, check data volumes and date ranges, visualize arrival patterns and headways (`notebooks/eda_routes_8_65_66.ipynb`). Expect every file to end 2026-07-28 (ADR-007); the fall-2026 construction period is archive-only.
+- [ ] Run-level view for routes 8, 65, & 66 from both adapters (Foundation items above): Mansueto for ~2022 to 2026-07-28, archive from 2026-09-28; the cross-check on overlapping days is deferred until Mansueto's data edge passes 2026-09-28 (ADR-007). Routes 8 and 66 had fall-2026 construction detours (route 8 on Division near Halsted per the cta-bus-speed-scorecard study): record detour dates in `docs/` so they can be flagged.
 - [ ] Build the stop-level view for routes 8, 65, & 66 (route → direction → stop_id → arrival-time list) by grouping the run-level view
 
 ### Next
@@ -65,7 +65,7 @@ Pick a web-app stack, extend ingestion to all (or most) CTA bus routes, and depl
 
 Scheduled data updates, richer metrics, and polish features that go beyond the initial static snapshot.
 
-- [ ] Scheduled refresh: nightly ingest of new archive days (checksum-verified, `known_gaps` recorded) plus periodic Mansueto backfill for history (Mansueto has a ~14-day upstream lag per the knowledge-vault note `cta-stop-watch-freshness-check`; the archive exports nightly)
+- [ ] Scheduled refresh: nightly ingest of new archive days (checksum-verified, `known_gaps` recorded). Mansueto backfill is deferred: the bucket has been frozen at 2026-07-28 since at least 2026-11-04 (ADR-007); the refresh job should re-measure `cta.mansueto.data_edge` periodically and raise a flag if it moves (the archive exports nightly)
 - [ ] Add derived metrics: excess wait vs. scheduled headway, on-time reliability score. Handle: join GTFS trips on (`sched_start_date`, `sched_start_sec`, `pid` → shape/direction), which the archive carries on every row
 - [ ] Community-area rollups (mirror what the Mansueto dashboard does, but interactive)
 - [ ] Compare weekday-vs-weekend distributions side by side

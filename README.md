@@ -12,7 +12,7 @@ The primary audience is Chicago transit riders and researchers who want a distri
 
 1. **Phase 1 — Routes 8, 65, & 66.** Build the data ingestion pipeline and compute wait-time and travel-time distributions for three routes affected by current construction, using scripts and exploratory notebooks.
 2. **Phase 2 — Static web app for all routes.** Extend ingestion to all (or most) CTA bus routes, pick a web-app stack, and deploy as a static dataset served on a webpage.
-3. **Phase 3 — Scheduled refresh and extras.** Add automated data updates from the Mansueto bucket, derived metrics (excess wait, reliability scores), community-area rollups, and shareable URLs.
+3. **Phase 3 — Scheduled refresh and extras.** Add automated data updates from the Transit Alerts archive (Mansueto backfill only if that bucket resumes; see ADR-007), derived metrics (excess wait, reliability scores), community-area rollups, and shareable URLs.
 
 See [TODO.md](TODO.md) for the detailed breakdown of each phase.
 
@@ -85,11 +85,11 @@ Additional directories (`backend/`, `frontend/`) will be added once the web-app 
 
 ## Data Source
 
-Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). From 2026-09-28 onward, raw ~60-second bus positions also come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
+Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). Its published parquets run from ~2022 to 2026-07-28 and have not been updated since (measured 2026-11-04, [ADR-007](DECISIONS.md), `docs/2026-11-04-mansueto-data-edge.md`). From 2026-09-28 onward, raw ~60-second bus positions come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
 
 ### Data Model
 
-The app queries two derived views built from the Mansueto data:
+The app queries two derived views built from both sources (ADR-004):
 
 - **Run-level** — one row per stop-visit within a bus run (route, direction, pattern, stop, arrival time). Used for travel-time and time-series queries.
 - **Stop-level** — one row per (stop, route, direction) with the ordered list of arrival timestamps. Used for wait-time queries.
