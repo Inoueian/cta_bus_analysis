@@ -1,6 +1,6 @@
 # Spec: Mansueto StopWatch adapter → run-level view
 
-Status: draft
+Status: ready (2026-11-04)
 Owner: Satoru  ·  Date: 2026-11-04  ·  TODO item: Foundation "Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write)."
 
 ## Question
