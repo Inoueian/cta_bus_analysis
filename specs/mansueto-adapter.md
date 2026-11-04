@@ -19,7 +19,7 @@ systematic bias between the two sources will be measured.
 | Per-pattern parquet | `cta.mansueto.parquet_url(pid)`; local copy `data/mansueto/trips_<pid>_full.parquet` | `unique_trip_vehicle_day`, `rt`, `pid`, `stpid`, `stop_sequence`, `bus_stop_time`, `vid`, `p_stp_id`, `seg_combined`, `typ`, `speed_mph` (11 columns, verified route 66 / PID 6662, `scripts/verify_parquet.py`) | no manifest or checksum upstream; `pid` is float-typed (`cta.dlsd_run_quality.build_dlsd_runs` casts float→int→str); not every `rt_to_pid.csv` PID has a file (route 65 PIDs 7906/7907 return 404, `notebooks/eda_routes_8_65_66.ipynb` §6) |
 | Route → PID catalog | `cta.mansueto.RT_TO_PID_URL` | `rt`, `pid` | read as strings; route 10 absent (TODO Michigan Next) |
 | Pattern stops | `cta.bustracker.pattern_stops_table(pids, cache_dir)` | `pid`, `rtdir`, `seq`, `stpid`, `pdist_ft` | direction and `stop_sequence_index`, same as the archive adapter |
-| Calendar | `cta.calendar.calendar_flag(service_date, index=None)` | holidays only | archive `known_gaps` do not apply to Mansueto |
+| Calendar | `cta.calendar.calendar_flag(service_date, index=None)` | `holiday:<name>` flags, same as the archive side | pass `index=None`: archive `known_gaps` are Transit Alerts outages, not Mansueto outages, so `known_gap_day` is never set here |
 
 ## Outputs
 
