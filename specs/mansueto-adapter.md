@@ -29,7 +29,7 @@ systematic bias between the two sources will be measured.
 | Clean trips + QA | `cta.mansueto.clean_trips(trips, pattern_stops) -> (DataFrame, DataFrame)` | first: normalized columns + `seq` int64, `rtdir` str, `service_date` str; second: `stage`, `rows_in`, `rows_out`, `reason`, `count` (`cta.archive.QA_COLUMNS`) | one row per (run, stop); QA one row per (stage, reason) |
 | Run-level view | `cta.views.run_level_from_mansueto(pids, *, parquet_dir, pattern_stops=None, pattern_cache_dir=None, start=None, end=None) -> DataFrame` | exactly `cta.views.RUN_LEVEL_COLUMNS`; `bracket_gap_s` NaN; `source='mansueto'` | one row per (run, stop) |
 | QA table | `cta.views.mansueto_qa(...)` or returned alongside (implementer's choice, state it) | QA columns + `pid` | one row per (pid, stage, reason) |
-| Local copy + sidecar | `cta.mansueto.fetch_parquet(pid, dest_dir) -> Path` writes `trips_<pid>_full.parquet` and `trips_<pid>_full.meta.json` (`url`, `bytes`, `fetched_at` UTC, `max_bus_stop_time`) | — | per pid; the sidecar is what the calendar freshness item will read |
+| Local copy + download metadata file | `cta.mansueto.fetch_parquet(pid, dest_dir) -> Path` writes `trips_<pid>_full.parquet` and, next to it, `trips_<pid>_full.meta.json` (`url`, `bytes`, `fetched_at` UTC, `max_bus_stop_time`) | — | per pid; the metadata file is what the calendar freshness item will read, since the bucket has no manifest |
 | Catalog helper | `cta.mansueto.pids_for_route(route, rt_to_pid) -> list[str]` where `rt_to_pid` is a DataFrame or path | — | moved from `scripts/verify_parquet.py`; the script imports it |
 
 Column mapping (ADR-003 "ingestion will confirm and adapt"): `run_id` = `unique_trip_vehicle_day`
@@ -119,7 +119,7 @@ to write a fixture with zero rows for that day.
   here is median-level only.
 - Stop-level view, wait/travel-time computations, EDA notebook findings.
 - Mansueto freshness policy and a `MANSUETO_EXPECTED_LAG_DAYS` constant (calendar item); this spec
-  only writes the sidecar the calendar module will read.
+  only writes the download metadata file the calendar module will read.
 - Any imputation of missing stops, terminal trims, or minimum-stops filters (ADR-004).
 - Reading `scripts/transit_archive.py`-style DuckDB caches for Mansueto; files stay plain parquet.
 
