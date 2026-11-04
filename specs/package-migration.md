@@ -62,7 +62,7 @@ behaviour change, no new features.
 - [x] New test `tests/test_package_layout.py`: (a) every module in `cta/` imports; (b) no `.ipynb` under `notebooks/` contains the string `"notebooks"` inside a `sys.path.insert` call; (c) `cta.michigan_ave_segment.repo_root()` equals the repo root.
 - [x] `python scripts/dlsd_weekday_friday_summary.py -h` exits 0.
 - [x] `pip install -e .` succeeds in a fresh venv (checked manually by the implementer; CI installs from `requirements.txt` only).
-- [ ] CI workflow runs on the PR and is green.
+- [x] CI workflow runs on the PR and is green. (Run 1 on the branch push went green: https://github.com/Inoueian/cta_bus_analysis/actions/runs/41769962515)
 - [x] Report contains the QA table: for each of the three modules, old path absent, new path present, public-name set identical (compare `dir()` filtered to non-underscore names before and after).
 
 ## Implementation notes (2026-11-04)
