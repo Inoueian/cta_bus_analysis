@@ -118,9 +118,9 @@ Each becomes one pytest; all offline; fixtures named.
 
 ## Open questions
 
-- **Shim or clean removal?** Proposal: clean removal (acceptance test 2). Every importer is in this
-  repo and is updated in the same change; a shim would leave two names for one thing, which is what
-  the previous spec deferred this rename to fix. If the owner wants a shim for external notebooks,
-  acceptance test 2 inverts to "the shim re-exports every name and emits `DeprecationWarning`".
-- **`load_dotenv` home.** Proposal: `bustracker` (it exists to load `CTA_API_KEY`). Alternative:
-  a tiny `cta/env.py`; not worth a module for one function today.
+Both resolved by the owner on 2026-11-04.
+
+- **Shim or clean removal?** **Clean removal** (acceptance test 2 as written). Every importer is in
+  this repo and is updated in the same change; a shim would leave two names for one thing, which is
+  what the previous spec deferred this rename to fix.
+- **`load_dotenv` home.** **`bustracker`** (it exists to load `CTA_API_KEY`). No `cta/env.py`.
