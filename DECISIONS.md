@@ -45,7 +45,7 @@ to address a stop across time.
 
 ## ADR-007: Mansueto StopWatch is a frozen history source until it resumes
 Date: 2026-11-04
-Status: Proposed (amends ADR-004; does not supersede it)
+Status: Accepted (amends ADR-004; does not supersede it)
 
 ### Context
 
