@@ -415,7 +415,7 @@ def impute_arrivals(
 ) -> pd.DataFrame:
     """Linear interpolation of the time each run crossed each pattern stop; earliest crossing per (run, stop).
 
-    ``pattern_stops`` is ``cta.patterns.pattern_stops_table`` output (pid, rtdir, seq, stpid, pdist_ft).
+    ``pattern_stops`` is ``cta.bustracker.pattern_stops_table`` output (pid, rtdir, seq, stpid, pdist_ft).
     A stop with p0 <= pdist < p1 is crossed in the pair (p0, t0) -> (p1, t1). Stops a run never
     crosses are absent, not NaT.
     """

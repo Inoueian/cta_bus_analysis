@@ -37,10 +37,12 @@ data/           local caches, gitignored
 docs/           durable notes migrated from the knowledge vault (data quirks, thresholds)
 ```
 
-This is the target layout (ADR-005). `cta/` exists and is the only import surface: the archive adapter
-(`archive.py`, `patterns.py`, `calendar.py`, `views.py`) and the migrated helpers `cta_api.py`
-(Bus Tracker + Mansueto URL helpers), `dlsd_run_quality.py` and `michigan_ave_segment.py`
-(`specs/package-migration.md`, 2026-11-04). It imports from the repo root without installing
+This is the target layout (ADR-005). `cta/` exists and is the only import surface: one module per data
+source, `bustracker.py` (Bus Tracker API client, daily budget, throttle, `getpatterns` fetch and the
+disk cache it alone owns, reader included) and `mansueto.py` (StopWatch CloudFront URL helpers), the
+archive adapter (`archive.py`, `calendar.py`, `views.py`) and the migrated helpers `dlsd_run_quality.py`
+and `michigan_ave_segment.py` (`specs/package-migration.md`, `specs/split-cta-api.md`, 2026-11-04).
+It imports from the repo root without installing
 (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
 `pip install -e .`. The JSON snapshots the helpers read (`dlsd_boundaries_snapshot.json`,
 `michigan_ave_*.json`) stay under `notebooks/`. Do not add importable code under `notebooks/`.

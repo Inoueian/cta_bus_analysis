@@ -7,7 +7,7 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-from cta import archive, calendar, patterns
+from cta import archive, bustracker, calendar
 
 SOURCE_ARCHIVE = "archive"
 
@@ -55,7 +55,7 @@ def run_level_from_archive(
     if con is None:
         con = archive.open_archive_db()
     if pattern_stops is None:
-        pattern_stops = patterns.pattern_stops_table(pids, pattern_cache_dir)
+        pattern_stops = bustracker.pattern_stops_table(pids, pattern_cache_dir)
     gaps = calendar.known_gaps(index)
     frames = []
     for day in days:

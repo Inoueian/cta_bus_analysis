@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta.cta_api import BASE, parquet_url
+from cta.mansueto import BASE, parquet_url
 
 PARQUET_COLS = [
     "bus_stop_time",

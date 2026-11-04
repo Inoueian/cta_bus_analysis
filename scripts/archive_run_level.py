@@ -11,7 +11,7 @@ Examples:
   python scripts/archive_run_level.py --days 2026-10-29 --index data/archive/raw/index.pinned.json ...
 
 Needs: the getpatterns cache for every pid (data/cta_api_cache/getpatterns_<pid>.json, fetched once by
-cta_api.batch_pattern_stops) and curl for the archive. Never run against tests/fixtures/.
+cta.bustracker.batch_pattern_stops) and curl for the archive. Never run against tests/fixtures/.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ if str(REPO_ROOT) not in sys.path:
 
 import pandas as pd  # noqa: E402
 
-from cta import archive, patterns, views  # noqa: E402
+from cta import archive, bustracker, views  # noqa: E402
 
 DEFAULT_PIDS_FILE = REPO_ROOT / "notebooks" / "michigan_ave_kept_pids.json"
 DEFAULT_DB = REPO_ROOT / "data" / "archive" / "positions.duckdb"
@@ -70,7 +70,7 @@ def main() -> None:
     index = archive.fetch_index(args.index, args.raw_dir)
     pinned = archive.pin_index(index, args.raw_dir)
     print(f"index pinned at {pinned} ({len(index['days'])} days, {len(index.get('known_gaps', []))} known gaps)")
-    stops = patterns.pattern_stops_table(pids, args.pattern_cache)
+    stops = bustracker.pattern_stops_table(pids, args.pattern_cache)
     print(f"pattern stops: {len(stops)} rows for {stops['pid'].nunique()} pids")
 
     con = archive.open_archive_db(args.db)

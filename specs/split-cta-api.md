@@ -1,6 +1,6 @@
 # Spec: Split `cta.cta_api` into `cta.bustracker` and `cta.mansueto`
 
-Status: ready (owner review 2026-11-04)
+Status: done (implemented 2026-11-04 on branch `claude/epic-babbage-5ivl4f`; commit reference added below)
 Owner: Satoru  ·  Date: 2026-11-04  ·  TODO item: Foundation — "Split `cta.cta_api` into `cta.bustracker` (API client, daily budget, throttle, `getpatterns` fetch and disk cache; fold in the cache reader `cta/patterns.py` so the cache format has one owner) and `cta.mansueto` (`parquet_url`, `parquet_http_status`, `RT_TO_PID_URL`); update importers (notebooks' import cell only), keep every public name. After the package migration. Spec: `specs/split-cta-api.md` (to write)."
 
 ## Question

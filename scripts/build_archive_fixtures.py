@@ -7,7 +7,7 @@ Two independent parts, each off by default:
                   is in --pids-file, and write tests/fixtures/archive_<day>_michigan.ndjson.gz plus a
                   manifest archive_<day>_michigan.index.json (rows, bytes, sha256, known_gaps) that
                   cta.archive.ingest_day verifies against. Deterministic gzip (mtime 0).
-  --getpatterns   Fetch Bus Tracker getpatterns for the same pids through cta.cta_api (uses the
+  --getpatterns   Fetch Bus Tracker getpatterns for the same pids through cta.bustracker (uses the
                   daily budget counter under data/cta_api_cache, cache hits cost nothing) and copy the
                   JSON into tests/fixtures/getpatterns/. Needs CTA_API_KEY in .env.
 
@@ -77,13 +77,13 @@ def build_day_fixture(day: str, index_location: str, raw_dir: Path, pids: list[s
 
 
 def build_getpatterns_fixture(pids: list[str]) -> None:
-    from cta import cta_api
+    from cta import bustracker
 
-    cta_api.load_dotenv()
-    cache_dir = cta_api.api_cache_dir()
-    before = cta_api.daily_api_request_count(cache_dir)
-    result = cta_api.batch_pattern_stops(pids, use_cache=True, cache_dir=cache_dir, progress_every=0)
-    after = cta_api.daily_api_request_count(cache_dir)
+    bustracker.load_dotenv()
+    cache_dir = bustracker.api_cache_dir()
+    before = bustracker.daily_api_request_count(cache_dir)
+    result = bustracker.batch_pattern_stops(pids, use_cache=True, cache_dir=cache_dir, progress_every=0)
+    after = bustracker.daily_api_request_count(cache_dir)
     dest = FIXTURES / "getpatterns"
     dest.mkdir(parents=True, exist_ok=True)
     copied = 0

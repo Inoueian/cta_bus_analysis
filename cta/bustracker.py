@@ -1,7 +1,13 @@
-"""CTA Bus Tracker API and Mansueto CloudFront helpers for notebooks and scripts.
+"""CTA Bus Tracker API client: daily budget, throttle, ``getpatterns`` fetch and its disk cache.
 
 Daily Bus Tracker budget uses America/Chicago calendar dates (default cap 10,000
 live requests/day per API key). Use ``getpatterns`` disk cache to avoid repeat calls.
+
+This module is the one owner of the cache format: ``batch_pattern_stops`` writes the files
+``getpatterns_<pid>.json`` (raw ``bustime-response`` roots) under ``api_cache_dir()`` and
+``load_getpatterns`` / ``pattern_stops_table`` read them back into the stop table the archive
+imputation needs (``cta.archive.STOP_PDIST_SOURCE``), with no network.
+The Mansueto CloudFront helpers live in ``cta.mansueto`` (specs/split-cta-api.md).
 """
 
 from __future__ import annotations
@@ -20,14 +26,11 @@ import pandas as pd
 
 CHICAGO = ZoneInfo("America/Chicago")
 
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
-RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
 CTA_API_BASE = "https://www.ctabustracker.com/bustime/api/v3"
 
 CTA_API_MIN_INTERVAL_SEC = 0.25
 CTA_API_DAILY_WARN = 9_500
 CTA_API_DAILY_MAX = 10_000
-CLOUDFRONT_MIN_INTERVAL_SEC = 0.1
 
 CTA_API_MAX_RETRIES = 3
 CTA_API_RETRY_BASE_SEC = 2.0
@@ -35,7 +38,8 @@ CTA_API_RETRY_BASE_SEC = 2.0
 LAST_CTA_REQUEST_URL: str | None = None
 
 _last_api_call_monotonic: float = 0.0
-_last_cloudfront_call_monotonic: float = 0.0
+
+PATTERN_STOP_COLUMNS = ["pid", "rtdir", "seq", "stpid", "stpnm", "lat", "lon", "pdist_ft"]
 
 
 def repo_root() -> Path:
@@ -44,6 +48,9 @@ def repo_root() -> Path:
 
 def api_cache_dir() -> Path:
     return repo_root() / "data" / "cta_api_cache"
+
+
+default_cache_dir = api_cache_dir  # name kept from the former cta.patterns
 
 
 def load_dotenv(env_path: Path | None = None) -> None:
@@ -124,15 +131,6 @@ def _throttle_api() -> None:
     _last_api_call_monotonic = time.monotonic()
 
 
-def _throttle_cloudfront() -> None:
-    global _last_cloudfront_call_monotonic
-    now = time.monotonic()
-    elapsed = now - _last_cloudfront_call_monotonic
-    if _last_cloudfront_call_monotonic > 0 and elapsed < CLOUDFRONT_MIN_INTERVAL_SEC:
-        time.sleep(CLOUDFRONT_MIN_INTERVAL_SEC - elapsed)
-    _last_cloudfront_call_monotonic = time.monotonic()
-
-
 def _is_retryable_cta_message(msg: str) -> bool:
     lower = str(msg).lower()
     return any(token in lower for token in ("limit", "rate", "busy", "overload"))
@@ -140,20 +138,6 @@ def _is_retryable_cta_message(msg: str) -> bool:
 
 def _is_retryable_http(code: int) -> bool:
     return code in (429, 503)
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
-
-
-def parquet_http_status(pid: str) -> int:
-    _throttle_cloudfront()
-    req = urllib.request.Request(parquet_url(pid), method="HEAD")
-    try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            return resp.status
-    except urllib.error.HTTPError as exc:
-        return exc.code
 
 
 def cta_api_get(
@@ -244,12 +228,13 @@ def pattern_records(pid: str, **cta_kwargs) -> list[dict]:
     return ptr
 
 
-def _getpatterns_cache_path(pid: str, cache_dir: Path) -> Path:
-    return cache_dir / f"getpatterns_{pid}.json"
+def cache_path(pid: str, cache_dir: Path) -> Path:
+    return Path(cache_dir) / f"getpatterns_{pid}.json"
 
 
-def _load_getpatterns_cache(pid: str, cache_dir: Path) -> dict | None:
-    path = _getpatterns_cache_path(pid, cache_dir)
+def load_getpatterns(pid: str, cache_dir: Path | None = None) -> dict | None:
+    """Cached ``bustime-response`` root for one pid, or None when not cached."""
+    path = cache_path(str(pid), cache_dir or default_cache_dir())
     if not path.is_file():
         return None
     return json.loads(path.read_text())
@@ -257,7 +242,7 @@ def _load_getpatterns_cache(pid: str, cache_dir: Path) -> dict | None:
 
 def _save_getpatterns_cache(pid: str, cache_dir: Path, root: dict) -> None:
     cache_dir.mkdir(parents=True, exist_ok=True)
-    _getpatterns_cache_path(pid, cache_dir).write_text(json.dumps(root) + "\n")
+    cache_path(pid, cache_dir).write_text(json.dumps(root) + "\n")
 
 
 def batch_pattern_stops(
@@ -281,7 +266,7 @@ def batch_pattern_stops(
     for i, pid in enumerate(unique_pids, start=1):
         root: dict | None = None
         if use_cache:
-            root = _load_getpatterns_cache(pid, cache_root)
+            root = load_getpatterns(pid, cache_root)
             if root is not None:
                 cached_hits += 1
 
@@ -322,3 +307,47 @@ def batch_pattern_stops(
             f"API today={usage}/{CTA_API_DAILY_MAX}"
         )
     return result
+
+
+def stops_from_getpatterns(root: dict) -> pd.DataFrame:
+    """Stop points (``typ == 'S'``) of every pattern in a getpatterns response, one row per stop."""
+    ptr = root.get("ptr", [])
+    if isinstance(ptr, dict):
+        ptr = [ptr]
+    frames = []
+    for p in ptr:
+        pts = p.get("pt", [])
+        if isinstance(pts, dict):
+            pts = [pts]
+        if not any(pt.get("typ") == "S" for pt in pts):
+            continue  # no rows to contribute; ptr_to_stops_df cannot sort an empty frame
+        stops = ptr_to_stops_df(p)
+        stops.insert(0, "rtdir", str(p.get("rtdir", "")))
+        stops.insert(0, "pid", str(p["pid"]))
+        frames.append(stops[PATTERN_STOP_COLUMNS])
+    if not frames:
+        return pd.DataFrame(columns=PATTERN_STOP_COLUMNS)
+    df = pd.concat(frames, ignore_index=True)
+    return df.sort_values(["pid", "seq"]).reset_index(drop=True)
+
+
+def pattern_stops_table(pids: list[str], cache_dir: Path | None = None) -> pd.DataFrame:
+    """Stop table for ``pids`` from the cache. Raises ``FileNotFoundError`` naming any pid not cached."""
+    cache_dir = Path(cache_dir) if cache_dir is not None else default_cache_dir()
+    frames = []
+    missing = []
+    for pid in dict.fromkeys(str(p) for p in pids):
+        root = load_getpatterns(pid, cache_dir)
+        if root is None:
+            missing.append(pid)
+            continue
+        df = stops_from_getpatterns(root)
+        frames.append(df[df["pid"] == pid])
+    if missing:
+        raise FileNotFoundError(
+            f"no getpatterns cache under {cache_dir} for {len(missing)} pids: {missing}; "
+            "fetch them with bustracker.batch_pattern_stops(pids, cache_dir=...)"
+        )
+    if not frames:
+        return pd.DataFrame(columns=PATTERN_STOP_COLUMNS)
+    return pd.concat(frames, ignore_index=True)
