@@ -1,0 +1,127 @@
+{
+ "title": "Fixture manifest: Mansueto StopWatch per-pattern parquet cuts for specs/mansueto-adapter.md",
+ "built_at": "2026-11-04T06:33:25.114042+00:00",
+ "builder": "scripts/build_mansueto_fixtures.py",
+ "data_edge_constant": "2026-07-28",
+ "timezone": "America/Chicago",
+ "sources": {
+  "6410": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6410_full.parquet",
+   "bytes": 7227486,
+   "last_modified": "2026-07-28T10:19:28+00:00",
+   "fetched_at": "2026-11-04T06:31:56.692613+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6410_full.parquet",
+    "bytes": 7227486,
+    "last_modified": "2026-07-28T10:19:28+00:00",
+    "rows": 316695,
+    "min_bus_stop_time": "2022-06-01T15:14:34.476848",
+    "max_bus_stop_time": "2026-07-27T18:19:02.183471751"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "18414": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_18414_full.parquet",
+   "bytes": 386365028,
+   "last_modified": "2026-07-28T10:11:52+00:00",
+   "fetched_at": "2026-11-04T06:32:26.391725+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_18414_full.parquet",
+    "bytes": 386365028,
+    "last_modified": "2026-07-28T10:11:52+00:00",
+    "rows": 14167004,
+    "min_bus_stop_time": "2022-08-21T05:54:29.426879",
+    "max_bus_stop_time": "2026-07-28T00:04:59.540707995"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "18415": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_18415_full.parquet",
+   "bytes": 422543385,
+   "last_modified": "2026-07-28T10:12:00+00:00",
+   "fetched_at": "2026-11-04T06:32:27.296708+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_18415_full.parquet",
+    "bytes": 422543385,
+    "last_modified": "2026-07-28T10:12:00+00:00",
+    "rows": 15493762,
+    "min_bus_stop_time": "2022-08-21T07:11:13.591071",
+    "max_bus_stop_time": "2026-07-28T02:04:00.202529762"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  }
+ },
+ "files": {
+  "mansueto_6410_last30d.parquet": {
+   "pids": [
+    "6410"
+   ],
+   "rows": 4730,
+   "bytes": 61613,
+   "sha256": "cfb6830bf82d0c46454d5302875b639e946b5e08f4ac93d16e3621364cc0b746",
+   "window": {
+    "cutoff": "2026-06-27T18:19:02.183471751",
+    "max_bus_stop_time": "2026-07-27T18:19:02.183471751",
+    "days": 30
+   },
+   "service_date_check": {
+    "runs": 110,
+    "embedded_date_matches_earliest_row": 110,
+    "post_midnight_continuations": 0,
+    "unexplained": 0
+   }
+  },
+  "mansueto_2026-07-27_route3.parquet": {
+   "pids": [
+    "18414",
+    "18415"
+   ],
+   "rows": 23888,
+   "bytes": 263184,
+   "sha256": "81dbcf3a1bdb4f6d8379abbd5239a7520b06d9c25d50a5811a41933ea43ca11f",
+   "window": {
+    "date": "2026-07-27",
+    "timezone": "America/Chicago"
+   },
+   "service_date_check": {
+    "runs": 230,
+    "embedded_date_matches_earliest_row": 225,
+    "post_midnight_continuations": 5,
+    "unexplained": 0
+   }
+  },
+  "mansueto_rt_to_pid_route3.csv": {
+   "pids": [
+    "18416",
+    "18412",
+    "18414",
+    "18415",
+    "18417",
+    "1054",
+    "7770",
+    "18413",
+    "19388"
+   ],
+   "rows": 9,
+   "bytes": 77,
+   "sha256": "46b198141b67726f444354b5a818966b99789d61b4024b1254db8b006535d98b",
+   "source_url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/rt_to_pid.csv"
+  },
+  "mansueto_18414_footer.bin": {
+   "pids": [
+    "18414"
+   ],
+   "bytes": 131452,
+   "sha256": "f721158ad3d77939e6c82a229480414c2eebbc65e34ade27325402a634a2ba1a",
+   "offset": 386233576,
+   "footer_len": 131444,
+   "rows": 14167004,
+   "row_groups": 121,
+   "min_bus_stop_time": "2022-08-21T05:54:29.426879",
+   "max_bus_stop_time": "2026-07-28T00:04:59.540707995"
+  }
+ }
+}

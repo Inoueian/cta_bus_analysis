@@ -8,11 +8,16 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import pandas as pd
 
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
-RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from cta import mansueto  # noqa: E402
+from cta.mansueto import BASE, RT_TO_PID_URL, parquet_url  # noqa: E402,F401  (kept as script-level names)
 
 # ADR-003 assumed names -> verified Mansueto columns (PID 6662, route 66, 2026-09-15)
 EXPECTED_MAPPING = {
@@ -29,16 +34,10 @@ MANSUETO_EXTRA = ["seg_combined", "typ", "speed_mph", "vid", "p_stp_id"]
 
 
 def pids_for_route(route: str) -> list[str]:
-    rt_df = pd.read_csv(RT_TO_PID_URL)
-    rt_df["rt"] = rt_df["rt"].astype(str)
-    pids = rt_df.loc[rt_df["rt"] == str(route), "pid"].astype(str).tolist()
+    pids = mansueto.pids_for_route(route, RT_TO_PID_URL)
     if not pids:
         raise SystemExit(f"No PIDs found for route {route} in {RT_TO_PID_URL}")
     return pids
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
 
 
 def verify(df: pd.DataFrame, pid: str, route: str) -> None:

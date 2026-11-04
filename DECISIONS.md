@@ -10,6 +10,39 @@ Statuses:
 
 ---
 
+## ADR-008: `stop_sequence_index` is the dense getpatterns stop rank on both adapters
+Date: 2026-11-04
+Status: Accepted (amends ADR-003; does not supersede it)
+
+### Context
+
+ADR-003 names `stop_sequence_index` without defining it. The archive adapter (specs/archive-adapter.md)
+used the Bus Tracker `getpatterns` `seq`, which counts waypoints as well as stops: PID 18414 has 105
+stops and a last `seq` of 319, and the fixture day reached 367. Mansueto's own `stop_sequence` is a
+third numbering. The `± 1` neighbour idiom in `cta.dlsd_run_quality` and any "next stop" logic need
+an index that is contiguous and means the same thing whichever source produced the row. The owner
+resolved this on 2026-11-04 while closing the open questions of specs/mansueto-adapter.md.
+
+### Decision
+
+`cta.bustracker.pattern_stops_table` carries `stop_rank`: the dense 0-based rank of each stop within
+its pattern by `seq` over `typ == 'S'` points only (`cta.bustracker.with_stop_rank` computes it for a
+hand-built table). Both `cta.views.run_level_from_archive` and `cta.views.run_level_from_mansueto`
+set `stop_sequence_index = stop_rank`. Neither `seq` nor Mansueto `stop_sequence` appears in the
+run-level view.
+
+### Consequences
+
+Stops are indexed identically across sources, so travel-time and neighbour logic is source-agnostic
+and the index of a stop is stable across archive days as long as the pattern is unchanged. The index
+is tied to the getpatterns snapshot in the cache: when a pattern gains or loses a stop the ranks
+after it shift, so a rebuilt cache can renumber history. Rows whose stop is absent from the current
+pattern are dropped and counted (`stop_not_in_pattern`, about 1% of route 3 rows from July 2026
+against a November 2026 pattern). Joining to a stop by `stop_id` is unaffected and remains the way
+to address a stop across time.
+
+---
+
 ## ADR-007: Mansueto StopWatch is a frozen history source until it resumes
 Date: 2026-11-04
 Status: Proposed (amends ADR-004; does not supersede it)

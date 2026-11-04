@@ -161,7 +161,7 @@ EXPECTED_CONSTANTS = {
     "CTA_API_DAILY_MAX": 10_000,
     "CTA_API_MAX_RETRIES": 3,
     "CTA_API_RETRY_BASE_SEC": 2.0,
-    "PATTERN_STOP_COLUMNS": ["pid", "rtdir", "seq", "stpid", "stpnm", "lat", "lon", "pdist_ft"],
+    "PATTERN_STOP_COLUMNS": ["pid", "rtdir", "seq", "stpid", "stpnm", "lat", "lon", "pdist_ft", "stop_rank"],  # stop_rank added by specs/mansueto-adapter.md
 }
 
 # Row count of pattern_stops_table(KEPT, GETPATTERNS_DIR) obtained by tests/test_views_archive.py

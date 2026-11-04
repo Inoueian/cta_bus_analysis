@@ -1,6 +1,6 @@
 # Spec: Mansueto StopWatch adapter → run-level view
 
-Status: ready (2026-11-04)
+Status: done (implemented 2026-11-04 on branch `claude/vibrant-allen-79ws4p`; QA and measured ratios in `docs/2026-11-04-mansueto-adapter-qa.md`; implementation notes at the end)
 Owner: Satoru  ·  Date: 2026-11-04  ·  TODO item: Foundation "Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write)."
 
 ## Question
@@ -158,3 +158,29 @@ None. Resolved 2026-11-04 by the owner: `bus_stop_time` is tz-naive America/Chic
 `nonmonotone_time` rows are dropped; `service_date` is parsed from `unique_trip_vehicle_day` with
 the earliest-arrival fallback; `stop_sequence_index` is the dense getpatterns `stop_rank` on both
 adapters; the 30-day self-consistency fixture is PID 6410, not 18414.
+
+## Implementation notes (2026-11-04)
+
+Choices the spec left to the implementer, and what the data corrected:
+
+- QA table: `cta.views.run_level_from_mansueto_with_qa(...)` returns `(view, qa)`; `run_level_from_mansueto`
+  is the view-only wrapper. `cta.views.mansueto_view_from_trips(trips, pattern_stops)` builds both from a
+  `read_trips` frame (used by the hand-built tests). `clean_trips` also carries `stop_rank` in its output.
+- `read_trips` filters `pid` in SQL (a full file holds one pid; the committed fixtures hold several) and
+  keeps DST-NaT rows so `clean_trips` can count them; it records the source's null `bus_stop_time` count
+  in `DataFrame.attrs` because null and DST-ambiguous times are both NaT once the column is UTC.
+- `data_edge` uses two range requests (8-byte trailer, then the footer) through `urllib` with the project
+  User-Agent; it honours the environment's proxy and CA variables. The footer of PID 18414 is 131 KB, not
+  8 KB, so `tests/fixtures/mansueto_18414_footer.bin` is the whole footer plus trailer.
+- The builder's refusal rule is "`Last-Modified` on `MANSUETO_DATA_EDGE` and last row within one day of
+  it": PID 6410's last row is 2026-07-27 18:19 (151 NB ends before midnight) while the bucket edge is
+  07-28. The 30-day window is still relative to the file's own maximum, as the legacy script did.
+- "Every row has `service_date == 2026-07-27`" does not hold on a row-by-date cut: 5 of 230 route 3 runs
+  are post-midnight continuations embedding 2026-07-26, and the view keeps that date by design. The test
+  asserts the set {2026-07-26, 2026-07-27} with the 07-26 rows all before 04:00 Chicago; the builder's
+  99% check counts those continuations as the expected exceptions.
+- `rt_to_pid.csv` has nine route 3 rows, not two; the fixture and test use all nine.
+- Fixture sizes: 4,730 rows / 62 KB (6410) and 23,888 rows / 263 KB (route 3 day); 0 null keys or times.
+- Self-consistency measured exactly 1.0000 with 110 of 110 runs (no stage dropped a row on 6410), so
+  `MAX_SELF_CONSISTENCY_DEVIATION = 0.02` is recorded but not yet exercised.
+
