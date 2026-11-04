@@ -36,7 +36,8 @@ The Sunday 2026-11-01 file has 1.25M rows against ~1.08M on a weekday: the colle
 ## Validation against Mansueto
 
 Per-pattern corridor minutes (entry stop → exit stop) on the archive day versus the Mansueto
-last-30-day medians stored in `michigan_ave_kept_pids.json` (window ending ~2026-10-03):
+last-30-day medians stored in `michigan_ave_kept_pids.json` (window ending ~2026-10-03; corrected
+2026-11-04: the window is 2026-06-28 to 2026-07-28, see `docs/2026-11-04-mansueto-data-edge.md`):
 
 | Pattern | Route / dir | Archive median (n) | Mansueto median (n) |
 |---|---|---|---|

@@ -13,7 +13,7 @@ served to riders as a static web app (Phase 2) with scheduled refresh (Phase 3).
 
 | Source | What it is | Use it for |
 |---|---|---|
-| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history to ~2022, ~2 week lag | Long history, drift over time |
+| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history from ~2022 to **2026-07-28**, frozen since (ADR-007; re-measure before assuming otherwise) | Long history, drift over time; no overlap with the archive yet |
 | Transit Alerts position archive (`data.chicagotransitalerts.app/positions/`) | Raw Bus Tracker positions, ~60 s fixes (30 s from 2026-11-01), history from 2026-09-28, nightly | Everything from Oct 2026 on, stop-level imputation, incidents |
 | CTA Bus Tracker API `getpatterns` | Stop list per pattern with `pdist` (feet along pattern) | Stop pdist for imputation, direction labels. Cached on disk; 10k calls/day cap |
 | GTFS | Schedules | Phase 3 excess-wait / on-time metrics |
