@@ -1,4 +1,4 @@
-"""CTA Bus Tracker API and Mansueto CloudFront helpers for notebooks.
+"""CTA Bus Tracker API and Mansueto CloudFront helpers for notebooks and scripts.
 
 Daily Bus Tracker budget uses America/Chicago calendar dates (default cap 10,000
 live requests/day per API key). Use ``getpatterns`` disk cache to avoid repeat calls.

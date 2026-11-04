@@ -1,4 +1,4 @@
-"""Pytest configuration: ensure repo root is on sys.path for `scripts` imports."""
+"""Pytest configuration: ensure repo root is on sys.path so `cta` and `scripts` import without installing."""
 
 from __future__ import annotations
 

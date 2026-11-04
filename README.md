@@ -38,7 +38,8 @@ For exploratory notebooks and tests today (no pinned `requirements.txt` yet):
 ```
 python3 -m venv env
 source env/bin/activate
-pip install pandas numpy pytest jupyterlab matplotlib python-dotenv
+pip install -r requirements.txt
+pip install -e .   # makes `import cta` work from anywhere (notebooks, scripts)
 ```
 
 ### Run
