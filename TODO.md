@@ -8,7 +8,6 @@ Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial
 
 Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two data sources) and [ADR-005](DECISIONS.md) (package + DuckDB).
 
-- [ ] Split `cta.cta_api` into `cta.bustracker` (API client, daily budget, throttle, `getpatterns` fetch and disk cache; fold in the cache reader `cta/patterns.py` so the cache format has one owner) and `cta.mansueto` (`parquet_url`, `parquet_http_status`, `RT_TO_PID_URL`); update importers (notebooks' import cell only), keep every public name. After the package migration. Spec: `specs/split-cta-api.md` (ready, 2026-11-04).
 - [ ] Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write).
 - [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
 - [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), ~~`getpatterns` JSON for those PIDs~~ (done 2026-11-03: `tests/fixtures/getpatterns/`, 45 files), one small Mansueto parquet.
@@ -74,6 +73,7 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 
 ## Done
 
+- [x] Split `cta.cta_api` into `cta.bustracker` (API client, daily budget, throttle, `getpatterns` fetch and disk cache, with the former `cta/patterns.py` reader folded in so the cache format has one owner) and `cta.mansueto` (`BASE`, `RT_TO_PID_URL`, `parquet_url`, `parquet_http_status`); clean removal, no shim; every public name kept; importers, notebook import cells, CLAUDE.md and README.md updated (`specs/split-cta-api.md`) (2026-11-04)
 - [x] Package + tests + CI (ADR-005): moved `cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` from `notebooks/` to `cta/` with every public name unchanged; notebooks, scripts and tests import `cta.<module>`; `pyproject.toml` (`pip install -e .`), `.github/workflows/ci.yml` (pytest, no network), `tests/test_package_layout.py` (`specs/package-migration.md`) (2026-11-04)
 - [x] Archive adapter → run-level view (ADR-004): `cta/archive.py`, `cta/patterns.py`, `cta/calendar.py`, `cta/views.py`, `scripts/archive_run_level.py`, fixtures for 2026-10-29 and the 45 kept PIDs; validation tolerance set by ADR-006 (`specs/archive-adapter.md`, `docs/2026-11-03-archive-adapter-qa.md`) (2026-11-03)
 - [x] Archive initial iteration onto `legacy` branch (2026-08-10)

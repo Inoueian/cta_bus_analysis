@@ -64,10 +64,13 @@ The static web app install and run commands are still TBD until Phase 2 stack is
 │   ├── verify_parquet.py
 │   ├── cache_dlsd_parquets.py      # DLSD or Michigan PID parquets (--source michigan)
 │   └── dlsd_weekday_friday_summary.py
-├── notebooks/     # exploratory analysis and side-quest notebooks
-│   ├── cta_api.py                  # shared Bus Tracker + Mansueto URL helpers
+├── cta/           # importable package (ADR-005): adapters, cleaning, imputation, views
+│   ├── bustracker.py               # Bus Tracker API client, daily budget, getpatterns cache (one owner)
+│   ├── mansueto.py                 # Mansueto StopWatch CloudFront URL helpers
+│   ├── archive.py, calendar.py, views.py  # Transit Alerts archive adapter → run-level view
 │   ├── dlsd_run_quality.py         # DLSD rush plot guards and stats
-│   ├── michigan_ave_segment.py     # Michigan corridor segment + timing helpers
+│   └── michigan_ave_segment.py     # Michigan corridor segment + timing helpers
+├── notebooks/     # exploratory analysis and side-quest notebooks
 │   ├── michigan_ave_route_identification.ipynb
 │   ├── michigan_ave_kept_pids.json # patterns with median corridor time ≥ 5 min
 │   ├── *_snapshot.json             # frozen stop/boundary lists (e.g. Michigan Ave, DLSD)

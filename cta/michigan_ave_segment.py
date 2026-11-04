@@ -9,7 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta.cta_api import RT_TO_PID_URL, batch_pattern_stops
+from cta.bustracker import batch_pattern_stops
+from cta.mansueto import RT_TO_PID_URL
 from cta.dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
 
 DEFAULT_MIN_MEDIAN_MINUTES = 5.0

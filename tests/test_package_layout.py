@@ -10,10 +10,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 NOTEBOOKS = REPO_ROOT / "notebooks"
-LEGACY_MODULES = ("cta_api", "dlsd_run_quality", "michigan_ave_segment")
+LEGACY_MODULES = ("bustracker", "mansueto", "dlsd_run_quality", "michigan_ave_segment")
+REMOVED_MODULES = ("cta_api", "patterns")  # specs/split-cta-api.md: clean removal, no shim
 
 _SYS_PATH_INSERT = re.compile(r"sys\.path\.insert\((.*?)\)", re.DOTALL)
 _BARE_IMPORT = re.compile(r"^\s*(?:from|import)\s+(" + "|".join(LEGACY_MODULES) + r")\b", re.MULTILINE)
+_REMOVED_IMPORT = re.compile(r"^\s*(?:from|import)\s+cta\.(" + "|".join(REMOVED_MODULES) + r")\b", re.MULTILINE)
 
 
 def _code_cells(nb_path: Path) -> list[str]:
@@ -44,6 +46,8 @@ def test_notebooks_do_not_put_notebooks_dir_on_sys_path():
                 if "notebooks" in m.group(1):
                     offenders.append((nb_path.name, m.group(0)))
             for m in _BARE_IMPORT.finditer(src):
+                offenders.append((nb_path.name, m.group(0).strip()))
+            for m in _REMOVED_IMPORT.finditer(src):
                 offenders.append((nb_path.name, m.group(0).strip()))
     assert offenders == []
 

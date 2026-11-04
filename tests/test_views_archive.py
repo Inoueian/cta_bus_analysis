@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cta import archive, patterns, views
+from cta import archive, bustracker, views
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 DAY = "2026-10-29"
@@ -60,7 +60,7 @@ def ingested_con(fixture_index):
 
 @pytest.fixture(scope="module")
 def run_level(ingested_con, fixture_index) -> pd.DataFrame:
-    stops = patterns.pattern_stops_table(KEPT, GETPATTERNS_DIR)
+    stops = bustracker.pattern_stops_table(KEPT, GETPATTERNS_DIR)
     return views.run_level_from_archive([DAY], KEPT, con=ingested_con, index=fixture_index, pattern_stops=stops)
 
 
@@ -86,7 +86,7 @@ def test_run_level_from_synthetic_pattern_cache(ingested_con, fixture_index, tmp
         ]
     }
     (tmp_path / f"getpatterns_{pid}.json").write_text(json.dumps(root))
-    stops = patterns.pattern_stops_table([pid], tmp_path)
+    stops = bustracker.pattern_stops_table([pid], tmp_path)
     assert stops["stpid"].tolist() == ["1580", "1126"]  # waypoints dropped
     view = views.run_level_from_archive([DAY], [pid], con=ingested_con, index=fixture_index, pattern_stops=stops)
     assert list(view.columns) == views.RUN_LEVEL_COLUMNS
