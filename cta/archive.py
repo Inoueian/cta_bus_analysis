@@ -28,6 +28,8 @@ from zoneinfo import ZoneInfo
 import duckdb
 import pandas as pd
 
+from cta import bustracker
+
 ARCHIVE_ORIGIN = "https://data.chicagotransitalerts.app/"
 INDEX_URL = ARCHIVE_ORIGIN + "positions/index.json"
 CHICAGO = ZoneInfo("America/Chicago")
@@ -73,7 +75,7 @@ BUS_SCHEMA = {
 CLEAN_FIX_COLUMNS = ["route", "pid", "vehicle_id", "run_id", "service_date", "vehicle_ts", "pdist", "lat", "lon"]
 PAIR_COLUMNS = ["route", "pid", "vehicle_id", "run_id", "service_date", "t0", "t1", "p0", "p1", "bracket_gap_s"]
 ARRIVAL_COLUMNS = [
-    "route", "pid", "vehicle_id", "run_id", "service_date", "stpid", "seq", "rtdir", "stop_pdist_ft",
+    "route", "pid", "vehicle_id", "run_id", "service_date", "stpid", "seq", "stop_rank", "rtdir", "stop_pdist_ft",
     "arrival_time", "bracket_gap_s",
 ]
 QA_COLUMNS = ["stage", "rows_in", "rows_out", "reason", "count"]
@@ -415,15 +417,18 @@ def impute_arrivals(
 ) -> pd.DataFrame:
     """Linear interpolation of the time each run crossed each pattern stop; earliest crossing per (run, stop).
 
-    ``pattern_stops`` is ``cta.bustracker.pattern_stops_table`` output (pid, rtdir, seq, stpid, pdist_ft).
+    ``pattern_stops`` is ``cta.bustracker.pattern_stops_table`` output (pid, rtdir, seq, stpid, pdist_ft,
+    stop_rank; the dense rank is computed here when a hand-built table lacks it).
     A stop with p0 <= pdist < p1 is crossed in the pair (p0, t0) -> (p1, t1). Stops a run never
     crosses are absent, not NaT.
     """
+    stops = bustracker.with_stop_rank(pattern_stops)
     con.register("_pairs_in", pairs[PAIR_COLUMNS])
-    con.register("_stops", pattern_stops[["pid", "rtdir", "seq", "stpid", "pdist_ft"]])
+    con.register("_stops", stops[["pid", "rtdir", "seq", "stop_rank", "stpid", "pdist_ft"]])
     con.execute(
         """CREATE OR REPLACE TEMP TABLE _cross AS
-           SELECT p.route, p.pid, p.vehicle_id, p.run_id, p.service_date, s.stpid, s.seq, s.rtdir, s.pdist_ft stop_pdist_ft,
+           SELECT p.route, p.pid, p.vehicle_id, p.run_id, p.service_date, s.stpid, s.seq, s.stop_rank, s.rtdir,
+                  s.pdist_ft stop_pdist_ft,
                   epoch_ms(p.t0) + (epoch_ms(p.t1) - epoch_ms(p.t0)) * (s.pdist_ft - p.p0) / (p.p1 - p.p0) arr_ms,
                   p.bracket_gap_s
            FROM _pairs_in p JOIN _stops s ON s.pid = p.pid
@@ -432,7 +437,8 @@ def impute_arrivals(
     rows_in = con.execute("SELECT count(*) FROM _cross").fetchone()[0]
     arrivals = con.execute(
         """SELECT any_value(route) route, pid, any_value(vehicle_id) vehicle_id, run_id, any_value(service_date) service_date,
-                  stpid, any_value(seq) seq, any_value(rtdir) rtdir, any_value(stop_pdist_ft) stop_pdist_ft,
+                  stpid, any_value(seq) seq, any_value(stop_rank) stop_rank, any_value(rtdir) rtdir,
+                  any_value(stop_pdist_ft) stop_pdist_ft,
                   to_timestamp(min(arr_ms) / 1000.0) arrival_time, arg_min(bracket_gap_s, arr_ms) bracket_gap_s
            FROM _cross GROUP BY pid, run_id, stpid ORDER BY run_id, seq"""
     ).df()[ARRIVAL_COLUMNS]

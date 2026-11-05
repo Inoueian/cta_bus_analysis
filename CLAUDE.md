@@ -39,8 +39,9 @@ docs/           durable notes migrated from the knowledge vault (data quirks, th
 
 This is the target layout (ADR-005). `cta/` exists and is the only import surface: one module per data
 source, `bustracker.py` (Bus Tracker API client, daily budget, throttle, `getpatterns` fetch and the
-disk cache it alone owns, reader included) and `mansueto.py` (StopWatch CloudFront URL helpers), the
-archive adapter (`archive.py`, `calendar.py`, `views.py`) and the migrated helpers `dlsd_run_quality.py`
+disk cache it alone owns, reader included) and `mansueto.py` (StopWatch CloudFront URL helpers, parquet
+reader, cleaning stages with QA, footer `data_edge` probe, `fetch_parquet`; `specs/mansueto-adapter.md`),
+the archive adapter (`archive.py`, `calendar.py`, `views.py`; `views.py` also holds `run_level_from_mansueto`) and the migrated helpers `dlsd_run_quality.py`
 and `michigan_ave_segment.py` (`specs/package-migration.md`, `specs/split-cta-api.md`, 2026-11-04).
 It imports from the repo root without installing
 (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via

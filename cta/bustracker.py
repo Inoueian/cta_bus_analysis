@@ -39,7 +39,9 @@ LAST_CTA_REQUEST_URL: str | None = None
 
 _last_api_call_monotonic: float = 0.0
 
-PATTERN_STOP_COLUMNS = ["pid", "rtdir", "seq", "stpid", "stpnm", "lat", "lon", "pdist_ft"]
+# stop_rank: dense 0-based rank of each stop within its pattern by seq over typ == 'S' only. It is the
+# stop_sequence_index of both run-level views (specs/mansueto-adapter.md); seq counts waypoints too.
+PATTERN_STOP_COLUMNS = ["pid", "rtdir", "seq", "stpid", "stpnm", "lat", "lon", "pdist_ft", "stop_rank"]
 
 
 def repo_root() -> Path:
@@ -213,7 +215,18 @@ def ptr_to_stops_df(ptr: dict) -> pd.DataFrame:
                 "pdist_ft": float(pt.get("pdist", 0)),
             }
         )
-    return pd.DataFrame(rows).sort_values("seq").reset_index(drop=True)
+    df = pd.DataFrame(rows).sort_values("seq").reset_index(drop=True)
+    df["stop_rank"] = pd.Series(range(len(df)), dtype="int64")
+    return df
+
+
+def with_stop_rank(stops: pd.DataFrame) -> pd.DataFrame:
+    """``stops`` with a dense ``stop_rank`` (0 to n-1 by ``seq`` within each pid), computed when absent."""
+    if "stop_rank" in stops.columns:
+        return stops
+    out = stops.copy()
+    out["stop_rank"] = (out.groupby("pid")["seq"].rank(method="first") - 1).astype("int64")
+    return out
 
 
 def pattern_stops_from_ptr(ptr: dict) -> tuple[str, pd.DataFrame]:

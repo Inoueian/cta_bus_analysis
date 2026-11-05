@@ -11,11 +11,14 @@ from pathlib import Path
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from cta.mansueto import BASE, RT_TO_PID_URL, parquet_url  # noqa: E402,F401  (kept as script-level names)
+
 BOUNDARIES_PATH = REPO_ROOT / "notebooks" / "dlsd_boundaries_snapshot.json"
 MICHIGAN_STOPS_PATH = REPO_ROOT / "notebooks" / "michigan_ave_stops_snapshot.json"
 DATA_DIR = REPO_ROOT / "data" / "mansueto"
-BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
-RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
 
 COLS = [
     "bus_stop_time",
@@ -26,10 +29,6 @@ COLS = [
     "speed_mph",
     "seg_combined",
 ]
-
-
-def parquet_url(pid: str) -> str:
-    return f"{BASE}/processed_by_pid/trips_{pid}_full.parquet"
 
 
 def load_dlsd_pids() -> list[str]:

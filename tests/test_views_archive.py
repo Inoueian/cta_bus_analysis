@@ -111,6 +111,16 @@ def test_run_level_row_count_and_no_duplicates(run_level):
 
 
 @needs_getpatterns
+def test_stop_sequence_index_is_the_dense_stop_rank(run_level):
+    # specs/mansueto-adapter.md: both adapters index stops by getpatterns stop_rank (0 to n-1), not the
+    # waypoint-counting seq, which reached 367 on the fixture day.
+    assert run_level.groupby("pattern_id")["stop_sequence_index"].max().lt(130).all()
+    assert run_level["stop_sequence_index"].min() == 0
+    v = run_level.sort_values(["run_id", "stop_sequence_index"])
+    assert (v.groupby("run_id")["stop_sequence_index"].diff().dropna() > 0).all()
+
+
+@needs_getpatterns
 def test_corridor_minutes_match_mansueto_medians(run_level):
     from cta.michigan_ave_segment import trip_segment_minutes
 
