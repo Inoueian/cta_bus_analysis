@@ -9,9 +9,20 @@ Arguments: what changed, in a sentence, or nothing (then ask which item and what
 
 ## Shape of the file
 
-- Sections are fixed: Foundation, the phases, the side quests, Done. Items under a `### Now` or `### Next`
-  heading, or directly under Foundation / Phase 2 / Phase 3, are active. Done is history: newest first,
-  one line per finished item ending with `(YYYY-MM-DD)`.
+- A `##` heading is a workstream: one goal, an intro paragraph that says what done looks like and what it
+  rests on (ADRs, docs notes), and its items. Phase headings match the README's roadmap language.
+  Foundation is the cross-cutting workstream: it exists to unblock the others.
+- Section order is priority order, first section first. Foundation stays first only while it unblocks
+  something. Done is always last.
+- `### Now` / `### Next` only where they earn it: a section with more than about five items, or a gate
+  between them (such as "each Next item gets a spec first"). Otherwise the section is flat.
+- A section with no active items retires: its intro shrinks to one line under `## Completed workstreams`,
+  just above Done, pointing at its notebooks and vault notes.
+- Adding, renaming, merging, reordering or retiring a section is the owner's call. When an item fits no
+  section, propose one in the report rather than inventing it. When asked to restructure, date and explain
+  the change in the section intro. Done is the one section never restructured.
+- Items under a `### Now` or `### Next` heading, or directly under a flat section, are active. Done is
+  history: newest first, one line per finished item ending with `(YYYY-MM-DD)`.
 - `Last updated:` at the top is today's date whenever the file changes.
 - An active item says what the deliverable is (file, function, script, notebook, docs note) and cites
   the ADR, spec or docs note it rests on. Evidence goes in the item (counts, dates, pids), not adjectives.

@@ -2,7 +2,7 @@
 
 Last updated: 2026-11-05
 
-Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial items get a spec in `specs/` (template: `specs/TEMPLATE.md`) before implementation; every active item ends with `Spec: …` or `No spec: <reason>` (convention in [CLAUDE.md](CLAUDE.md), maintained by `/todo`).
+Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial items get a spec in `specs/` (template: `specs/TEMPLATE.md`) before implementation; every active item ends with `Spec: …` or `No spec: <reason>` (convention in [CLAUDE.md](CLAUDE.md), maintained by `/todo`). Sections are workstreams in priority order, first section first.
 
 ## Foundation
 
@@ -48,10 +48,6 @@ Each item gets a spec with acceptance tests on the fixture day before implementa
 - [ ] Time-series of average travel time by date — group the run-level view's per-run deltas by date, filter to chosen day_of_week. Spec: to write.
 - [ ] Handle direction-only destination (aggregate over all downstream stops in that direction). Spec: to write.
 
-## DLSD Express Analysis
-
-Side-quest: Lake Shore Drive express segment timing for all-day routes 146 & 147 (`notebooks/dlsd_travel_time_146_147.ipynb`) and rush-hour-only routes 134, 135, 136, 143, and 148. Comparison plots in `notebooks/dlsd_express_comparison_plots.ipynb`. Active backlog for this side-quest is complete.
-
 ## Phase 2: Static web app for all routes
 
 Pick a web-app stack, extend ingestion to all (or most) CTA bus routes, and deploy as a static dataset served on a webpage.
@@ -73,6 +69,12 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 - [ ] Community-area rollups (mirror what the Mansueto dashboard does, but interactive). Spec: to write.
 - [ ] Compare weekday-vs-weekend distributions side by side. Spec: to write.
 - [ ] Persist and share URLs for a chosen route+stop+time combination. Spec: to write.
+
+## Completed workstreams
+
+Sections with no active items (retired 2026-11-05, when section order became priority order). Their finished items are in Done.
+
+- **DLSD Express Analysis**: Lake Shore Drive express segment timing for all-day routes 146 & 147 (`notebooks/dlsd_travel_time_146_147.ipynb`) and rush-hour-only routes 134, 135, 136, 143, and 148; comparison plots in `notebooks/dlsd_express_comparison_plots.ipynb`; helpers in `cta.dlsd_run_quality`. Reopens if the calendar retro-apply (Foundation) changes its figures.
 
 ## Done
 
