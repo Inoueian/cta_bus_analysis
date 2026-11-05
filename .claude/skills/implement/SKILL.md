@@ -76,4 +76,8 @@ Then:
 
 ## Report
 
+If the report would list more than two "spec got wrong" items, or the suite cannot get green after
+every plan row was attempted, stop there: say the spec needs an owner pass or a stronger model before
+more work, and do not keep iterating.
+
 In this order, briefly: assumptions made; files changed, naming any file outside the spec's Outputs table and why; the plan table with each row's state; the QA table; test results (counts, any xfail and why, any assertion changed after it was first written); anything the spec got wrong or left open. Lead with failures if there are any.

@@ -37,14 +37,9 @@ data/           local caches, gitignored
 docs/           durable notes migrated from the knowledge vault (data quirks, thresholds)
 ```
 
-This is the target layout (ADR-005). `cta/` exists and is the only import surface: one module per data
-source, `bustracker.py` (Bus Tracker API client, daily budget, throttle, `getpatterns` fetch and the
-disk cache it alone owns, reader included) and `mansueto.py` (StopWatch CloudFront URL helpers, parquet
-reader, cleaning stages with QA, footer `data_edge` probe, `fetch_parquet`; `specs/mansueto-adapter.md`),
-the archive adapter (`archive.py`, `calendar.py`, `views.py`; `views.py` also holds `run_level_from_mansueto`) and the migrated helpers `dlsd_run_quality.py`
-and `michigan_ave_segment.py` (`specs/package-migration.md`, `specs/split-cta-api.md`, 2026-11-04).
-It imports from the repo root without installing
-(`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
+`cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar and the
+migrated helpers; each module's docstring says what it holds. It imports from the repo root without
+installing (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
 `pip install -e .`. The JSON snapshots the helpers read (`dlsd_boundaries_snapshot.json`,
 `michigan_ave_*.json`) stay under `notebooks/`. Do not add importable code under `notebooks/`.
 
@@ -68,9 +63,7 @@ pytest tests/test_x.py -k y # one test
 python scripts/<name>.py -h # every script documents itself
 ```
 
-`.claude/settings.json` runs `.claude/hooks/precommit.sh` before any `git commit` from Claude Code: it
-re-runs pytest and refuses staged `data/` or `.env` paths and literal `CTA_API_KEY` values (rules 4 and 5).
-A blocked commit is a failed check to fix, never something to work around.
+A `git commit` that is blocked hit `.claude/hooks/precommit.sh` (pytest, rules 4 and 5); fix what it reports.
 
 ## Rules
 
@@ -94,27 +87,9 @@ An agent implementing a spec:
 3. Updates TODO.md (move the item to Done with the date) and, if a decision was made, DECISIONS.md.
 4. Reports: what changed, QA table, anything the spec got wrong.
 
-Numbers in a spec's acceptance tests are requirements unless the spec marks them as estimates (`~N` or
-"estimate; measure, then pin"). `/implement` may correct only marked numbers; any other mismatch is an
-xfail plus a report line, never an edited assertion.
-
 Every active TODO.md item ends with a spec marker: `Spec: specs/<slug>.md (draft|ready|done)`,
 `Spec: to write`, or `No spec: <reason>` (exploratory, applies existing code, documentation, ADR).
 `/todo` owns that file's shape; `/implement` only starts from a `ready` spec.
 
 Exploratory analysis (figuring out what the data looks like) does not need a spec. It needs a
 notebook with a markdown "Findings" cell at the end, and any durable finding copied to `docs/`.
-
-## Models and effort
-
-Cost is dominated by long agentic sessions, not clerical edits. Judge cost per completed task: a failed cheap
-run plus a rerun costs more than one run on the stronger model.
-
-- **Specs, spec review of a new data source, exploratory notebooks, findings:** Opus at high effort. This is the
-  judgment step (prior art, ADR consistency, data quirks) and the cheap one by volume.
-- **`/implement` from a `ready` spec:** Sonnet at medium effort, one fresh session per spec. Escalate to Opus
-  when the spec introduces a new module shape or data source, or when a run reports more than two
-  "spec got wrong" items or cannot get green.
-- **`/todo`, `/adr`, spec checklist review:** whatever model the session has.
-- The skill files are written for the weaker model: labels, checklists and commands rather than judgment calls.
-  The commit hook enforces the pytest gate and rules 4 and 5 regardless of model.
