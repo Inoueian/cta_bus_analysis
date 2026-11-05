@@ -37,14 +37,9 @@ data/           local caches, gitignored
 docs/           durable notes migrated from the knowledge vault (data quirks, thresholds)
 ```
 
-This is the target layout (ADR-005). `cta/` exists and is the only import surface: one module per data
-source, `bustracker.py` (Bus Tracker API client, daily budget, throttle, `getpatterns` fetch and the
-disk cache it alone owns, reader included) and `mansueto.py` (StopWatch CloudFront URL helpers, parquet
-reader, cleaning stages with QA, footer `data_edge` probe, `fetch_parquet`; `specs/mansueto-adapter.md`),
-the archive adapter (`archive.py`, `calendar.py`, `views.py`; `views.py` also holds `run_level_from_mansueto`) and the migrated helpers `dlsd_run_quality.py`
-and `michigan_ave_segment.py` (`specs/package-migration.md`, `specs/split-cta-api.md`, 2026-11-04).
-It imports from the repo root without installing
-(`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
+`cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar and the
+migrated helpers; each module's docstring says what it holds. It imports from the repo root without
+installing (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
 `pip install -e .`. The JSON snapshots the helpers read (`dlsd_boundaries_snapshot.json`,
 `michigan_ave_*.json`) stay under `notebooks/`. Do not add importable code under `notebooks/`.
 
@@ -63,10 +58,12 @@ It imports from the repo root without installing
 ## Commands
 
 ```
-pytest                      # all tests; must pass before any commit
+python -m pytest -q         # all tests; must pass before any commit
 pytest tests/test_x.py -k y # one test
 python scripts/<name>.py -h # every script documents itself
 ```
+
+A `git commit` that is blocked hit `.claude/hooks/precommit.sh` (pytest, rules 4 and 5); fix what it reports.
 
 ## Rules
 

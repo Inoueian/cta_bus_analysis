@@ -32,8 +32,9 @@ Arguments: what changed, in a sentence, or nothing (then ask which item and what
 Every active item ends with exactly one of:
 
 - `Spec: specs/<slug>.md (draft|ready|done)` — the spec exists; the status in parentheses mirrors the
-  spec's own `Status:` line. On every edit of TODO.md, re-read each referenced spec's `Status:` and
-  correct the marker, whichever item you were asked to touch; report any marker you corrected.
+  spec's own `Status:` line. On every edit of TODO.md, whichever item you were asked to touch, run
+  `grep -n '^Status:' specs/*.md`, compare each result with its marker, correct any that differ, and
+  report every marker you corrected.
 - `Spec: to write` — non-trivial work with no spec yet. `/implement` cannot start it; `/spec` can.
 - `No spec: <reason>` — the reason is one of `exploratory` (a notebook with a Findings cell, durable results
   to `docs/`), `applies existing code` (a thin script plus a `docs/` QA note, no new thresholds), `documentation`,
