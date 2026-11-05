@@ -90,5 +90,9 @@ An agent implementing a spec:
 3. Updates TODO.md (move the item to Done with the date) and, if a decision was made, DECISIONS.md.
 4. Reports: what changed, QA table, anything the spec got wrong.
 
+Every active TODO.md item ends with a spec marker: `Spec: specs/<slug>.md (draft|ready|done)`,
+`Spec: to write`, or `No spec: <reason>` (exploratory, applies existing code, documentation, ADR).
+`/todo` owns that file's shape; `/implement` only starts from a `ready` spec.
+
 Exploratory analysis (figuring out what the data looks like) does not need a spec. It needs a
 notebook with a markdown "Findings" cell at the end, and any durable finding copied to `docs/`.

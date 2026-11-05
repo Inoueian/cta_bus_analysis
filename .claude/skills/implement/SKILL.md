@@ -31,7 +31,7 @@ Argument: a path under `specs/`.
 
 ## Finish
 
-1. TODO.md: move the item to Done with today's date and the spec path. Flip the spec's status to `done` and add the commit or PR reference.
+1. TODO.md: close the item as `/todo` describes (Done, today's date, spec path, QA numbers). Flip the spec's status to `done` and add the commit or PR reference.
 2. If an implementation choice is one future work must respect, record it with `/adr`.
 3. If a durable data finding came up, add it to `docs/` as a dated note.
 4. Commit on the working branch with a message that names the spec. Do not open a PR unless asked.

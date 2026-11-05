@@ -41,6 +41,6 @@ Return a checklist, each line pass or gap with the fix:
 
 ## After
 
-- Add the spec path to the TODO.md item (`Spec: specs/<slug>.md (draft)`).
+- Add the spec path to the TODO.md item as `/todo` describes (`Spec: specs/<slug>.md (draft)`).
 - Do not implement. That is `/implement`, and only from a `ready` spec.
 - Report: the path, the open questions the owner must answer, and any TODO or ADR edits made.

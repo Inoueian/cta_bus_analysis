@@ -48,5 +48,5 @@ If the decision amends an earlier ADR without reversing it, say `Status: Accepte
 ## After
 
 - If CLAUDE.md states the old behaviour (layout, sources, conventions), update that line too; CLAUDE.md must never disagree with an Accepted ADR.
-- If a TODO.md item or a spec depends on the decision, add the ADR reference there.
+- If a TODO.md item or a spec depends on the decision, add the ADR reference there (TODO.md edits follow `/todo`).
 - Report: the ADR number, its status, and every other file touched.
