@@ -11,13 +11,20 @@ Arguments: a TODO.md line, a sentence, or a path to an existing `specs/*.md` to 
 
 1. Read `CLAUDE.md`, `specs/TEMPLATE.md`, the TODO.md item this spec serves, and the most recent `done`
    spec of the same kind (an adapter spec for an adapter, a view spec for a view). Quote the item verbatim in the header.
+   Find the spec of the same kind by tag, not by guessing: `grep -ln 'Tags:.*stage:view' specs/*.md`
+   (vocabulary in `docs/playbook.md`).
 2. Read the ADRs the item touches (DECISIONS.md). A spec never contradicts an Accepted ADR; if it must, it says so under Open questions and proposes a new ADR.
 3. Look for prior art before inventing. Run these and read what they find, rather than designing from memory:
 
    ```
    grep -n '^def \|^class ' cta/*.py          # every helper that exists today
    grep -rn '<keyword>' cta/ docs/ specs/     # one grep per noun in the TODO item
+   grep -n 'Tags:.*source:<x>' docs/playbook.md docs/*.md specs/*.md   # one grep per source and stage the item touches
    ```
+
+   Read every playbook gotcha and pattern the tag grep returns before writing Method; a `kind:pattern`
+   entry is usually the "Prior art to copy" line. A gotcha the spec must handle goes in Method or
+   Thresholds with the playbook heading cited.
 
    Reference by file and function rather than re-deriving. The scorecard pipeline cited in ADR-004 and the
    helpers in `notebooks/*.py` count as prior art.
@@ -25,7 +32,9 @@ Arguments: a TODO.md line, a sentence, or a path to an existing `specs/*.md` to 
 
 ## Writing
 
-Fill every section of the template. The parts people skip are the ones that matter:
+Fill every section of the template, including the `Tags:` line (one `kind:spec`, then the `source:`,
+`stage:` and `topic:` tags from `docs/playbook.md`; no new tags from a spec). The parts people skip are
+the ones that matter:
 
 - **Method** opens with `Prior art to copy: cta/<module>.py <function or stage>; tests/test_<module>.py <test>`
   so the implementer mirrors a shape instead of designing one. If nothing fits, write "none" and say why.
@@ -59,6 +68,8 @@ Return a checklist, each line pass or gap with the fix:
 - [ ] No conflict with Accepted ADRs; CLAUDE.md rules 1–6 respected.
 - [ ] Under about 120 lines and eight acceptance items, or split.
 - [ ] TODO.md item exists and will link to this spec.
+- [ ] `Tags:` line present, every tag in the `docs/playbook.md` vocabulary, exactly one `kind:`.
+- [ ] Every playbook gotcha matching the spec's `source:` and `stage:` tags is handled or cited.
 
 ## After
 

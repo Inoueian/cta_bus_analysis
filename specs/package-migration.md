@@ -2,6 +2,7 @@
 
 Status: done (implemented 2026-11-04 on branch `claude/upbeat-knuth-6709xh`; open questions answered by the owner 2026-11-04, see below)
 Owner: Satoru  ·  Date: 2026-11-03  ·  TODO item: Foundation — "Package + tests + CI (ADR-005): create `cta/`, move `notebooks/cta_api.py`, `dlsd_run_quality.py`, `michigan_ave_segment.py` with tests passing; add `.github/workflows/ci.yml` (pytest, no network)."
+Tags: `kind:spec topic:process`
 
 ## Question
 

@@ -1,5 +1,7 @@
 # Archive adapter: fixture QA and conventions (2026-11-03)
 
+Tags: `kind:qa source:archive stage:impute topic:qa-table topic:calendar`
+
 Implementation notes for `specs/archive-adapter.md` (package `cta/`: `archive.py`, `patterns.py`,
 `calendar.py`, `views.py`). Durable facts a later session should not have to rediscover.
 

@@ -1,5 +1,7 @@
 # Archive stop-imputation prototype (2026-11-03)
 
+Tags: `kind:measurement source:archive stage:impute topic:thresholds`
+
 Findings from a one-day prototype that produced stop arrival times from the Transit Alerts
 position archive for the Michigan Ave corridor. Script: `scripts/proto_archive_imputation.py`.
 This is exploratory evidence behind ADR-004 and `specs/archive-adapter.md`; the production

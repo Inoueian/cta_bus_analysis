@@ -3,6 +3,7 @@
 Status: done (2026-11-03, branch `claude/keen-hopper-te6y2f`; QA and validation in `docs/2026-11-03-archive-adapter-qa.md`)
 Amended 2026-11-04 by `specs/mansueto-adapter.md`: `stop_sequence_index` becomes the dense getpatterns `stop_rank` (0 to n−1) instead of the waypoint-counting `seq`, so both adapters index stops identically.
 Owner: Satoru  ·  Date: 2026-11-03  ·  TODO item: Phase 1 "Data ingestion … build the run-level view" (second source)
+Tags: `kind:spec source:archive stage:clean stage:impute stage:view`
 
 ## Question
 
