@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-11-04
+Last updated: 2026-11-05
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial items get a spec in `specs/` (template: `specs/TEMPLATE.md`) before implementation; see [CLAUDE.md](CLAUDE.md).
 
@@ -11,6 +11,9 @@ Unblocks spec-driven, agent-implemented work. See [ADR-004](DECISIONS.md) (two d
 - [ ] Calendar module (`cta/calendar.py`): CTA holidays, archive `known_gaps` windows, Mansueto freshness; one place, flag rows rather than drop them. Started 2026-11-03 with the archive adapter (six Sunday-schedule holidays, `known_gaps`, `calendar_flag`); Mansueto freshness (read `MANSUETO_DATA_EDGE` and the per-pid `trips_<pid>_full.meta.json` the adapter spec defines; the source-coverage hole 2026-07-28 to 2026-09-27 belongs here too, ADR-007) and the vault note migration remain. Absorbs the former "Holiday schedule filtering (cross-cutting)" item; applies retroactively to the DLSD analysis.
 - [ ] Fixtures under `tests/fixtures/`: ~~one archive day filtered to the Michigan kept PIDs~~ (done 2026-11-03: `archive_2026-10-29_michigan.ndjson.gz` + manifest), ~~`getpatterns` JSON for those PIDs~~ (done 2026-11-03: `tests/fixtures/getpatterns/`, 45 files), ~~one small Mansueto parquet (PID 6410 last-30-day window, under 300 KB, plus one day of route 3 PIDs 18414/18415)~~ (done 2026-11-04: `mansueto_6410_last30d.parquet`, `mansueto_2026-07-27_route3.parquet`, catalog rows, footer sample and `mansueto.manifest.json`, built by `scripts/build_mansueto_fixtures.py`). All three fixture groups exist; close this item when the vault notes are migrated.
 - [ ] Migrate the durable knowledge-vault notes cited in README/TODO into `docs/` (agents cannot read the vault). Start with: `canonical-data-views`, `cta-bus-tracker-api`, `cta-holiday-schedule-filtering`, `michigan-ave-segment-view`, `mansueto-imputed-stop-times`.
+- [ ] `/qa` skill (`.claude/skills/qa/`): run an adapter on its committed fixture, print the per-stage QA table (rows in, rows out, reason counts) and diff it against the table recorded in the latest `docs/*-qa.md`, so Rule 2 (no silent threshold or exclusion change) is a command rather than a convention. Needs a shared QA-row helper first: `cta.archive._record_qa` and `cta.mansueto.qa_rows` are two copies of the same additivity check. Spec: to write (the helper is a small API decision).
+- [ ] `/fixture` skill (`.claude/skills/fixture/`): build or rebuild a committed fixture from a public file and write its manifest (source URL, bytes, SHA-256, rows, fetch time), with the one-archive-day limit, a refuse-if-the-source-moved guard, and a printed list of every deviation from the spec's estimates. Generalizes `scripts/build_archive_fixtures.py` and `scripts/build_mansueto_fixtures.py`; the next fixtures (routes 8, 65, 66; the Michigan catalog refresh) should be built with it. No spec: the two builders are the specification.
+- [ ] `/finding` skill (`.claude/skills/finding/`): write a dated `docs/` note from a measurement (what was measured, how, the numbers, what it corrects, how to re-check); `docs/2026-11-04-mansueto-data-edge.md` is the shape. Write it first and use it for the vault migration above. No spec.
 
 ## Phase 1: Routes 8, 65, & 66
 
@@ -59,12 +62,13 @@ Pick a web-app stack, extend ingestion to all (or most) CTA bus routes, and depl
 - [ ] Frontend flow: route dropdown → start-stop dropdown → destination-stop-or-direction → optional time/day picker (default = "now")
 - [ ] Frontend: histogram for wait time, histogram for travel time, line chart for average travel time over time
 - [ ] Deployment target (Streamlit Cloud / Fly / Render / Vercel — depends on stack)
+- [ ] `/figure` skill (`.claude/skills/figure/`): the project's plotting conventions, one layer above the generic `dataviz` skill: load `notebooks/cta_analysis.mplstyle`; minutes per mile on the y axis with the dual mph axis for corridor speed (`cta.michigan_ave_segment` helpers); the `valid_rush_plot_cells` / 30-run gate before any cell is drawn; Mon–Thu / Friday / weekend slices; median, IQR band and 95th-percentile layering; rider-facing figures carry computed labels only (ADR-002). Write it when the first app figure is specced, so it covers matplotlib and the app renderer. No spec.
 
 ## Phase 3: Scheduled refresh and extras
 
 Scheduled data updates, richer metrics, and polish features that go beyond the initial static snapshot.
 
-- [ ] Scheduled refresh: nightly ingest of new archive days (checksum-verified, `known_gaps` recorded). Mansueto backfill is deferred: the bucket has been frozen at 2026-07-28 since at least 2026-11-04 (ADR-007); the refresh job should re-measure `cta.mansueto.data_edge` periodically and raise a flag if it moves (the archive exports nightly)
+- [ ] Scheduled refresh: nightly ingest of new archive days (checksum-verified, `known_gaps` recorded). Mansueto backfill is deferred: the bucket has been frozen at 2026-07-28 since at least 2026-11-04 (ADR-007); the refresh job should re-measure `cta.mansueto.data_edge` periodically, as a script entry point (`scripts/mansueto_data_edge.py`, a few pids plus the archive index's latest day), and raise a flag if it moves (the archive exports nightly)
 - [ ] Add derived metrics: excess wait vs. scheduled headway, on-time reliability score. Handle: join GTFS trips on (`sched_start_date`, `sched_start_sec`, `pid` → shape/direction), which the archive carries on every row
 - [ ] Community-area rollups (mirror what the Mansueto dashboard does, but interactive)
 - [ ] Compare weekday-vs-weekend distributions side by side
