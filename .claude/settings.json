@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/precommit.sh\"",
+            "timeout": 300,
+            "statusMessage": "git commit guard: pytest, data/, secrets"
+          }
+        ]
+      }
+    ]
+  }
+}

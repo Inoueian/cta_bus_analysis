@@ -63,10 +63,14 @@ It imports from the repo root without installing
 ## Commands
 
 ```
-pytest                      # all tests; must pass before any commit
+python -m pytest -q         # all tests; must pass before any commit
 pytest tests/test_x.py -k y # one test
 python scripts/<name>.py -h # every script documents itself
 ```
+
+`.claude/settings.json` runs `.claude/hooks/precommit.sh` before any `git commit` from Claude Code: it
+re-runs pytest and refuses staged `data/` or `.env` paths and literal `CTA_API_KEY` values (rules 4 and 5).
+A blocked commit is a failed check to fix, never something to work around.
 
 ## Rules
 
@@ -90,9 +94,27 @@ An agent implementing a spec:
 3. Updates TODO.md (move the item to Done with the date) and, if a decision was made, DECISIONS.md.
 4. Reports: what changed, QA table, anything the spec got wrong.
 
+Numbers in a spec's acceptance tests are requirements unless the spec marks them as estimates (`~N` or
+"estimate; measure, then pin"). `/implement` may correct only marked numbers; any other mismatch is an
+xfail plus a report line, never an edited assertion.
+
 Every active TODO.md item ends with a spec marker: `Spec: specs/<slug>.md (draft|ready|done)`,
 `Spec: to write`, or `No spec: <reason>` (exploratory, applies existing code, documentation, ADR).
 `/todo` owns that file's shape; `/implement` only starts from a `ready` spec.
 
 Exploratory analysis (figuring out what the data looks like) does not need a spec. It needs a
 notebook with a markdown "Findings" cell at the end, and any durable finding copied to `docs/`.
+
+## Models and effort
+
+Cost is dominated by long agentic sessions, not clerical edits. Judge cost per completed task: a failed cheap
+run plus a rerun costs more than one run on the stronger model.
+
+- **Specs, spec review of a new data source, exploratory notebooks, findings:** Opus at high effort. This is the
+  judgment step (prior art, ADR consistency, data quirks) and the cheap one by volume.
+- **`/implement` from a `ready` spec:** Sonnet at medium effort, one fresh session per spec. Escalate to Opus
+  when the spec introduces a new module shape or data source, or when a run reports more than two
+  "spec got wrong" items or cannot get green.
+- **`/todo`, `/adr`, spec checklist review:** whatever model the session has.
+- The skill files are written for the weaker model: labels, checklists and commands rather than judgment calls.
+  The commit hook enforces the pytest gate and rules 4 and 5 regardless of model.
