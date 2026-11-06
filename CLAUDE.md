@@ -13,12 +13,13 @@ served to riders as a static web app (Phase 2) with scheduled refresh (Phase 3).
 
 | Source | What it is | Use it for |
 |---|---|---|
-| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history from ~2022 to **2026-07-28**, frozen since (ADR-007; re-measure before assuming otherwise) | Long history, drift over time; no overlap with the archive yet |
-| Transit Alerts position archive (`data.chicagotransitalerts.app/positions/`) | Raw Bus Tracker positions, ~60 s fixes (30 s from 2026-11-01), history from 2026-09-28, nightly | Everything from Oct 2026 on, stop-level imputation, incidents |
+| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history from ~2022 to **2026-07-28**, frozen since (ADR-007; re-measure before assuming otherwise) | Long history, drift over time, labelled as Mansueto's imputation; no overlap with the archive (the raw CSVs below do) |
+| Transit Alerts position archive (`data.chicagotransitalerts.app/positions/`) | Raw Bus Tracker positions, ~60 s fixes (30 s from 2026-11-01), history from 2026-09-28, nightly | Everything from Oct 2026 on, stop-level imputation, incidents. The primary live source |
+| Mansueto raw day CSVs (`full_day_data/YYYY-MM-DD.csv`, same bucket) | Raw Bus Tracker positions, ~300 s pings, minute timestamps, no manifest; 2026-08-13 to 2026-10-27 with gaps, stalled since (ADR-009, `docs/2026-11-06-mansueto-raw-positions.md`) | The 2026-08-13 to 2026-09-27 hole, the 25-day overlap cross-check, method comparison against the parquet; read through our imputation, never for freshness |
 | CTA Bus Tracker API `getpatterns` | Stop list per pattern with `pdist` (feet along pattern) | Stop pdist for imputation, direction labels. Cached on disk; 10k calls/day cap |
 | GTFS | Schedules | Phase 3 excess-wait / on-time metrics |
 
-Both sources must produce the same **run-level view** (ADR-003). Downstream code never reads a
+Every position source must produce the same **run-level view** (ADR-003), with `source` and `bracket_gap_s` telling 60 s arrivals from 300 s ones (ADR-009). Downstream code never reads a
 source-specific schema.
 
 Source gotchas (the Cloudflare 403 on the archive, Mansueto wall-clock times, the stale `rt_to_pid.csv`,

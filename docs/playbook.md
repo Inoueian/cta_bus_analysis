@@ -106,6 +106,12 @@ Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Cause: it is the speed over the ~5-minute ping interval, not between stops.
 - Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed comes from stop-to-stop deltas in `cta.michigan_ave_segment`.
 
+### GTFS `arrival_time` runs past 24:00
+Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
+- Symptom: schedule rows after midnight fail to parse as clock times, or land on the wrong service day.
+- Cause: GTFS stop times are offsets from the service day, so post-midnight trips carry `24:xx` and `25:xx`. Mansueto's pipeline handled only `24:xx` and then filtered to 6am to 8pm (their issue 21).
+- Fix: nothing in `cta/` reads GTFS yet; the Phase 3 derived-metrics item (ADR-009) must build the stop time as service date plus a seconds offset, never a clock-time parse.
+
 ### Holidays and archive outages are flags, not drops
 Tags: `kind:gotcha source:archive stage:clean topic:calendar`
 - Symptom: a holiday or an outage day is filtered inline in a notebook.
