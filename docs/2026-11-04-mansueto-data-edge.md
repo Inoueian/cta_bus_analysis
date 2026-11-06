@@ -1,5 +1,7 @@
 # Mansueto StopWatch data edge: 2026-07-28 (measured 2026-11-04)
 
+Tags: `kind:measurement source:mansueto topic:calendar topic:timezone`
+
 Durable finding from probing the CloudFront bucket while drafting `specs/mansueto-adapter.md`.
 It corrects two earlier notes (below) and is the evidence for ADR-007.
 

@@ -1,5 +1,7 @@
 # Mansueto adapter: QA and self-consistency on the committed fixtures (2026-11-04)
 
+Tags: `kind:qa source:mansueto stage:clean stage:view topic:qa-table`
+
 Durable findings from implementing `specs/mansueto-adapter.md` (`cta.mansueto`, `cta.views.run_level_from_mansueto`).
 Fixtures are cut from the public CloudFront files by `scripts/build_mansueto_fixtures.py`; the manifest
 `tests/fixtures/mansueto.manifest.json` records source bytes, footer `data_edge`, SHA-256 and rows per file.

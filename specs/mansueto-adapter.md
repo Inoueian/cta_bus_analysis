@@ -2,6 +2,7 @@
 
 Status: done (implemented 2026-11-04 on branch `claude/vibrant-allen-79ws4p`; QA and measured ratios in `docs/2026-11-04-mansueto-adapter-qa.md`; implementation notes at the end)
 Owner: Satoru  ·  Date: 2026-11-04  ·  TODO item: Foundation "Mansueto adapter → run-level view (the former Phase 1 ingestion item, now one of two adapters). Spec: `specs/mansueto-adapter.md` (to write)."
+Tags: `kind:spec source:mansueto stage:clean stage:view`
 
 ## Question
 

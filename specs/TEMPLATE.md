@@ -2,6 +2,7 @@
 
 Status: draft | ready | in progress | done
 Owner: <you>  ·  Date: YYYY-MM-DD  ·  TODO item: <link or quote>
+Tags: `kind:spec source:<archive|mansueto|bustracker|gtfs> stage:<…> topic:<…>   (vocabulary: docs/playbook.md)`
 
 ## Question
 

@@ -10,8 +10,15 @@ Argument: a path under `specs/`.
 ## Gate
 
 1. Read, in this order and nothing else yet: `CLAUDE.md`, the spec, the ADRs the spec cites in
-   DECISIONS.md, the prior-art module the spec's Method names and that module's test file. Do not open
-   notebooks unless the spec points at one. Do not read other modules until a test fails for want of one.
+   DECISIONS.md, the prior-art module the spec's Method names and that module's test file, and the
+   playbook entries for the spec's tags:
+
+   ```
+   grep -n 'Tags:.*kind:gotcha.*source:<x>' docs/playbook.md   # one per source: and stage: tag on the spec
+   ```
+
+   Read each matching gotcha (heading to the next `###`). Do not open notebooks unless the spec points at
+   one. Do not read other modules until a test fails for want of one.
 2. If the spec's status is not `ready`, stop and say so; offer `/spec` to review it. Do not implement a draft because it looks fine.
 3. If the spec contradicts itself or an Accepted ADR, stop and ask. Otherwise do not ask; write assumptions down and continue.
 4. Confirm every fixture the acceptance tests name exists under `tests/fixtures/`. If one is missing and the spec says how to build it, build it first, from the public file it names, and verify the stated SHA-256 or row count. Never download more than one archive day.
@@ -69,7 +76,8 @@ Then:
 
 1. TODO.md: close the item as `/todo` describes (Done, today's date, spec path, QA numbers). Flip the spec's status to `done` and add the commit or PR reference.
 2. If an implementation choice is one future work must respect, record it with `/adr`.
-3. If a durable data finding came up, add it to `docs/` as a dated note.
+3. If a durable data finding came up, record it with `/finding` (a dated `docs/` note for a measurement,
+   a `docs/playbook.md` entry for a gotcha or pattern).
 4. Commit on the working branch with a message that names the spec. Do not open a PR unless asked. The
    commit hook in `.claude/settings.json` re-runs pytest and refuses staged `data/` or `.env` paths; a
    blocked commit is a failed check to fix, not something to work around.

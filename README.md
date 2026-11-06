@@ -85,7 +85,7 @@ Additional directories (`backend/`, `frontend/`) will be added once the web-app 
 
 ## Data Source
 
-Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). Its published parquets run from ~2022 to 2026-07-28 and have not been updated since (measured 2026-11-04, [ADR-007](DECISIONS.md), `docs/2026-11-04-mansueto-data-edge.md`). From 2026-09-28 onward, raw ~60-second bus positions come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
+Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). Its published parquets run from ~2022 to 2026-07-28 and have not been updated since (measured 2026-11-04, [ADR-007](DECISIONS.md), `docs/2026-11-04-mansueto-data-edge.md`). The same bucket's raw 5-minute position CSVs continued to 2026-10-27 and are read through our own imputation as a bounded third source covering 2026-08-13 onward ([ADR-009](DECISIONS.md), `docs/2026-11-06-mansueto-raw-positions.md`). From 2026-09-28 onward, raw ~60-second bus positions come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
 
 ### Data Model
 
@@ -102,4 +102,5 @@ Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are pres
 - [specs/](specs/) — one spec per unit of work (`specs/TEMPLATE.md`)
 - [TODO.md](TODO.md) — active work and backlog
 - [DECISIONS.md](DECISIONS.md) — architecture decision log
+- [docs/playbook.md](docs/playbook.md) — tag vocabulary, index of dated `docs/` notes, gotchas and patterns to copy; every note and spec carries a `Tags:` line (`kind:`, `source:`, `stage:`, `topic:`) so `grep -n 'Tags:.*source:mansueto' docs/*.md specs/*.md` finds everything about one source
 - Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs). Michigan bus-lane scope and methodology: `michigan-ave-bus-lane-segment`; segment view and check: `michigan-ave-segment-view`; **148 SB PID 6402** local pattern hand trim: `michigan-ave-6402-pattern-trim`.

@@ -13,17 +13,18 @@ served to riders as a static web app (Phase 2) with scheduled refresh (Phase 3).
 
 | Source | What it is | Use it for |
 |---|---|---|
-| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history from ~2022 to **2026-07-28**, frozen since (ADR-007; re-measure before assuming otherwise) | Long history, drift over time; no overlap with the archive yet |
-| Transit Alerts position archive (`data.chicagotransitalerts.app/positions/`) | Raw Bus Tracker positions, ~60 s fixes (30 s from 2026-11-01), history from 2026-09-28, nightly | Everything from Oct 2026 on, stop-level imputation, incidents |
+| Mansueto StopWatch parquet (`trips_<PID>_full.parquet`) | Imputed stop arrivals from ~5 min pings, history from ~2022 to **2026-07-28**, frozen since (ADR-007; re-measure before assuming otherwise) | Long history, drift over time, labelled as Mansueto's imputation; no overlap with the archive (the raw CSVs below do) |
+| Transit Alerts position archive (`data.chicagotransitalerts.app/positions/`) | Raw Bus Tracker positions, ~60 s fixes (30 s from 2026-11-01), history from 2026-09-28, nightly | Everything from Oct 2026 on, stop-level imputation, incidents. The primary live source |
+| Mansueto raw day CSVs (`full_day_data/YYYY-MM-DD.csv`, same bucket) | Raw Bus Tracker positions, ~300 s pings, minute timestamps, no manifest; 2026-08-13 to 2026-10-27 with gaps, stalled since (ADR-009, `docs/2026-11-06-mansueto-raw-positions.md`) | The 2026-08-13 to 2026-09-27 hole, the 25-day overlap cross-check, method comparison against the parquet; read through our imputation, never for freshness |
 | CTA Bus Tracker API `getpatterns` | Stop list per pattern with `pdist` (feet along pattern) | Stop pdist for imputation, direction labels. Cached on disk; 10k calls/day cap |
 | GTFS | Schedules | Phase 3 excess-wait / on-time metrics |
 
-Both sources must produce the same **run-level view** (ADR-003). Downstream code never reads a
+Every position source must produce the same **run-level view** (ADR-003), with `source` and `bracket_gap_s` telling 60 s arrivals from 300 s ones (ADR-009). Downstream code never reads a
 source-specific schema.
 
-Archive access gotchas: Cloudflare returns 403 to Python's default `urllib` User-Agent. Use `curl`
-(as `scripts/transit_archive.py` does) or set a non-default User-Agent. Verify every file's SHA-256
-against `index.json` before ingesting.
+Source gotchas (the Cloudflare 403 on the archive, Mansueto wall-clock times, the stale `rt_to_pid.csv`,
+the getpatterns budget) and patterns to copy live in `docs/playbook.md`, found by tag:
+`grep -n 'Tags:.*source:<x>' docs/playbook.md`. Read the matching entries before touching a source.
 
 ## Layout
 
@@ -34,7 +35,7 @@ notebooks/      exploration and figures only; no logic that anything else import
 specs/          one markdown spec per unit of work (see "Working from specs")
 tests/          pytest; synthetic or tiny real fixtures; no network
 data/           local caches, gitignored
-docs/           durable notes migrated from the knowledge vault (data quirks, thresholds)
+docs/           dated measurement notes plus docs/playbook.md (tag vocabulary, note index, gotchas, patterns)
 ```
 
 `cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar and the
@@ -92,4 +93,5 @@ Every active TODO.md item ends with a spec marker: `Spec: specs/<slug>.md (draft
 `/todo` owns that file's shape; `/implement` only starts from a `ready` spec.
 
 Exploratory analysis (figuring out what the data looks like) does not need a spec. It needs a
-notebook with a markdown "Findings" cell at the end, and any durable finding copied to `docs/`.
+notebook with a markdown "Findings" cell at the end, and any durable finding recorded with `/finding`
+(a dated `docs/` note for a measurement; a `docs/playbook.md` entry for a gotcha or a pattern).

@@ -10,6 +10,60 @@ Statuses:
 
 ---
 
+## ADR-009: Mansueto raw daily positions are a bounded third source, read through our own imputation
+Date: 2026-11-06
+Status: Accepted (amends ADR-007 and ADR-004; does not supersede either)
+
+### Context
+
+On 2026-11-06, while reviewing the Mansueto `cta-stop-watch` repository for prior art, a HEAD sweep of
+the bucket's `full_day_data/YYYY-MM-DD.csv` files showed that the raw 5-minute vehicle positions kept
+being published after the per-pattern parquets froze: 71 day files from 2026-08-13 to 2026-10-27
+(missing 09-30, 10-02, 10-03, 10-16, 10-17), nothing for 2026-07-28 to 2026-08-12, and nothing since
+2026-10-28 (`docs/2026-11-06-mansueto-raw-positions.md`). A one-day profile (2026-09-15) found the same
+core fields as the archive (`pdist` in feet, pattern id, vehicle id), a 300 s poll cadence,
+minute-resolution vehicle timestamps, no scheduled-start key, and no checksum manifest. The parquets
+remain frozen at 2026-07-28 and the upstream metrics job still runs but has no actual-service months
+after July 2026. ADR-007 recorded 2026-07-28 to 2026-09-27 as covered by no source and deferred every
+cross-source check until the parquet data edge moved; 46 of those days now have raw positions, and
+25 days (2026-09-28 to 2026-10-27) exist in both the archive and the CSVs.
+
+### Decision
+
+1. The archive stays the primary live source (ADR-004 unchanged).
+2. The Mansueto raw CSVs become a third source, `source='mansueto_raw'`, read through the same pair and
+   imputation stages as the archive (`cta.archive.fix_pairs` / `impute_arrivals` shape, getpatterns
+   `pdist` for stops), never through Mansueto's imputation. The adapter gets its own spec and its own
+   named gap threshold: `MAX_BRACKET_GAP_S = 180` is an archive constant and would drop every 5-minute
+   pair. Its run key is built from `vid`, `pid`, `origtatripno` and `data_date` because the CSV has no
+   `sched_start_date` / `sched_start_sec`. `bracket_gap_s` is populated, so downstream filters can treat
+   5-minute arrivals differently from 60 s ones.
+3. The CSVs are history, not freshness. The refresh job probes their edge alongside the parquet edge and
+   never depends on them; a day missing from the CSVs is a declared coverage gap in `cta/calendar.py`.
+4. The deferred cross-source checks (ADR-004, ADR-007) no longer wait for the parquet edge. Two
+   comparisons replace the single ADR-006 check: archive arrivals against CSV arrivals on the 25 overlap
+   days, which isolates poll rate with the method held fixed; and our CSV or archive arrivals against
+   the Mansueto parquet on the 2022 to July 2026 history, which isolates method. ADR-006's 20% bound is
+   the tolerance for both until measured otherwise.
+5. The parquet stays a frozen history source for drift and the side quests, labelled as Mansueto's
+   imputation; time series show the 2026-07-28 to 2026-08-12 hole rather than bridge it.
+6. Phase 3 schedule handling copies Mansueto's approach, not their code: historical feeds from the
+   Transit.land archive, GTFS `shape_id` suffix as the pattern id, feed versions deduplicated by keeping
+   each feed's days only up to the next feed's first day.
+
+### Consequences
+
+The coverage hole shrinks from two months to sixteen days, and cross-source bias becomes measurable
+now instead of after an upstream resumption that may never come. We maintain a third adapter whose
+source has no manifest and has already been down for nine days, so ingestion must verify by probing
+and record what it found. Arrivals from this source carry about plus or minus 2.5 minutes of
+interpolation uncertainty plus minute rounding: fine for headways and corridor travel times, unfit for
+stop-to-stop speed, which the stop-level and figure code must respect through `bracket_gap_s` and
+`source`. If the CSVs are retired upstream, the adapter and its coverage window become history in
+`cta/calendar.py` and the parquet-only language of ADR-007 applies again.
+
+---
+
 ## ADR-008: `stop_sequence_index` is the dense getpatterns stop rank on both adapters
 Date: 2026-11-04
 Status: Accepted (amends ADR-003; does not supersede it)
