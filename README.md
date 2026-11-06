@@ -102,4 +102,5 @@ Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are pres
 - [specs/](specs/) — one spec per unit of work (`specs/TEMPLATE.md`)
 - [TODO.md](TODO.md) — active work and backlog
 - [DECISIONS.md](DECISIONS.md) — architecture decision log
+- [docs/playbook.md](docs/playbook.md) — tag vocabulary, index of dated `docs/` notes, gotchas and patterns to copy; every note and spec carries a `Tags:` line (`kind:`, `source:`, `stage:`, `topic:`) so `grep -n 'Tags:.*source:mansueto' docs/*.md specs/*.md` finds everything about one source
 - Personal **knowledge-vault** project `cta-bus-analysis` — durable notes on API limits, segment boundaries, and dataset quirks (complements these repo docs). Michigan bus-lane scope and methodology: `michigan-ave-bus-lane-segment`; segment view and check: `michigan-ave-segment-view`; **148 SB PID 6402** local pattern hand trim: `michigan-ave-6402-pattern-trim`.

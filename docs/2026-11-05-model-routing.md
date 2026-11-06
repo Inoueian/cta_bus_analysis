@@ -1,5 +1,7 @@
 # Model routing for spec-driven work (decided 2026-11-05)
 
+Tags: `kind:owner-note topic:process`
+
 A note for the owner, not the agent: CLAUDE.md holds only rules an agent acts on, and an agent cannot
 choose its own model or effort. This records which model runs which step once Fable-class credits run
 out, and where that choice is enforced.
