@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-06-mansueto-raw-positions.md` | `kind:measurement source:mansueto source:archive stage:fetch topic:calendar` | Raw 5-minute position CSVs on the Mansueto bucket cover 2026-08-13 to 2026-10-27 (71 days, 25 overlapping the archive), nothing since; parquets still frozen; schema and one-day profile |
 | `2026-11-05-model-routing.md` | `kind:owner-note topic:process` | Which model and effort runs `/spec`, `/implement` and the clerical skills, and where that is enforced |
 | `2026-11-04-mansueto-data-edge.md` | `kind:measurement source:mansueto topic:calendar topic:timezone` | Every Mansueto parquet ends 2026-07-28; `bus_stop_time` is naive Chicago wall time; row groups are not time-ordered; corrects the kept-pids window to 2026-06-28..07-28 |
 | `2026-11-04-mansueto-adapter-qa.md` | `kind:qa source:mansueto stage:clean stage:view topic:qa-table` | Self-consistency on PID 6410 (ratio 1.0000), QA tables on both fixtures, data facts that corrected the spec, dense stop index |
@@ -75,10 +76,10 @@ Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 - Cause: the catalog was last modified 2025-01-16. Route 10 is absent (no `10.0` variant either); route 65 PIDs 7906 and 7907 return 404 on CloudFront; patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
 - Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
 
-### Mansueto history stops at 2026-07-28 and never overlaps the archive
+### Mansueto imputed history stops at 2026-07-28 and never overlaps the archive
 Tags: `kind:gotcha source:mansueto source:archive topic:calendar`
 - Symptom: a cross-source comparison finds no common service day.
-- Cause: the bucket has been frozen since 2026-07-28 (`MANSUETO_DATA_EDGE`, ADR-007) and the archive starts 2026-09-28. 2026-07-28 to 2026-09-27 is covered by neither.
+- Cause: the per-pattern parquets have been frozen since 2026-07-28 (`MANSUETO_DATA_EDGE`, ADR-007) and the archive starts 2026-09-28. The same bucket's raw 5-minute position CSVs (`full_day_data/`) do continue, 2026-08-13 to 2026-10-27 with gaps (`docs/2026-11-06-mansueto-raw-positions.md`), but they are positions, not imputed arrivals, and no adapter reads them; 2026-07-28 to 2026-08-12 is covered by nothing.
 - Fix: same-source self-consistency is the adapter gate (`MAX_SELF_CONSISTENCY_DEVIATION`); the cross-source test stays skipped until `cta.mansueto.data_edge` moves. Re-measure before assuming the edge changed.
 
 ### The kept-PIDs "30-day" medians are a midsummer window
@@ -104,6 +105,12 @@ Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Symptom: Mansueto speeds look faster and smoother than imputed stop-to-stop speeds.
 - Cause: it is the speed over the ~5-minute ping interval, not between stops.
 - Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed comes from stop-to-stop deltas in `cta.michigan_ave_segment`.
+
+### GTFS `arrival_time` runs past 24:00
+Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
+- Symptom: schedule rows after midnight fail to parse as clock times, or land on the wrong service day.
+- Cause: GTFS stop times are offsets from the service day, so post-midnight trips carry `24:xx` and `25:xx`. Mansueto's pipeline handled only `24:xx` and then filtered to 6am to 8pm (their issue 21).
+- Fix: nothing in `cta/` reads GTFS yet; the Phase 3 derived-metrics item (ADR-009) must build the stop time as service date plus a seconds offset, never a clock-time parse.
 
 ### Holidays and archive outages are flags, not drops
 Tags: `kind:gotcha source:archive stage:clean topic:calendar`
