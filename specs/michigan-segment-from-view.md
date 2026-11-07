@@ -30,7 +30,8 @@ Westbound/Eastbound, run south Ohio to Washington and north Randolph to Grand on
 | Segment sequences | `direction_segment_sequences(path=None) -> dict[str, DataFrame]` | `seg_index` int64 (= the from stop's `seq_index`), `from_stpid`, `to_stpid`, `lat` (midpoint), `stpnm` (`"<from> to <to>"`) | one row per consecutive stop pair |
 | Segment speeds + QA | `corridor_segment_speeds(stops, pattern_stops, *, sequences=None) -> (DataFrame, DataFrame)` | `unique_trip_vehicle_day`, `pid`, `route`, `rtdir`, `seg_index`, `from_stpid`, `to_stpid`, `lat`, `stpnm`, `bus_stop_time` (arrival at the hop's start stop, UTC; legacy name so the hour helpers bucket on it), `speed_mph` float64, `hop_n_segments` int64 (segments the hop covers; 1 = exactly this one), `hop_from_stpid`, `hop_to_stpid`, `source`, `service_date`, `calendar_flag`, `bracket_gap_s` (max of the hop's two stops, NaN if either is NaN), `speed_basis` = `"segment"`. QA stage `hops` | one row per (run, pid, `seg_index`) covered by a valid hop; QA rows are candidate hops |
 | Segment stats | `corridor_segment_min_per_mile_stats(sub, segment_sequence, *, min_obs=10)` | as `corridor_stop_min_per_mile_stats`, keyed by `seg_index`, `from_stpid`, `to_stpid` | one row per segment |
-| Helper changes | `observed_speed_rows`, `michigan_day_slice_mask`, `filter_dlsd_leak_stops`, `segment_view_report` | signatures unchanged; behaviour in Method steps 4, 6, 7 | — |
+| Helper changes | `direction_stop_sequences` (gains `lon`), `observed_speed_rows`, `michigan_day_slice_mask`, `filter_dlsd_leak_stops`, `segment_view_report` | signatures unchanged; behaviour in Method steps 4, 6, 7 | — |
+| Distance | `straight_line_feet(lat1, lon1, lat2, lon2) -> float` in `cta.michigan_ave_segment` | haversine, feet; the ratio test tolerates small earth-radius differences | one pair of points |
 
 ## Method
 
@@ -69,7 +70,7 @@ Prior art to copy: `cta/michigan_ave_segment.py` `interpolate_trip_corridor` (sp
 | Name | Value | Evidence | Sensitivity if changed |
 |---|---|---|---|
 | `SPEED_BASIS_SEGMENT` | `"segment"` | ADR-010; 6410: ping median 5.23 vs hop median 4.28 mph | — |
-| `MAX_HOP_DETOUR_RATIO` | 1.5 | archive fixture day: 13,712 of 13,714 positive hops within 1.036× straight line (multi-segment median 1.00); the other 2, about 4×, are PID 25899's loop off Michigan; owner 2026-11-07 | any value from about 1.1 to 4 drops the same 2 hops on the fixture |
+| `MAX_HOP_DETOUR_RATIO` | 1.5 | archive fixture day: 13,712 of 13,714 positive hops within 1.036× straight line (multi-segment median 1.00); the other 2, 5.32× (5,166 route ft against 971 straight-line ft, Madison to Lake/Randolph), are PID 25899's loop off Michigan; owner 2026-11-07 | any value from 1.04 to 5.3 drops the same 2 hops on the fixture |
 | `NORTHBOUND_/SOUTHBOUND_DLSD_LEAK_STPIDS` | existing | carried to segments touching them (ADR-010) | drops 220 of 1,210 6410 segment rows |
 
 One new threshold, `MAX_HOP_DETOUR_RATIO`; no `bracket_gap_s` bound (the raw adapter's spec and the figure code decide, ADR-009).
@@ -97,7 +98,7 @@ fixture). Numbers measured 2026-11-07 with a prototype of steps 2–4.
 - [ ] `test_corridor_segment_speeds_hand_built`: 4-stop sequence, `pdist_ft` 0, 1000, 2000, 3000. Run A at stops 0, 2,
       3 at 13:00, 13:10, 13:12 UTC gives 3 rows: segments 0 and 1 at `2000/5280/(10/60)` mph, `hop_n_segments` 2,
       start 13:00; segment 2 at `1000/5280/(2/60)` mph, `hop_n_segments` 1, start 13:10 (stops 1000 ft apart along a
-      meridian). Run B at stops 1, 2 with equal times gives `nonpositive_hop_time`; run C on a pid whose `pdist_ft`
+      meridian, so `straight_line_feet` between them is 1000 ± 5). Run B at stops 1, 2 with equal times gives `nonpositive_hop_time`; run C on a pid whose `pdist_ft`
       falls from stop 1 to 2 gives `nonpositive_hop_distance`; run D on a pid whose `pdist_ft` step from stop 1 to 2 is
       3000 gives `detour_hop`. QA `hops`: `rows_in` 5, `rows_out` 2, reasons sum; no NaN `speed_mph`; `speed_basis == "segment"`.
 - [ ] `test_corridor_segment_speeds_6410`: 880 candidate and 880 valid hops; 1,210 rows, 110 runs × the 11 segments
@@ -105,12 +106,12 @@ fixture). Numbers measured 2026-11-07 with a prototype of steps 2–4.
       median over distinct hops 4.28 ± 0.05 mph; `filter_dlsd_leak_stops` drops 220 rows.
 - [ ] `test_corridor_segment_speeds_archive_fixture_day`: 13,716 candidate and 13,712 valid hops;
       `nonpositive_hop_distance == 2` and `detour_hop == 2`, all on pid 25899 and its loop off Michigan (the detours are
-      Madison to Lake/Randolph, about 4× straight line); 15,919 rows, 3,718 with `hop_n_segments > 1`; all 40 segments
+      Madison to Lake/Randolph, 5.32× straight line); 15,919 rows, 3,718 with `hop_n_segments > 1`; all 40 segments
       have rows, 7 of them only from multi-segment hops, Madison to Lake/Randolph among them; `filter_dlsd_leak_stops`
       drops 1,319; max `speed_mph` 35.0 ± 0.1; rows for 14130 and 14132 present;
       `bracket_gap_s <= cta.archive.MAX_BRACKET_GAP_S` everywhere.
-- [ ] `test_segment_helpers_on_view_outputs`: `direction_segment_sequences` gives 22 NB and 18 SB rows, the first NB
-      one `"Michigan & Roosevelt to Michigan & 11th Street"`; `observed_speed_rows` on the 6410 segments keeps all 1,210 rows with
+- [ ] `test_segment_helpers_on_view_outputs`: `direction_stop_sequences` has a `lon` column; `direction_segment_sequences` gives 22 NB and 18 SB rows, the
+      first NB one `"Michigan & Roosevelt to Michigan & 11th Street"`; `observed_speed_rows` on the 6410 segments keeps all 1,210 rows with
       `hour` in America/Chicago, which differs from the UTC hour on every row; `michigan_day_slice_mask` agrees;
       `corridor_segment_min_per_mile_stats` against the NB segment sequence returns 22 rows with medians on exactly the
       11 segments from 1119 to 1128 and `lat` the stop midpoint; `slowest_hours` runs; the existing naive tests in
