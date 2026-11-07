@@ -81,7 +81,7 @@ No new threshold. `hop_feet` stays the published distance (rule 2).
 
 ## Acceptance tests
 
-Fixture-day view: as the `run_level` fixture of `tests/test_views_archive.py` builds it (copy its three lines;
+Fixture-day view: as `tests/test_views_archive.py` builds it (copy its `fixture_index`, `ingested_con`, `run_level` chain;
 leave that file alone, the Michigan spec edits it). Counts measured 2026-11-05 (view: 103,364 rows, 1,562 runs).
 
 - [ ] `test_dlsd_runs_from_view_hand_built`: a hand-built view (columns exactly `RUN_LEVEL_COLUMNS`) with pattern

@@ -98,7 +98,7 @@ Tags: `kind:gotcha stage:view source:mansueto topic:thresholds`
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 - Symptom: a trip's `bus_stop_time` decreases between consecutive stops.
 - Cause: stop times are imputed from ~5-minute pings, so sequence order and time order disagree on short gaps.
-- Fix: `cta.mansueto.clean_trips` drops and counts them as `nonmonotone_time` in the `order` stage (0 on the route 3 fixture day). The archive cannot produce them: arrivals interpolate along monotone `pdist`.
+- Fix: `cta.mansueto.clean_trips` drops and counts them as `nonmonotone_time` in the `order` stage (0 on the route 3 fixture day). Against pattern order the archive cannot produce them, because arrivals interpolate along monotone `pdist`. Against the Michigan latitude sequence it can, when a pattern's stop order differs from latitude order: route 4 NB PID 25899 reaches South Water before Lake/Randolph, 2 trips on the 2026-10-29 fixture day (`specs/michigan-segment-from-view.md`).
 
 ### Mansueto `speed_mph` is a ping-interval speed
 Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
