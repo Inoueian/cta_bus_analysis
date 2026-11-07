@@ -98,13 +98,13 @@ Tags: `kind:gotcha stage:view source:mansueto topic:thresholds`
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 - Symptom: a trip's `bus_stop_time` decreases between consecutive stops.
 - Cause: stop times are imputed from ~5-minute pings, so sequence order and time order disagree on short gaps.
-- Fix: `cta.mansueto.clean_trips` drops and counts them as `nonmonotone_time` in the `order` stage (0 on the route 3 fixture day). The archive cannot produce them: arrivals interpolate along monotone `pdist`.
+- Fix: `cta.mansueto.clean_trips` drops and counts them as `nonmonotone_time` in the `order` stage (0 on the route 3 fixture day). Against pattern order the archive cannot produce them, because arrivals interpolate along monotone `pdist`. Against the Michigan latitude sequence it can, when a pattern's stop order differs from latitude order: route 4 NB PID 25899 loops off Michigan (north to Randolph, east on Randolph, north on Columbus, west on Wacker, back south on Michigan), so it serves Lake/Randolph after South Water, 2 trips on the 2026-10-29 fixture day; the hop into that loop is dropped as `detour_hop` (`specs/michigan-segment-from-view.md`).
 
 ### Mansueto `speed_mph` is a ping-interval speed
 Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Symptom: Mansueto speeds look faster and smoother than imputed stop-to-stop speeds.
 - Cause: it is the speed over the ~5-minute ping interval, not between stops.
-- Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed comes from stop-to-stop deltas in `cta.michigan_ave_segment`.
+- Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed is defined on segments between consecutive corridor stops, from run-level arrivals and getpatterns `pdist` (ADR-010, `specs/michigan-segment-from-view.md`); until that lands, the legacy segment view and `notebooks/michigan_ave_speed_plots.ipynb` still plot this ping-interval speed.
 
 ### GTFS `arrival_time` runs past 24:00
 Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
