@@ -36,8 +36,10 @@ consecutive observed corridor stops has speed = getpatterns `pdist` difference Ã
 speed is assigned to every segment it covers, with `hop_n_segments` recording how many, and bucketed by the hop's
 start arrival in America/Chicago. Every such row is used: stop times are imputed from GPS positions on every source,
 so a hop covering several segments measures the same road over a longer stretch, and it mostly reflects a pattern
-having no stop in between (1,510 of 1,513 such hops on the fixture day). Hops with a missing or non-positive distance or a non-positive time are
-dropped and counted, never given a NaN speed. Segments are plotted at the midpoint latitude of their two stops, in
+having no stop in between (1,510 of 1,513 such hops on the fixture day). Hops with a missing or non-positive distance, a non-positive time, or a
+route distance more than 1.5 times the straight-line distance between their stops (the bus left Michigan between
+them, as route 4 PID 25899 does on its Randolph, Columbus and Wacker loop) are dropped and counted, never given a NaN
+speed. Segments are plotted at the midpoint latitude of their two stops, in
 minutes per mile. Ping-interval `speed_mph` is never plotted alongside segment speeds, and arrivals from a source
 with ~300 s pings (`source == "mansueto_raw"`, ADR-009) are excluded from segment speeds by the figure code via
 `source` and `bracket_gap_s`. The DLSD-leak stop exclusion carries over to segments that touch a leak stop.
