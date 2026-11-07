@@ -104,7 +104,7 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Symptom: Mansueto speeds look faster and smoother than imputed stop-to-stop speeds.
 - Cause: it is the speed over the ~5-minute ping interval, not between stops.
-- Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed comes from stop-to-stop deltas in `cta.michigan_ave_segment`.
+- Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed is defined on segments between consecutive corridor stops, from run-level arrivals and getpatterns `pdist` (ADR-010, `specs/michigan-segment-from-view.md`); until that lands, the legacy segment view and `notebooks/michigan_ave_speed_plots.ipynb` still plot this ping-interval speed.
 
 ### GTFS `arrival_time` runs past 24:00
 Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`

@@ -1,30 +1,28 @@
 # Spec: DLSD runs from the run-level view
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-05 (revised 2026-11-06 after ADR-009 and the playbook)  ·  TODO item: Foundation "Move `cta.dlsd_run_quality` and `cta.michigan_ave_segment` onto the run-level view (the "later item" of `specs/mansueto-adapter.md`): both read Mansueto parquets directly today (`PARQUET_COLS`, `local_parquet_path`, `median_segment_minutes_for_pid`); make them take a run-level DataFrame so the two Michigan segment-view QA items and the DLSD calendar retro-apply run on either source, with `bracket_gap_s` NaN treated as unknown. Spec: to write." (DLSD half; the Michigan half is `specs/michigan-segment-from-view.md`)
+Owner: Satoru  ·  Date: 2026-11-05 (revised 2026-11-07: owner answers)  ·  TODO item: Foundation "Move `cta.dlsd_run_quality` and `cta.michigan_ave_segment` onto the run-level view (the "later item" of `specs/mansueto-adapter.md`): both read Mansueto parquets directly today (`PARQUET_COLS`, `local_parquet_path`, `median_segment_minutes_for_pid`); make them take a run-level DataFrame so the two Michigan segment-view QA items and the DLSD calendar retro-apply run on either source, with `bracket_gap_s` NaN treated as unknown. Spec: to write." (DLSD half; the Michigan half is `specs/michigan-segment-from-view.md`)
 Tags: `kind:spec source:mansueto source:archive stage:view topic:calendar`
 
 ## Question
 
-The DLSD express figures (`notebooks/dlsd_express_comparison_plots.ipynb`) are built from `cta.dlsd_run_quality.build_dlsd_runs`,
-which reads Mansueto parquets and so stops at 2026-07-28 (ADR-007) and can never show an archive day. Build the same
-one-row-per-run table from the ADR-003 run-level view instead, so the DLSD timing runs on any source that produces
-the view (archive, Mansueto parquet, and the ADR-009 raw-positions adapter once it exists), carries `calendar_flag`
-for the holiday retro-apply (TODO Foundation, calendar item), and is the shape Phase 1 travel-time computation will
-reuse. The ± 1 neighbour idiom this helper relies on is exactly why ADR-008 made `stop_sequence_index` dense.
+The DLSD express figures come from `cta.dlsd_run_quality.build_dlsd_runs`, which reads Mansueto parquets and so
+stops at 2026-07-28 (ADR-007). Build the same one-row-per-run table from the ADR-003 run-level view, so DLSD timing
+runs on any source that produces the view (ADR-009 included), carries `calendar_flag` for the holiday retro-apply,
+and is the shape Phase 1 travel-time code will reuse. Its ± 1 neighbour idiom is why ADR-008 made the index dense.
 
 ## Inputs
 
 | Input | Where | Schema / keys | Notes |
 |---|---|---|---|
-| Run-level view | `cta.views.run_level_from_archive` / `run_level_from_mansueto` (later `run_level_from_mansueto_raw`, ADR-009) | `cta.views.RUN_LEVEL_COLUMNS` | `bracket_gap_s` NaN on Mansueto parquet means unknown, not 0 (playbook gotcha "`bracket_gap_s` NaN means unknown, not zero"); ~300 s on the raw adapter |
-| DLSD boundaries | `notebooks/dlsd_boundaries_snapshot.json` via `load_dlsd_boundaries` | per pid: `route`, `rtdir`, `entry_stpid`, `exit_stpid`, `hop_feet` | 29 pids; `hop_feet` is the straight-line (haversine) entry→exit distance from `notebooks/dlsd_stop_discovery_rush_routes.ipynb` |
+| Run-level view | `cta.views.run_level_from_archive` / `run_level_from_mansueto` (later `run_level_from_mansueto_raw`, ADR-009) | `cta.views.RUN_LEVEL_COLUMNS` | `bracket_gap_s`: NaN on Mansueto means unknown (playbook gotcha); ~300 s on the raw adapter |
+| DLSD boundaries | `notebooks/dlsd_boundaries_snapshot.json` via `load_dlsd_boundaries` | per pid: `route`, `rtdir`, `entry_stpid`, `exit_stpid`, `hop_feet` | 29 pids; `hop_feet` is the straight-line entry→exit distance (`notebooks/dlsd_stop_discovery_rush_routes.ipynb`) |
 | Archive fixture | `tests/fixtures/archive_2026-10-29_michigan.*` + `tests/fixtures/getpatterns/` | as `tests/test_views_archive.py` | holds 22 of the 29 DLSD pids (routes 143, 146, 147, 148); the rush pids of 134/135/136 are absent |
-| Mansueto fixture | `tests/fixtures/mansueto_6410_last30d.parquet` | as `tests/test_views_mansueto.py` | 151 NB, not a DLSD pid, but a legal "boundaries" entry (1119 → 1128) for a legacy-equivalence check on real Mansueto rows (midsummer window, playbook gotcha) |
+| Mansueto fixture | `tests/fixtures/mansueto_6410_last30d.parquet` | as `tests/test_views_mansueto.py` | 151 NB, not a DLSD pid, used as a boundaries entry (1119 → 1128) for the legacy-equivalence check |
 
 On the getpatterns fixture every one of the 22 pids has `stop_rank(exit) − stop_rank(entry) == 1`, so the dense index
 reproduces the legacy `exit_sequence == entry_sequence + 1` check. getpatterns `pdist` for the hop is 3–14% longer than
-`hop_feet` (e.g. 4511: 12,041 vs 10,554 ft; 146 NB: 16,385 vs 15,566 ft); the spec keeps `hop_feet` (see Open questions).
+`hop_feet`; the owner kept `hop_feet` (2026-11-07), so published speeds do not move.
 
 ## Outputs
 
@@ -66,7 +64,8 @@ table from a pipeline stage"); `tests/test_views_archive.py` `test_corridor_minu
    a 6–20 min segment), which the figure code must filter on `source` or the gap columns; this spec sets no bound.
 6. `source`, `service_date`, `calendar_flag` are copied from the entry row; nothing is dropped for a flag (playbook
    gotcha "Holidays and archive outages are flags, not drops"). The retro-apply is a notebook filter on
-   `calendar_flag`, which the calendar item will extend with the ADR-007/ADR-009 coverage holes.
+   `calendar_flag`. A DLSD time series spanning sources shows the coverage holes rather than bridging them (playbook
+   gotcha "Mansueto imputed history stops at 2026-07-28 and never overlaps the archive"; ADR-007, ADR-009).
 7. Output sorted by (`pid`, `entry_time`); `cta.mansueto.qa_rows` builds the QA rows (the shared helper of the `/qa`
    item may replace it later; the columns do not change).
 
@@ -82,9 +81,8 @@ No new threshold. `hop_feet` stays the published distance (rule 2).
 
 ## Acceptance tests
 
-Fixture: `tests/fixtures/archive_2026-10-29_michigan.*` with `tests/fixtures/getpatterns/`, built into the view by
-the `run_level` fixture of `tests/test_views_archive.py` (reuse it via a shared conftest fixture or copy the three
-lines). Counts below were measured on 2026-11-05 with the kept-pid view (`103,364` rows, `1,562` runs).
+Fixture-day view: as the `run_level` fixture of `tests/test_views_archive.py` builds it (copy its three lines;
+leave that file alone, the Michigan spec edits it). Counts measured 2026-11-05 (view: 103,364 rows, 1,562 runs).
 
 - [ ] `test_dlsd_runs_from_view_hand_built`: a hand-built view (columns exactly `RUN_LEVEL_COLUMNS`) with pattern
       `p1` (`entry_stpid` `e`, `exit_stpid` `x`) and four runs: A has stops at indices 4, 5 (`e`), 6 (`x`), 7 with
@@ -116,16 +114,12 @@ lines). Counts below were measured on 2026-11-05 with the kept-pid view (`103,36
 ## Out of scope
 
 - Deleting or rewriting `build_dlsd_runs`, `PARQUET_COLS`, `local_parquet_path`: the notebooks and
-  `scripts/dlsd_weekday_friday_summary.py` still call them, and `/implement` does not edit notebooks. Deprecate in
-  the docstring; removal is a follow-up once the notebooks are re-pointed (Open questions).
-- Re-running the DLSD notebooks or any figure; the calendar retro-apply itself; the Michigan helpers (sibling spec).
-- Replacing `hop_feet` with getpatterns `pdist` or any change to `implied_dlsd_mph` (published; rule 2); any bound
-  on `bracket_gap_s`; a DLSD-pid Mansueto fixture (the 6410 cut covers legacy equivalence).
+  `scripts/dlsd_weekday_friday_summary.py` still call them, and `/implement` does not edit notebooks. Deprecate them
+  in the docstring now; removal is a TODO line added when this spec closes, after the owner re-points the notebooks.
+- Re-running DLSD notebooks or figures; the retro-apply itself; the Michigan helpers; a `pdist`-based distance;
+  any bound on `bracket_gap_s`; a DLSD-pid Mansueto fixture (the 6410 cut covers legacy equivalence).
 
 ## Open questions
 
-1. `hop_feet` (haversine) vs getpatterns `pdist` for `dlsd_miles`: pdist follows the road and is 3–14% longer, so
-   `implied_dlsd_mph` would rise by that much. Keep `hop_feet` now (recommended, rule 2) and open a separate item?
-2. Should `build_dlsd_runs` become a thin wrapper (`read_trips` → `mansueto_view_from_trips` → `dlsd_runs_from_view`)
-   in this change, dropping the five Mansueto-only columns from its output? Recommended: no; deprecate and remove
-   after the owner re-points the three notebooks and the script (a TODO line to add when this closes).
+None. Resolved by the owner 2026-11-07: `dlsd_miles` stays on `hop_feet` for now; `build_dlsd_runs` is deprecated
+now and removed once the notebooks and the script read the new table.

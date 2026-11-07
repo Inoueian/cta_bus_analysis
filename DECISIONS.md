@@ -10,6 +10,49 @@ Statuses:
 
 ---
 
+## ADR-010: Michigan Ave corridor speed is defined on segments between consecutive corridor stops
+Date: 2026-11-07
+Status: Accepted
+
+### Context
+
+The Michigan Ave corridor charts (`notebooks/michigan_ave_speed_plots.ipynb`) plot Mansueto's `speed_mph`, a
+speed over each ~5-minute GPS ping, attached to stops. Moving `cta.michigan_ave_segment` onto the run-level view
+(`specs/michigan-segment-from-view.md`) removes that column: the view carries arrival times, not ping speeds, and
+CLAUDE.md rule 6 forbids mixing ping-interval and imputed speeds. A speed from arrivals belongs to the stretch
+between two stops, not to a stop. Attaching it to stops leaves the first observed stop of every run without a value
+(1,500 of 15,216 corridor rows on the 2026-10-29 archive fixture day, often Roosevelt, where the new northbound lane
+starts) or forces one stop's value to describe the road after it while the others describe the road before. The two
+measures also differ: on PID 6410 (151 NB, 2026-06-28 to 07-28) the median ping-interval speed at observed corridor
+stops is 5.23 mph and the median stop-to-stop speed is 4.28 mph. ADR-009 adds a third source whose ~300 s arrivals
+are unfit for stop-to-stop speed. The owner chose segments on 2026-11-07 while resolving the spec's open questions.
+
+### Decision
+
+Corridor speed is a property of a segment: a consecutive pair of stops in a direction sequence of
+`cta.michigan_ave_segment.direction_stop_sequences()` (22 northbound, 18 southbound). For each run, a hop between
+consecutive observed corridor stops has speed = getpatterns `pdist` difference ÷ arrival-time difference; the hop's
+speed is assigned to every segment it covers, flagged `interpolated` when it covers more than one, and bucketed by
+the hop's start arrival in America/Chicago. Hops with a missing or non-positive distance or a non-positive time are
+dropped and counted, never given a NaN speed. Segments are plotted at the midpoint latitude of their two stops, in
+minutes per mile. Ping-interval `speed_mph` is never plotted alongside segment speeds, and arrivals from a source
+with ~300 s pings (`source == "mansueto_raw"`, ADR-009) are excluded from segment speeds by the figure code via
+`source` and `bracket_gap_s`. The DLSD-leak stop exclusion carries over to segments that touch a leak stop.
+
+### Consequences
+
+Every segment speed means the same thing, the corridor's first and last stops are covered by the segments next to
+them, and speeds from the archive and from Mansueto arrivals use one definition. New charts are not comparable with
+the existing ping-interval charts (about 18% slower on 151 NB), so the before-picture is built entirely on segment
+speeds and labelled as such. Mansueto parquet arrivals are themselves imputed from ~5-minute pings, so their segment
+speeds inherit that imputation error; the archive is the preferred source for the before-picture, with Mansueto
+history for drift only. The speed-plot helpers gain a segment-aware leak filter and a per-segment stats helper, and
+the speed-plot notebook must be re-pointed to segments (a follow-up item). Whether the leak exclusion is still needed
+for stop-to-stop speeds is a measurement for the before-picture note. If segment speeds prove too noisy on short
+segments, pooling adjacent segments is the fallback, as a new ADR.
+
+---
+
 ## ADR-009: Mansueto raw daily positions are a bounded third source, read through our own imputation
 Date: 2026-11-06
 Status: Accepted (amends ADR-007 and ADR-004; does not supersede either)

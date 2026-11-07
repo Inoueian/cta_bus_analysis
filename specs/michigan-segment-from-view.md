@@ -1,132 +1,123 @@
-# Spec: Michigan Ave segment view from the run-level view
+# Spec: Michigan Ave corridor stops and segment speeds from the run-level view
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-05 (revised 2026-11-06 after ADR-009 and the playbook)  ·  TODO item: Foundation "Move `cta.dlsd_run_quality` and `cta.michigan_ave_segment` onto the run-level view (the "later item" of `specs/mansueto-adapter.md`): both read Mansueto parquets directly today (`PARQUET_COLS`, `local_parquet_path`, `median_segment_minutes_for_pid`); make them take a run-level DataFrame so the two Michigan segment-view QA items and the DLSD calendar retro-apply run on either source, with `bracket_gap_s` NaN treated as unknown. Spec: to write." (Michigan half; the DLSD half is `specs/dlsd-runs-from-view.md`)
+Owner: Satoru  ·  Date: 2026-11-05 (revised 2026-11-07: owner answers, segment speeds per ADR-010)  ·  TODO item: Foundation "Move `cta.dlsd_run_quality` and `cta.michigan_ave_segment` onto the run-level view (the "later item" of `specs/mansueto-adapter.md`): both read Mansueto parquets directly today (`PARQUET_COLS`, `local_parquet_path`, `median_segment_minutes_for_pid`); make them take a run-level DataFrame so the two Michigan segment-view QA items and the DLSD calendar retro-apply run on either source, with `bracket_gap_s` NaN treated as unknown. Spec: to write." (Michigan half; the DLSD half is `specs/dlsd-runs-from-view.md`)
 Tags: `kind:spec source:mansueto source:archive stage:view stage:figure`
 
 ## Question
 
-The Michigan Ave before-picture (TODO Michigan Now) needs corridor timing and per-stop speed on archive days, but
+The Michigan Ave before-picture (TODO Michigan Now) needs corridor timing and speed on archive days, but
 `build_michigan_segment_view`, `median_segment_minutes_for_pid` and `build_endpoint_coverage_summary` read Mansueto
-parquets and the ping-interval `speed_mph` the run-level view omits (rule 6; playbook gotcha "Mansueto `speed_mph` is
-a ping-interval speed", whose "corridor speed comes from stop-to-stop deltas" this spec makes true). Build the segment
-view from the ADR-003 view with a stop-to-stop speed, on any source, so the two open segment-view QA items (157
-patterns 14130/14132 absent; `nonmonotone_time` counts per source) become one call. The 157 patterns are absent for
-a reason this spec fixes: their `rtdir` is Westbound/Eastbound and the builder only knows Northbound/Southbound
-sequences, although all their corridor stops lie in one of those (14130 → Southbound, 14132 → Northbound).
+parquets and the ping-interval `speed_mph` the run-level view omits (rule 6). Build corridor stop timing and
+segment speeds (ADR-010) from the ADR-003 view, on any source, so the two open segment-view QA items (157 patterns
+14130/14132 absent; `nonmonotone_time` counts per source) become one call. The 157 patterns were absent because their
+`rtdir` is Westbound/Eastbound and the legacy builder only knows Northbound/Southbound sequences, though they run
+southbound Ohio to Washington (14130) and northbound Randolph to Grand (14132) on Michigan; the owner chose to include them.
 
 ## Inputs
 
 | Input | Where | Schema / keys | Notes |
 |---|---|---|---|
-| Run-level view | `cta.views.run_level_from_archive` / `run_level_from_mansueto` (later `run_level_from_mansueto_raw`) | `cta.views.RUN_LEVEL_COLUMNS` | ADR-009: raw-adapter arrivals (~300 s pings) are unfit for stop-to-stop speed; `source` and `bracket_gap_s` are carried so figure code can exclude them |
-| Direction sequences | `cta.michigan_ave_segment.direction_stop_sequences()` | `seq_index`, `stpid`, `lat`, `stpnm` per direction | NB 23 stops, SB 19 |
-| Pattern stops | `cta.bustracker.pattern_stops_table(pids, cache_dir)` | `pid`, `stpid`, `pdist_ft`, `stop_rank` | `pdist_ft` is the hop length for speed |
+| Run-level view | `cta.views.run_level_from_archive` / `run_level_from_mansueto` (later `run_level_from_mansueto_raw`) | `cta.views.RUN_LEVEL_COLUMNS` | `bracket_gap_s` NaN on Mansueto means unknown (playbook gotcha); ~300 s raw-source arrivals are excluded from speeds by figure code (ADR-009, ADR-010) |
+| Direction sequences | `cta.michigan_ave_segment.direction_stop_sequences()` | `seq_index`, `stpid`, `lat`, `stpnm` | NB 23 stops (22 segments), SB 19 (18) |
+| Pattern stops | `cta.bustracker.pattern_stops_table(pids, cache_dir)` | `pid`, `stpid`, `pdist_ft` | hop distance |
 | Kept patterns | `load_kept_pid_records()` | `pid`, `route`, `rtdir`, `entry_stpid`, `exit_stpid`, `median_minutes`, `n_trips` | 45 pids; medians are the midsummer window (playbook gotcha) |
-| Fixtures | `tests/fixtures/mansueto_6410_last30d.parquet`, `tests/fixtures/archive_2026-10-29_michigan.*`, `tests/fixtures/getpatterns/` | as the two view test files | legacy `build_michigan_segment_view` on the 6410 cut: 1,320 rows, 110 trips, 330 interpolated (NB-sequence stops 18791, 1104, 1126 that 151 NB does not serve) |
+| Fixtures | `tests/fixtures/mansueto_6410_last30d.parquet`, `tests/fixtures/archive_2026-10-29_michigan.*`, `tests/fixtures/getpatterns/` | as the two view test files | no new fixture |
 
 ## Outputs
 
 | Output | Path / function | Schema | Grain |
 |---|---|---|---|
-| Legacy column names | `cta.views.legacy_trip_columns(view) -> DataFrame` | `run_id → unique_trip_vehicle_day`, `stop_id → stpid`, `arrival_time → bus_stop_time`, `pattern_id → pid`, `direction → rtdir`, `stop_sequence_index → stop_sequence`; values untouched (UTC stays UTC) | same as input |
-| Corridor minutes | `cta.michigan_ave_segment.segment_minutes_from_view(view, segment_or_record) -> Series` | legacy `trip_segment_minutes` on the renamed view filtered to the pid | one value per run with both stops |
-| Segment view + QA | `cta.michigan_ave_segment.segment_view_from_view(view, *, pattern_stops, sequences=None, kept=None) -> (DataFrame, DataFrame)` | legacy columns `unique_trip_vehicle_day`, `stpid`, `pid`, `route`, `rtdir`, `seq_index` int64, `lat`, `stpnm`, `bus_stop_time` (tz-aware UTC, NaT on gap rows), `speed_mph` float64, `interpolated` bool, plus `source`, `service_date`, `calendar_flag`, `bracket_gap_s` float64 (NaN on gap rows), `speed_basis` str = `"stop_to_stop"`; QA as `cta.views.MANSUETO_QA_COLUMNS` | one row per (run, pid, `seq_index`) over the run's observed span in its direction sequence; QA rows are view rows |
-| Timezone-aware hour helpers | `observed_speed_rows`, `michigan_day_slice_mask` (existing) | unchanged signatures; a tz-aware `bus_stop_time` is converted to America/Chicago before `hour` / `dayofweek`, a naive one is used as is (the legacy and test inputs) | — |
-
-`rtdir` in the output is the chosen direction sequence (Northbound/Southbound). Legacy column names are kept on
-purpose: the speed-plot helpers, `backwards_time_trip_keys`, `segment_view_report` and `data/michigan_ave/segment_view.parquet`
-consumers read them; renaming the segment-view schema to ADR-003 names is a separate item.
+| Legacy column names | `cta.views.legacy_trip_columns(view)` | `run_id → unique_trip_vehicle_day`, `stop_id → stpid`, `arrival_time → bus_stop_time`, `pattern_id → pid`, `direction → rtdir`, `stop_sequence_index → stop_sequence`; values untouched | as input |
+| Corridor minutes | `cta.michigan_ave_segment.segment_minutes_from_view(view, segment_or_record) -> Series` | legacy `trip_segment_minutes` on the renamed view filtered to the pid | one per run with both stops |
+| Corridor stops + QA | `corridor_stops_from_view(view, *, sequences=None, kept=None) -> (DataFrame, DataFrame)` | `unique_trip_vehicle_day`, `stpid`, `pid`, `route` str; `rtdir` (chosen sequence); `seq_index` int64; `lat`; `stpnm`; `bus_stop_time` tz-aware UTC; `interpolated` bool, always False, kept so `backwards_time_trip_keys` and `segment_view_report` run unchanged; `source`, `service_date`, `calendar_flag` str; `bracket_gap_s` float64. QA: `cta.views.MANSUETO_QA_COLUMNS`, stage `corridor` | one row per observed (run, pid, stop in the chosen sequence); no gap rows |
+| Segment sequences | `direction_segment_sequences(path=None) -> dict[str, DataFrame]` | `seg_index` int64 (= the from stop's `seq_index`), `from_stpid`, `to_stpid`, `lat` (midpoint), `stpnm` (`"<from> to <to>"`) | one row per consecutive stop pair |
+| Segment speeds + QA | `corridor_segment_speeds(stops, pattern_stops, *, sequences=None) -> (DataFrame, DataFrame)` | `unique_trip_vehicle_day`, `pid`, `route`, `rtdir`, `seg_index`, `from_stpid`, `to_stpid`, `lat`, `stpnm`, `bus_stop_time` (arrival at the hop's start stop, UTC; legacy name so the hour helpers bucket on it), `speed_mph` float64, `interpolated` bool (hop covers more than one segment), `hop_from_stpid`, `hop_to_stpid`, `source`, `service_date`, `calendar_flag`, `bracket_gap_s` (max of the hop's two stops, NaN if either is NaN), `speed_basis` = `"segment"`. QA stage `hops` | one row per (run, pid, `seg_index`) covered by a valid hop; QA rows are candidate hops |
+| Segment stats | `corridor_segment_min_per_mile_stats(sub, segment_sequence, *, min_obs=10)` | as `corridor_stop_min_per_mile_stats`, keyed by `seg_index`, `from_stpid`, `to_stpid` | one row per segment |
+| Helper changes | `observed_speed_rows`, `michigan_day_slice_mask`, `filter_dlsd_leak_stops`, `segment_view_report` | signatures unchanged; behaviour in Method steps 6–7 | — |
 
 ## Method
 
-Prior art to copy: `cta/michigan_ave_segment.py` `build_michigan_segment_view` and `interpolate_trip_corridor` (span
-and gap-row construction); `cta/views.py` `mansueto_view_from_trips` (per-pid loop, QA with `pid` in front; playbook
-pattern "Emit a QA table from a pipeline stage"); `tests/test_views_mansueto.py` `test_self_consistency_6410_against_legacy_median`
-(the rename-then-legacy-helper idiom this spec turns into `legacy_trip_columns`).
+Prior art to copy: `cta/michigan_ave_segment.py` `build_michigan_segment_view` and `interpolate_trip_corridor`
+(span logic, now on segments), `corridor_stop_min_per_mile_stats`; `cta/views.py` `mansueto_view_from_trips` (per-pid
+loop, QA with `pid` in front; playbook pattern "Emit a QA table from a pipeline stage");
+`tests/test_views_mansueto.py` `test_self_consistency_6410_against_legacy_median` (the rename idiom).
 
-1. `legacy_trip_columns` is a rename; `trip_segment_minutes`, `endpoint_coverage`, `mode_last_corridor_stop_on_trip`
-   then run on the view unchanged. `segment_minutes_from_view` filters `pattern_id`, renames, calls `trip_segment_minutes`.
-   `tests/test_views_archive.py` and `tests/test_views_mansueto.py` switch to the helper (no assertion changes).
-2. `segment_view_from_view`: `kept` defaults to `load_kept_pid_records()`; view rows whose `pattern_id` is not kept are
-   dropped with reason `pattern_not_kept`. Per kept pid the direction sequence is the pattern's `direction` when that
-   is Northbound or Southbound (legacy behaviour, unchanged for 43 pids); otherwise the sequence containing more of
-   the pattern's distinct corridor `stop_id`s (14130 → Southbound, 14132 → Northbound); a pid whose stops are in
-   neither is dropped with reason `no_direction_sequence`. Rows at stops outside the chosen sequence are dropped with
-   reason `stop_not_in_sequence`.
-3. Per run: observed rows are the remaining view rows mapped to `seq_index`; the span is `[min, max]` of observed
-   `seq_index`; every sequence stop inside the span without a row is a gap row (`interpolated=True`,
-   `bus_stop_time` NaT, `bracket_gap_s` NaN). Same shape as `interpolate_trip_corridor`; duplicates per (run, stpid)
-   cannot occur (adapters dedup).
-4. `speed_mph`: an observed row carries the hop into it, (`pdist_ft[stop] − pdist_ft[previous observed stop of the
-   run]`) ÷ 5280 ÷ (arrival delta in hours); the first observed row carries the hop out of it, so only a run with one
-   observed stop has NaN (first rows are 1,500 of 15,216 on the fixture day, and the entry stop is what the before/after
-   comparison needs most). A gap row carries the hop that spans it. A hop with delta ≤ 0 or missing `pdist_ft` gives
-   NaN, counted on the QA table as stage `hops` with `rows_in == rows_out` (reasons `nonpositive_hop_time`,
-   `missing_pdist`: flags, not drops). `speed_basis = "stop_to_stop"` on every row.
-5. `source`, `service_date`, `calendar_flag` copied from the run's first observed row; `bracket_gap_s` from each
-   observed row. Output sorted as legacy (`pid`, `unique_trip_vehicle_day`, `seq_index`).
+1. `legacy_trip_columns` is a rename; `segment_minutes_from_view` filters `pattern_id`, renames, calls
+   `trip_segment_minutes`. `tests/test_views_archive.py` and `tests/test_views_mansueto.py` switch to it (no assertion changes).
+2. `corridor_stops_from_view`: `kept` defaults to `load_kept_pid_records()`, pids cast to str (playbook gotcha
+   "Identifiers arrive as `6410.0`"). View rows of other patterns are dropped as `pattern_not_kept`. The sequence is
+   the pattern's `direction` when Northbound or Southbound (all 43 such kept pids); otherwise the sequence holding more
+   of its distinct corridor stops (14130 → Southbound, 14132 → Northbound); none → `no_direction_sequence`. Rows at
+   stops outside the chosen sequence → `stop_not_in_sequence`. One reason per row; QA additive.
+3. Hops: within a run, consecutive observed stops in `seq_index` order. A hop is valid when both `pdist_ft` are known,
+   the distance is > 0 and the time is > 0; otherwise one reason, in priority `missing_pdist`, `nonpositive_hop_distance`,
+   `nonpositive_hop_time`. QA stage `hops`: `rows_in` = observed stops − runs, `rows_out` = valid hops. A run with one
+   observed stop has no hop.
+4. A valid hop from `seq_index` i to j covers segments i to j − 1; each gets the hop's speed, `interpolated = j − i > 1`
+   (the analogue of legacy gap rows; `observed_speed_rows` keeps excluding them), and `bus_stop_time` = arrival at i.
+   No row has a NaN speed.
+5. `source`, `service_date`, `calendar_flag` from the hop's start row. Output sorted by (`pid`, run, `seg_index`).
 6. `observed_speed_rows` and `michigan_day_slice_mask` convert a tz-aware `bus_stop_time` to America/Chicago before
-   taking `hour` / `dayofweek` (playbook gotcha "Mansueto `bus_stop_time` is naive Chicago wall time": the legacy
-   frames are naive Chicago and stay as they are).
-7. QA stage `corridor`: `rows_in` = view rows, `rows_out` = observed rows in the output; `sum(count) == rows_in − rows_out`.
-   Gap rows are additions, not in the drop count; the report counts them via `interpolated`.
+   `hour` / `dayofweek`; naive frames, the legacy ones, are used as they are (playbook gotcha on naive Chicago time).
+7. `filter_dlsd_leak_stops` on a frame with `from_stpid`/`to_stpid` drops segments touching a leak stop of their
+   direction (ADR-010; same constants, so no exclusion changes; on stop frames it behaves as today).
+   `segment_view_report` skips its null-speed checks when the frame has no `speed_mph`.
 
 ## Thresholds and exclusions
 
 | Name | Value | Evidence | Sensitivity if changed |
 |---|---|---|---|
-| `SPEED_BASIS_STOP_TO_STOP` | `"stop_to_stop"` | rule 6: 6410 observed rows give median ping `speed_mph` 5.23 vs stop-to-stop 4.28 mph; different quantities | — |
-| `DEFAULT_MIN_MEDIAN_MINUTES`, `NORTHBOUND_/SOUTHBOUND_DLSD_LEAK_STPIDS`, `TRIM_6402_STPIDS` | existing | not touched | — |
+| `SPEED_BASIS_SEGMENT` | `"segment"` | ADR-010; 6410: ping median 5.23 vs hop median 4.28 mph | — |
+| `NORTHBOUND_/SOUTHBOUND_DLSD_LEAK_STPIDS` | existing | carried to segments touching them (ADR-010) | drops 220 of 1,210 6410 segment rows |
 
-No new threshold; no exclusion beyond the three QA reasons above. No `bracket_gap_s` bound here: the ADR-009 raw
-adapter's spec and the figure code decide what a 300 s bracket means for a speed.
+No new threshold. No `bracket_gap_s` bound: the raw adapter's spec and the figure code decide (ADR-009).
 
 ## Acceptance tests
 
-Numbers measured 2026-11-05 on the fixtures unless marked.
+Numbers measured 2026-11-07 on the committed fixtures with a prototype of steps 2–4 unless marked.
 
-- [ ] `test_legacy_trip_columns_roundtrip`: on the route 3 one-day Mansueto view, `legacy_trip_columns` renames the six
-      columns, keeps every other column and dtype, and `trip_segment_minutes(legacy, "1580", "1126")` for pid 18414
-      equals `segment_minutes_from_view(view, rec_18414)` exactly; the 6410 self-consistency test still passes through it.
-- [ ] `test_segment_view_from_view_hand_built`: hand-built view, one kept pid on a 4-stop sequence (`pdist_ft` 0, 1000,
-      2000, 3000) with run A at stops 0, 2, 3 at 13:00, 13:10, 13:12 UTC → 4 output rows; stop 0 (first row, hop out)
-      and the gap row at stop 1 and stop 2 all carry `2000/5280/(10/60)` (≈ 2.27), stop 3 carries `1000/5280/(2/60)`
-      (≈ 5.68); run B at stops 1, 2 with equal arrivals → `nonpositive_hop_time == 1` on the QA table and NaN speed;
-      `speed_basis` is `"stop_to_stop"` everywhere; `bus_stop_time` is tz-aware UTC on observed rows, NaT on the gap row.
-- [ ] `test_segment_view_from_view_qa_sums`: on the hand-built view with one extra non-kept pid and one kept pid with
-      stops in neither sequence, stage `corridor` reasons are `pattern_not_kept`, `no_direction_sequence`,
-      `stop_not_in_sequence`, and they sum to `rows_in − rows_out`; `rows_out` equals the count of `~interpolated` rows.
-- [ ] `test_segment_view_6410_matches_legacy`: on the 6410 Mansueto view (`tests/fixtures/mansueto_6410_last30d.parquet`,
-      getpatterns fixture), the output has 1,320 rows, 110 runs, 330 interpolated rows at exactly stops
-      {18791, 1104, 1126}, `rtdir == "Northbound"`, `source == "mansueto"`, and the set of observed
-      (`unique_trip_vehicle_day`, `stpid`, `bus_stop_time` in America/Chicago) equals the legacy
-      `build_michigan_segment_view` output on the same file (monkeypatch `local_parquet_path` as the measurement did);
-      `backwards_time_trip_keys` is empty; stop-to-stop `speed_mph` median on non-first observed rows is 4.28 ± 0.05.
-- [ ] `test_segment_view_archive_fixture_day`: on the fixture-day archive view with all 45 kept pids, 14130 appears
-      with `rtdir == "Southbound"` and 14132 with `"Northbound"` (352 and 290 observed rows); the output has 15,216
-      observed rows over 1,500 runs and 44 pids, ~2,213 gap rows (estimate; measure, then pin), `nonpositive_hop_time`
-      ~2 (estimate; measure, then pin), NaN `speed_mph` only on runs with one observed stop (count unknown; measure,
-      then pin), `backwards_time_trip_keys` empty, `calendar_flag == ""`, and `segment_view_report(out, kept_path=…,
-      cache_status=kept_pid_cache_status(...))` (explicit, so no `data/` read) gives `pids_missing_from_view == ["1054"]`.
-- [ ] `test_segment_view_speed_helpers_run`: `observed_speed_rows`, `filter_dlsd_leak_stops`, `hour_stop_speed_stats`
-      and `corridor_stop_min_per_mile_stats` accept the fixture-day output; `observed_speed_rows` returns exactly the
-      `~interpolated` rows with `hour` in America/Chicago (differs from the UTC hour on every row), and on the naive
-      frames of `tests/test_michigan_ave_segment.py` the existing assertions still hold.
+- [ ] `test_legacy_trip_columns_roundtrip`: on the route 3 one-day Mansueto view, the six columns are renamed, all
+      others kept with dtypes, and `segment_minutes_from_view(view, rec_18414)` equals `trip_segment_minutes` on the
+      renamed view for 1580 → 1126 exactly; the 6410 self-consistency test passes through the helper.
+- [ ] `test_corridor_stops_hand_built_qa`: a hand-built view with a kept NB pid, a kept Westbound pid whose stops lie
+      only in the SB sequence (→ Southbound), a non-kept pid, a kept pid with no corridor stop, and one row at a stop
+      outside the chosen sequence; reasons `pattern_not_kept`, `no_direction_sequence`, `stop_not_in_sequence` sum to
+      `rows_in − rows_out`; a kept record with an integer `pid` matches the string `pattern_id`.
+- [ ] `test_corridor_stops_6410_matches_legacy`: on `tests/fixtures/mansueto_6410_last30d.parquet`, 990 rows, 110 runs,
+      `rtdir == "Northbound"`, `source == "mansueto"`; the set of (`unique_trip_vehicle_day`, `stpid`, `bus_stop_time`
+      in America/Chicago) equals the non-interpolated rows of legacy `build_michigan_segment_view` on the same file
+      (monkeypatch `local_parquet_path`); `backwards_time_trip_keys` is empty.
+- [ ] `test_corridor_stops_archive_fixture_day`: 15,216 rows, 1,500 runs, 44 pids; 14130 Southbound with 352 rows,
+      14132 Northbound with 290; 4 runs with one observed stop; `calendar_flag == ""`; `segment_view_report` with an
+      explicit `cache_status` (no `data/` read) gives `pids_missing_from_view == ["1054"]` and no null-speed issue.
+- [ ] `test_corridor_segment_speeds_hand_built`: 4-stop sequence, `pdist_ft` 0, 1000, 2000, 3000. Run A at stops 0, 2,
+      3 at 13:00, 13:10, 13:12 UTC gives 3 rows: segments 0 and 1 at `2000/5280/(10/60)` mph, `interpolated`, start
+      13:00; segment 2 at `1000/5280/(2/60)` mph, not interpolated, start 13:10. Run B at stops 1, 2 with equal times
+      gives `nonpositive_hop_time`; run C on a pid whose `pdist_ft` falls from stop 1 to 2 gives `nonpositive_hop_distance`.
+      QA `hops`: `rows_in` 4, `rows_out` 2, reasons sum; no NaN `speed_mph`; `speed_basis == "segment"`.
+- [ ] `test_corridor_segment_speeds_6410`: 880 candidate and 880 valid hops; 1,210 rows, 110 runs × the 11 segments
+      from 1119 to 1128; 550 interpolated, the segments around stops 18791, 1104 and 1126 that 151 NB does not serve;
+      median over distinct hops 4.28 ± 0.05 mph; `filter_dlsd_leak_stops` drops 220 rows.
+- [ ] `test_corridor_segment_speeds_archive_fixture_day`: 13,716 candidate and 13,714 valid hops;
+      `nonpositive_hop_distance == 2`, both on pid 25899, where two stops' latitude order disagrees with travel order;
+      15,921 rows, 3,718 interpolated; `filter_dlsd_leak_stops` drops 1,319; max `speed_mph` 35.0 ± 0.1; rows for
+      14130 and 14132 present; `bracket_gap_s <= cta.archive.MAX_BRACKET_GAP_S` everywhere.
+- [ ] `test_segment_helpers_on_view_outputs`: `observed_speed_rows` on the 6410 segments keeps the 660 non-interpolated
+      rows with `hour` in America/Chicago, which differs from the UTC hour on every row; `michigan_day_slice_mask`
+      agrees; `corridor_segment_min_per_mile_stats` against the NB segment sequence returns 22 rows with medians on
+      exactly the 6 directly observed segments and `lat` the stop midpoint; `slowest_hours` runs; the existing naive
+      tests in `tests/test_michigan_ave_segment.py` pass unchanged.
 
 ## Out of scope
 
-- Deleting `build_michigan_segment_view`, `median_segment_minutes_for_pid`, `build_pid_timing_summary`,
-  `build_endpoint_coverage_summary`, `PARQUET_COLS`, `local_parquet_path` (notebooks call them; deprecate, remove later).
-- Regenerating `data/michigan_ave/segment_view.parquet`, any figure or notebook; a script entry point.
-- Changing the plotting helpers' names or signatures beyond step 6; renaming the segment-view schema to ADR-003 names.
-- Gap-fill beyond the legacy span rule; any `bracket_gap_s` bound; cross-source speed comparison (ADR-009 item).
+- Deleting the legacy builders, `PARQUET_COLS` or `local_parquet_path` (notebooks call them; deprecate, remove later).
+- Re-pointing `notebooks/michigan_ave_speed_plots.ipynb` to segments, regenerating `data/michigan_ave/`, any figure;
+  a script entry point; renaming the outputs to ADR-003 column names.
+- Measuring whether the leak exclusion is still needed for segment speeds (the before-picture note does that).
+- Pooling short segments; any `bracket_gap_s` bound; cross-source speed comparison (ADR-009 item).
 
 ## Open questions
 
-1. Stop-to-stop speed is a new published quantity for the corridor charts (today they show ping-interval speed), and
-   the first-row rule in step 4 is a choice. Recommended: accept both, record them as an ADR, and relabel the figures
-   when the before-picture notebook is built. A column name other than `speed_mph` would need a `speed_col` argument
-   on the plotting helpers (out of scope here).
-2. The direction rule brings 157's two patterns in. Is that wanted for the corridor charts (they add Michigan stops
-   between Randolph and Hubbard only), or should 157 stay a Mansueto-era caveat and be dropped from the kept list?
+None. Resolved by the owner 2026-11-07: speed is defined on segments between consecutive corridor stops (ADR-010);
+the two route 157 patterns are included, directed by stop membership.
