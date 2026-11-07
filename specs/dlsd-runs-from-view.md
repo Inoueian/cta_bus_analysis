@@ -1,6 +1,6 @@
 # Spec: DLSD runs from the run-level view
 
-Status: draft
+Status: done (2026-11-07, branch claude/epic-thompson-pi24h3)
 Owner: Satoru  ·  Date: 2026-11-05 (revised 2026-11-07: owner answers)  ·  TODO item: Foundation "Move `cta.dlsd_run_quality` and `cta.michigan_ave_segment` onto the run-level view (the "later item" of `specs/mansueto-adapter.md`): both read Mansueto parquets directly today (`PARQUET_COLS`, `local_parquet_path`, `median_segment_minutes_for_pid`); make them take a run-level DataFrame so the two Michigan segment-view QA items and the DLSD calendar retro-apply run on either source, with `bracket_gap_s` NaN treated as unknown. Spec: to write." (DLSD half; the Michigan half is `specs/michigan-segment-from-view.md`)
 Tags: `kind:spec source:mansueto source:archive stage:view topic:calendar`
 

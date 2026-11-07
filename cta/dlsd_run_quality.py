@@ -1,4 +1,10 @@
-"""Shared DLSD run construction and Mansueto-aligned quality flags."""
+"""Shared DLSD run construction and Mansueto-aligned quality flags.
+
+``dlsd_runs_from_view`` builds the one-row-per-run table from the ADR-003 run-level view (any source).
+``build_dlsd_runs``, ``PARQUET_COLS`` and ``local_parquet_path`` read Mansueto parquets directly and are
+deprecated (specs/dlsd-runs-from-view.md): the notebooks and scripts/dlsd_weekday_friday_summary.py still
+call them; remove them once those read the new table.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +14,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from cta.mansueto import BASE, parquet_url
+from cta import views
+from cta.mansueto import BASE, parquet_url, qa_rows
+
+STAGE_ENDPOINTS = "endpoints"
+LEGACY_DROP_MIN_MINUTES = 1.0  # add_quality_flags before naming: inline `dlsd_minutes < 1`; informational flag only
+LEGACY_DROP_MAX_MINUTES = 120.0  # same function, inline `dlsd_minutes > 120`; informational flag only
+CHICAGO_TZ = "America/Chicago"  # hour / weekday bucketing (CLAUDE.md: UTC in storage, Chicago for bucketing)
 
 PARQUET_COLS = [
     "bus_stop_time",
@@ -52,7 +64,10 @@ def build_dlsd_runs(
     prefer_local: bool = True,
     cache_variant: str = "last30d",
 ) -> pd.DataFrame:
-    """One row per trip with entry/exit times, sequences, and bracket stops."""
+    """One row per trip with entry/exit times, sequences, and bracket stops.
+
+    Deprecated: reads Mansueto parquets directly; use ``dlsd_runs_from_view`` on a run-level view.
+    """
     frames = []
     bracket_frames = []
 
@@ -151,6 +166,92 @@ def build_dlsd_runs(
 
     dlsd_runs = add_quality_flags(dlsd_runs)
     return dlsd_runs
+
+
+DLSD_RUN_COLUMNS = [
+    "run_id", "pid", "route", "rtdir", "source", "service_date", "calendar_flag",
+    "entry_time", "exit_time", "entry_sequence", "exit_sequence",
+    "entry_bracket_gap_s", "exit_bracket_gap_s", "pre_dlsd_time", "post_dlsd_time", "bracket_minutes",
+    "hop_feet", "dlsd_miles", "dlsd_minutes", "implied_dlsd_mph", "dlsd_minutes_bin",
+    "hour", "day_of_week", "is_weekday",
+]
+
+
+def _first_by_run(rows: pd.DataFrame, *, latest: bool) -> pd.DataFrame:
+    """Per run: earliest (or latest) arrival, min (or max) stop index, and that row's gap and calendar fields."""
+    ordered = rows.sort_values(["run_id", "arrival_time"], ascending=[True, not latest])
+    pick = ordered.drop_duplicates("run_id")  # drop_duplicates keeps NaN gaps; groupby.first() would skip them
+    seq = rows.groupby("run_id")["stop_sequence_index"].agg("max" if latest else "min")
+    out = pick[["run_id", "arrival_time", "bracket_gap_s", "service_date", "calendar_flag", "source"]].copy()
+    out["sequence"] = out["run_id"].map(seq).astype("int64")
+    return out
+
+
+def dlsd_runs_from_view(
+    view: pd.DataFrame, boundaries: dict[str, dict] | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """One row per (run, DLSD pid) from the run-level view, plus a QA table (specs/dlsd-runs-from-view.md).
+
+    Only patterns that are boundary pids are read. ``bracket_gap_s`` NaN is unknown and is carried, never
+    used in a flag. Nothing is dropped for ``calendar_flag``. QA rows are runs, stage ``endpoints``.
+    """
+    boundaries = load_dlsd_boundaries() if boundaries is None else boundaries
+    pattern_col = view["pattern_id"].astype(str)
+    frames, qas = [], []
+    for pid, info in boundaries.items():
+        pid = str(pid)
+        entry_stpid, exit_stpid = str(info["entry_stpid"]), str(info["exit_stpid"])
+        rows = view[pattern_col == pid]
+        stop = rows["stop_id"].astype(str)
+        all_runs = set(rows["run_id"])
+        entries = _first_by_run(rows[stop == entry_stpid], latest=False)
+        exits = _first_by_run(rows[stop == exit_stpid], latest=True)
+        entries = entries.rename(columns={
+            "arrival_time": "entry_time", "sequence": "entry_sequence", "bracket_gap_s": "entry_bracket_gap_s"})
+        exits = exits.rename(columns={
+            "arrival_time": "exit_time", "sequence": "exit_sequence", "bracket_gap_s": "exit_bracket_gap_s"})
+        runs = entries.merge(
+            exits[["run_id", "exit_time", "exit_sequence", "exit_bracket_gap_s"]], on="run_id", how="inner")
+        missing_entry = len(all_runs - set(entries["run_id"]))
+        missing_exit = len(set(entries["run_id"]) - set(exits["run_id"]))
+        qas.append(pd.DataFrame(
+            qa_rows(STAGE_ENDPOINTS, len(all_runs), len(runs),
+                    {"missing_entry_stop": missing_entry, "missing_exit_stop": missing_exit})
+        ).assign(pid=pid))
+        if runs.empty:
+            continue
+        # Bracket: arrival one stop before the entry and one after the exit (dense index, ADR-008).
+        by_idx = rows[["run_id", "stop_sequence_index", "arrival_time"]]
+        pre = runs[["run_id", "entry_sequence"]].assign(stop_sequence_index=runs["entry_sequence"] - 1)
+        pre = pre.merge(by_idx, on=["run_id", "stop_sequence_index"]).groupby("run_id")["arrival_time"].min()
+        post = runs[["run_id", "exit_sequence"]].assign(stop_sequence_index=runs["exit_sequence"] + 1)
+        post = post.merge(by_idx, on=["run_id", "stop_sequence_index"]).groupby("run_id")["arrival_time"].max()
+        runs["pre_dlsd_time"] = runs["run_id"].map(pre)
+        runs["post_dlsd_time"] = runs["run_id"].map(post)
+        runs["pid"] = pid
+        runs["route"] = str(info["route"])
+        runs["rtdir"] = info["rtdir"]
+        hop_feet = float(info["hop_feet"])
+        runs["hop_feet"] = hop_feet
+        runs["dlsd_miles"] = hop_feet / 5280.0
+        runs["dlsd_minutes"] = (runs["exit_time"] - runs["entry_time"]).dt.total_seconds() / 60.0
+        runs["implied_dlsd_mph"] = runs["dlsd_miles"] / (runs["dlsd_minutes"] / 60.0)
+        runs["dlsd_minutes_bin"] = np.floor(runs["dlsd_minutes"] / 5.0) * 5.0
+        frames.append(runs)
+
+    qa = pd.concat(qas, ignore_index=True)[views.MANSUETO_QA_COLUMNS] if qas else views._empty_mansueto_qa()
+    if not frames:
+        empty = pd.DataFrame({c: pd.Series(dtype="object") for c in DLSD_RUN_COLUMNS})
+        return add_quality_flags(empty.assign(dlsd_minutes=pd.Series(dtype="float64"))), qa
+    out = pd.concat(frames, ignore_index=True)
+    out["bracket_minutes"] = (out["post_dlsd_time"] - out["pre_dlsd_time"]).dt.total_seconds() / 60.0
+    local = out["entry_time"].dt.tz_convert(CHICAGO_TZ)
+    out["hour"] = local.dt.hour.astype("int64")
+    out["day_of_week"] = local.dt.dayofweek.astype("int64")
+    out["is_weekday"] = out["day_of_week"] < 5
+    out = add_quality_flags(out[DLSD_RUN_COLUMNS])
+    out = out.sort_values(["pid", "entry_time"], kind="stable").reset_index(drop=True)
+    return out, qa
 
 
 RUSH_ROUTES: frozenset[str] = frozenset({"134", "135", "136", "143", "148"})
@@ -308,5 +409,7 @@ def add_quality_flags(dlsd_runs: pd.DataFrame) -> pd.DataFrame:
     out["analysis_ok"] = (
         out["ok_times_present"] & out["ok_time_order"] & out["ok_consecutive"]
     )
-    out["legacy_drop"] = (out["dlsd_minutes"] < 1) | (out["dlsd_minutes"] > 120)
+    out["legacy_drop"] = (out["dlsd_minutes"] < LEGACY_DROP_MIN_MINUTES) | (
+        out["dlsd_minutes"] > LEGACY_DROP_MAX_MINUTES
+    )
     return out
