@@ -163,7 +163,7 @@ def test_self_consistency_6410_against_legacy_median():
     stops = bustracker.pattern_stops_table(["6410"], GETPATTERNS_DIR)
     view = views.run_level_from_mansueto(["6410"], parquet_dir=FIXTURES, pattern_stops=stops)
     assert (view["direction"] == rec["rtdir"]).all()
-    legacy = view.rename(columns={"run_id": "unique_trip_vehicle_day", "stop_id": "stpid", "arrival_time": "bus_stop_time"})
+    legacy = views.legacy_trip_columns(view)
     minutes = trip_segment_minutes(legacy, rec["entry_stpid"], rec["exit_stpid"])
     assert len(minutes) >= mansueto.MIN_RUNS_FOR_RATIO
     ratio = float(np.median(minutes)) / float(rec["median_minutes"])

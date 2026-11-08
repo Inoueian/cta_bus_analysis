@@ -32,6 +32,21 @@ RUN_LEVEL_COLUMNS = [
 ]
 
 
+LEGACY_TRIP_COLUMNS = {
+    "run_id": "unique_trip_vehicle_day",
+    "stop_id": "stpid",
+    "arrival_time": "bus_stop_time",
+    "pattern_id": "pid",
+    "direction": "rtdir",
+    "stop_sequence_index": "stop_sequence",
+}  # the Mansueto parquet names that cta.michigan_ave_segment's legacy helpers read (specs/michigan-segment-from-view.md)
+
+
+def legacy_trip_columns(view: pd.DataFrame) -> pd.DataFrame:
+    """``view`` with the six ADR-003 columns renamed to the legacy trip-table names; values and other columns untouched."""
+    return view.rename(columns=LEGACY_TRIP_COLUMNS)
+
+
 def _empty_run_level() -> pd.DataFrame:
     df = pd.DataFrame({c: pd.Series(dtype="object") for c in RUN_LEVEL_COLUMNS})
     df["stop_sequence_index"] = df["stop_sequence_index"].astype("int64")

@@ -126,12 +126,10 @@ def test_corridor_minutes_match_mansueto_medians(run_level):
 
     kept = pd.DataFrame(json.loads(KEPT_PIDS.read_text())["pids"])
     kept["pid"] = kept["pid"].astype(str)
-    legacy = run_level.rename(
-        columns={"run_id": "unique_trip_vehicle_day", "stop_id": "stpid", "arrival_time": "bus_stop_time"}
-    )
+    legacy = views.legacy_trip_columns(run_level)
     checked = 0
     for rec in kept.itertuples(index=False):
-        sub = legacy[legacy["pattern_id"] == rec.pid]
+        sub = legacy[legacy["pid"] == rec.pid]
         minutes = trip_segment_minutes(sub, rec.entry_stpid, rec.exit_stpid)
         if len(minutes) < MIN_RUNS_FOR_RATIO:
             continue
