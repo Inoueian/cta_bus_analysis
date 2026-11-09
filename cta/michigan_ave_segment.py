@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 
 from cta.bustracker import batch_pattern_stops
-from cta.mansueto import RT_TO_PID_URL
+from cta.mansueto import MANSUETO_TZ, RT_TO_PID_URL, qa_rows
+from cta.views import MANSUETO_QA_COLUMNS, legacy_trip_columns
 from cta.dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
 
 DEFAULT_MIN_MEDIAN_MINUTES = 5.0
@@ -364,6 +365,7 @@ def median_segment_minutes_for_pid(
     prefer_local: bool = True,
     cache_variant: str = "last30d",
 ) -> pd.Series:
+    """Deprecated: reads a Mansueto parquet directly; use ``segment_minutes_from_view`` on a run-level view."""
     path = local_parquet_path(
         segment.pid, prefer_local=prefer_local, cache_variant=cache_variant
     )
@@ -449,7 +451,7 @@ def _rtdirs_include(rtdirs: str, direction: str) -> bool:
 
 
 def direction_stop_sequences(path: Path | None = None) -> dict[str, pd.DataFrame]:
-    """Northbound: lat ascending; Southbound: lat descending."""
+    """Northbound: lat ascending; Southbound: lat descending. ``lon`` (additive) gives hop distances."""
     path = path or stops_snapshot_path()
     data = json.loads(path.read_text())
     out: dict[str, pd.DataFrame] = {}
@@ -466,6 +468,7 @@ def direction_stop_sequences(path: Path | None = None) -> dict[str, pd.DataFrame
                 "stpid": [str(s["stpid"]) for s in eligible],
                 "lat": [float(s["lat"]) for s in eligible],
                 "stpnm": [str(s["stpnm"]) for s in eligible],
+                "lon": [float(s["lon"]) for s in eligible],
             }
         )
     return out
@@ -554,7 +557,9 @@ def build_michigan_segment_view(
     cache_variant: str = "last30d",
     kept_path: Path | None = None,
 ) -> pd.DataFrame:
-    """Segment view for all kept PIDs: (trip, stpid) rows with optional speed interpolation."""
+    """Deprecated (reads Mansueto parquets and ping-interval speed_mph, rule 6): use ``corridor_stops_from_view``.
+
+    Segment view for all kept PIDs: (trip, stpid) rows with optional speed interpolation."""
     sequences = direction_stop_sequences()
     records = load_kept_pid_records(kept_path)
     frames: list[pd.DataFrame] = []
@@ -772,12 +777,11 @@ def segment_view_report(
         by_pid = by_pid.sort_values("pid", key=lambda s: s.astype(int))
 
         interp_share = float(view["interpolated"].mean())
-        null_obs = int(
-            view.loc[~view["interpolated"], "speed_mph"].isna().sum()
-        )
-        null_interp = int(
-            view.loc[view["interpolated"], "speed_mph"].isna().sum()
-        )
+        if "speed_mph" in view.columns:
+            null_obs = int(view.loc[~view["interpolated"], "speed_mph"].isna().sum())
+            null_interp = int(view.loc[view["interpolated"], "speed_mph"].isna().sum())
+        else:  # stop frames from corridor_stops_from_view carry arrivals, not speeds (ADR-010)
+            null_obs = null_interp = 0
         backwards = backwards_time_trip_keys(view)
         sub_6402 = view.loc[
             (view["pid"].astype(str) == "6402")
@@ -871,6 +875,13 @@ def format_segment_view_report(report: dict) -> str:
     return "\n".join(lines)
 
 
+def _chicago_time(times: pd.Series) -> pd.Series:
+    """Datetimes for bucketing: tz-aware values (run-level view, UTC) become America/Chicago; naive ones, the legacy
+    frames, already are Chicago wall time (playbook gotcha on Mansueto wall-clock times)."""
+    t = pd.to_datetime(times)
+    return t.dt.tz_convert(MANSUETO_TZ) if t.dt.tz is not None else t
+
+
 def michigan_day_slice_mask(df: pd.DataFrame, slice_name: str) -> pd.Series:
     """all | weekday (Mon–Thu) | friday | weekend (Sat–Sun)."""
     if slice_name == "all":
@@ -878,7 +889,7 @@ def michigan_day_slice_mask(df: pd.DataFrame, slice_name: str) -> pd.Series:
     if "day_of_week" in df.columns:
         dow = df["day_of_week"]
     else:
-        dow = pd.to_datetime(df["bus_stop_time"]).dt.dayofweek
+        dow = _chicago_time(df["bus_stop_time"]).dt.dayofweek
     if slice_name == "weekday":
         return dow <= 3
     if slice_name == "friday":
@@ -892,10 +903,11 @@ def michigan_day_slice_mask(df: pd.DataFrame, slice_name: str) -> pd.Series:
 
 def observed_speed_rows(view: pd.DataFrame) -> pd.DataFrame:
     """Observed corridor rows with hour and day_of_week from bus_stop_time."""
-    obs = view.loc[~view["interpolated"] & view["bus_stop_time"].notna()].copy()
+    interpolated = view["interpolated"] if "interpolated" in view.columns else pd.Series(False, index=view.index)
+    obs = view.loc[~interpolated & view["bus_stop_time"].notna()].copy()  # a frame without the column is all observed
     if obs.empty:
         return obs
-    bst = pd.to_datetime(obs["bus_stop_time"])
+    bst = _chicago_time(obs["bus_stop_time"])
     obs["hour"] = bst.dt.hour
     obs["day_of_week"] = bst.dt.dayofweek
     return obs
@@ -960,11 +972,13 @@ def filter_dlsd_leak_stops(df: pd.DataFrame) -> pd.DataFrame:
     """Drop Delaware / Chestnut / Pearson rows that leak DLSD speeds into Michigan."""
     if df.empty:
         return df
-    stpid = df["stpid"].astype(str)
     rtdir = df["rtdir"].astype(str)
-    drop = (
-        ((rtdir == "Northbound") & stpid.isin(NORTHBOUND_DLSD_LEAK_STPIDS))
-        | ((rtdir == "Southbound") & stpid.isin(SOUTHBOUND_DLSD_LEAK_STPIDS))
+    if "from_stpid" in df.columns:  # segment frame: drop a segment touching a leak stop of its direction (ADR-010)
+        touches = lambda leak: df["from_stpid"].astype(str).isin(leak) | df["to_stpid"].astype(str).isin(leak)
+    else:
+        touches = lambda leak: df["stpid"].astype(str).isin(leak)
+    drop = ((rtdir == "Northbound") & touches(NORTHBOUND_DLSD_LEAK_STPIDS)) | (
+        (rtdir == "Southbound") & touches(SOUTHBOUND_DLSD_LEAK_STPIDS)
     )
     return df.loc[~drop].copy()
 
@@ -1123,4 +1137,291 @@ def corridor_street_tick_positions(
         if not parts:
             continue
         rows.append({"label": label, "lat": float(np.mean(parts))})
+    return pd.DataFrame(rows)
+
+
+# --- corridor stops and segment speeds from the run-level view (specs/michigan-segment-from-view.md) ---------
+
+SPEED_BASIS_SEGMENT = "segment"  # ADR-010: speed over the road between consecutive corridor stops, not a ping interval
+MAX_HOP_DETOUR_RATIO = 1.5  # archive fixture day: 13,712 of 13,714 positive hops within 1.036x straight line; the other 2 (5.32x) leave Michigan on PID 25899's loop
+EARTH_RADIUS_FEET = 20_902_260.0  # mean earth radius 6,371,008.8 m; the detour ratio test is far coarser than the sphere error
+FEET_PER_MILE = 5280.0
+
+CORRIDOR_STOP_COLUMNS = [
+    "unique_trip_vehicle_day",
+    "stpid",
+    "pid",
+    "route",
+    "rtdir",
+    "seq_index",
+    "lat",
+    "stpnm",
+    "bus_stop_time",
+    "interpolated",
+    "source",
+    "service_date",
+    "calendar_flag",
+    "bracket_gap_s",
+]
+SEGMENT_SPEED_COLUMNS = [
+    "unique_trip_vehicle_day",
+    "pid",
+    "route",
+    "rtdir",
+    "seg_index",
+    "from_stpid",
+    "to_stpid",
+    "lat",
+    "stpnm",
+    "bus_stop_time",
+    "speed_mph",
+    "hop_n_segments",
+    "hop_from_stpid",
+    "hop_to_stpid",
+    "source",
+    "service_date",
+    "calendar_flag",
+    "bracket_gap_s",
+    "speed_basis",
+]
+
+
+def segment_minutes_from_view(view: pd.DataFrame, segment_or_record) -> pd.Series:
+    """Per-run minutes from entry to exit stop of a ``CorridorSegment`` or a kept-pid record, on a run-level view."""
+    get = (lambda k: segment_or_record[k]) if isinstance(segment_or_record, dict) else (lambda k: getattr(segment_or_record, k))
+    legacy = legacy_trip_columns(view)
+    legacy = legacy.loc[legacy["pid"].astype(str) == str(get("pid"))]
+    return trip_segment_minutes(legacy, get("entry_stpid"), get("exit_stpid"))
+
+
+def straight_line_feet(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Haversine distance between two points, in feet."""
+    p1, p2 = np.radians(lat1), np.radians(lat2)
+    a = np.sin((p2 - p1) / 2) ** 2 + np.cos(p1) * np.cos(p2) * np.sin(np.radians(lon2 - lon1) / 2) ** 2
+    return float(2 * EARTH_RADIUS_FEET * np.arcsin(np.sqrt(a)))
+
+
+def _empty_qa() -> pd.DataFrame:
+    qa = pd.DataFrame({c: pd.Series(dtype="object") for c in MANSUETO_QA_COLUMNS})
+    for c in ("rows_in", "rows_out", "count"):
+        qa[c] = qa[c].astype("int64")
+    return qa
+
+
+def _qa_table(parts: dict[str, list[dict]]) -> pd.DataFrame:
+    rows = [{"pid": pid, **r} for pid, rs in parts.items() for r in rs]
+    return pd.DataFrame(rows, columns=MANSUETO_QA_COLUMNS) if rows else _empty_qa()
+
+
+def _chosen_direction(rec_dir: str | None, pid_stpids: set[str], sequences: dict[str, pd.DataFrame]) -> str | None:
+    """A kept pattern's own direction when it names a sequence; otherwise the sequence holding more of its distinct
+    corridor stops (route 157's Westbound / Eastbound); a tie or no corridor stop gives None."""
+    if rec_dir in sequences:
+        return rec_dir
+    counts = {d: len(pid_stpids & set(seq["stpid"].astype(str))) for d, seq in sequences.items()}
+    best = max(counts.values(), default=0)
+    winners = [d for d, n in counts.items() if n == best]
+    return winners[0] if best > 0 and len(winners) == 1 else None
+
+
+def corridor_stops_from_view(
+    view: pd.DataFrame,
+    *,
+    sequences: dict[str, pd.DataFrame] | None = None,
+    kept: list[dict] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Observed Michigan corridor stops per (run, pid) from a run-level view, and the ``corridor`` QA table.
+
+    Replaces ``build_michigan_segment_view`` (no gap rows: ``interpolated`` is always False, kept so
+    ``backwards_time_trip_keys`` and ``segment_view_report`` run unchanged). QA reasons: ``pattern_not_kept``,
+    ``no_direction_sequence``, ``stop_not_in_sequence``; one per row. QA has one block per pid in the view, plus kept
+    pids with no rows.
+    """
+    sequences = sequences if sequences is not None else direction_stop_sequences()
+    kept = load_kept_pid_records() if kept is None else kept
+    kept_dir = {str(r["pid"]): str(r["rtdir"]) for r in kept}
+    seq_cols = ["stpid", "seq_index", "lat", "stpnm"]
+    lookups = {d: seq[seq_cols].astype({"stpid": str}).set_index("stpid") for d, seq in sequences.items()}
+
+    v = view.assign(pattern_id=view["pattern_id"].astype(str), stop_id=view["stop_id"].astype(str))
+    frames: list[pd.DataFrame] = []
+    qa: dict[str, list[dict]] = {}
+    for pid, part in v.groupby("pattern_id", sort=False):
+        n = len(part)
+        if pid not in kept_dir:
+            qa[pid] = qa_rows("corridor", n, 0, {"pattern_not_kept": n})
+            continue
+        direction = _chosen_direction(kept_dir[pid], set(part["stop_id"]), sequences)
+        if direction is None:
+            qa[pid] = qa_rows("corridor", n, 0, {"no_direction_sequence": n})
+            continue
+        lk = lookups[direction]
+        inside = part[part["stop_id"].isin(lk.index)]
+        qa[pid] = qa_rows("corridor", n, len(inside), {"stop_not_in_sequence": n - len(inside)})
+        meta = lk.loc[inside["stop_id"]]
+        frames.append(
+            pd.DataFrame(
+                {
+                    "unique_trip_vehicle_day": inside["run_id"].to_numpy(),
+                    "stpid": inside["stop_id"].to_numpy(),
+                    "pid": pid,
+                    "route": inside["route"].astype(str).to_numpy(),
+                    "rtdir": direction,
+                    "seq_index": meta["seq_index"].astype("int64").to_numpy(),
+                    "lat": meta["lat"].astype("float64").to_numpy(),
+                    "stpnm": meta["stpnm"].astype(str).to_numpy(),
+                    "bus_stop_time": inside["arrival_time"].to_numpy(),
+                    "interpolated": False,
+                    "source": inside["source"].to_numpy(),
+                    "service_date": inside["service_date"].to_numpy(),
+                    "calendar_flag": inside["calendar_flag"].to_numpy(),
+                    "bracket_gap_s": inside["bracket_gap_s"].astype("float64").to_numpy(),
+                }
+            )
+        )
+    for pid in kept_dir:  # kept pids with no rows at all still get a zero-row QA block
+        qa.setdefault(pid, qa_rows("corridor", 0, 0, {}))
+    if frames:
+        out = pd.concat(frames, ignore_index=True)
+        out["bus_stop_time"] = pd.to_datetime(out["bus_stop_time"], utc=True)
+        out = out.sort_values(["pid", "unique_trip_vehicle_day", "seq_index"], kind="mergesort").reset_index(drop=True)
+    else:
+        out = pd.DataFrame({c: pd.Series(dtype="object") for c in CORRIDOR_STOP_COLUMNS})
+        out["bus_stop_time"] = pd.to_datetime(out["bus_stop_time"], utc=True)
+        out["seq_index"] = out["seq_index"].astype("int64")
+        out["interpolated"] = out["interpolated"].astype(bool)
+    return out[CORRIDOR_STOP_COLUMNS], _qa_table(qa)
+
+
+def _segment_sequences(stop_sequences: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    out: dict[str, pd.DataFrame] = {}
+    for direction, seq in stop_sequences.items():
+        seq = seq.sort_values("seq_index").reset_index(drop=True)
+        a, b = seq.iloc[:-1].reset_index(drop=True), seq.iloc[1:].reset_index(drop=True)
+        out[direction] = pd.DataFrame(
+            {
+                "seg_index": a["seq_index"].astype("int64"),
+                "from_stpid": a["stpid"].astype(str),
+                "to_stpid": b["stpid"].astype(str),
+                "lat": (a["lat"].astype(float) + b["lat"].astype(float)) / 2,
+                "stpnm": a["stpnm"].astype(str) + " to " + b["stpnm"].astype(str),
+            }
+        )
+    return out
+
+
+def direction_segment_sequences(path: Path | None = None) -> dict[str, pd.DataFrame]:
+    """One row per consecutive stop pair of each direction sequence; ``seg_index`` is the from stop's ``seq_index``."""
+    return _segment_sequences(direction_stop_sequences(path))
+
+
+def corridor_segment_speeds(
+    stops: pd.DataFrame,
+    pattern_stops: pd.DataFrame,
+    *,
+    sequences: dict[str, pd.DataFrame] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Segment speeds (ADR-010) from ``corridor_stops_from_view`` output, and the ``hops`` QA table.
+
+    A hop joins consecutive observed stops of a run; speed = getpatterns ``pdist_ft`` difference over the arrival-time
+    difference, and every segment the hop covers gets it (``hop_n_segments`` says how many). QA rows are candidate hops
+    (observed stops minus runs); reasons, in priority: ``missing_pdist``, ``nonpositive_hop_distance``, ``detour_hop``
+    (route distance over ``MAX_HOP_DETOUR_RATIO`` times straight line), ``nonpositive_hop_time``.
+    """
+    sequences = sequences if sequences is not None else direction_stop_sequences()
+    segs = _segment_sequences(sequences)
+    lonlat = {d: s.astype({"stpid": str}).set_index("stpid")[["lat", "lon"]] for d, s in sequences.items()}
+    pdist = (
+        pattern_stops.assign(pid=pattern_stops["pid"].astype(str), stpid=pattern_stops["stpid"].astype(str))
+        .drop_duplicates(["pid", "stpid"])
+        .set_index(["pid", "stpid"])["pdist_ft"]
+    )
+
+    s = stops.sort_values(["pid", "unique_trip_vehicle_day", "seq_index"], kind="mergesort").reset_index(drop=True)
+    grp = s.groupby(["pid", "unique_trip_vehicle_day"], sort=False)
+    prev = pd.DataFrame({c: grp[c].shift(1) for c in ("stpid", "seq_index", "bus_stop_time", "bracket_gap_s")})
+    has_prev = prev["stpid"].notna()
+    hops = s.loc[has_prev].copy()
+    prev = prev.loc[has_prev]
+    hops["hop_from_stpid"] = prev["stpid"].astype(str)
+    hops["i"] = prev["seq_index"].astype("int64")
+    hops["hop_to_stpid"] = hops["stpid"].astype(str)
+    hops["j"] = hops["seq_index"].astype("int64")
+    hops["t_from"] = prev["bus_stop_time"]
+    hops["gap"] = np.maximum(prev["bracket_gap_s"].astype("float64"), hops["bracket_gap_s"].astype("float64"))  # NaN if either is
+    idx = list(zip(hops["pid"].astype(str), hops["hop_from_stpid"]))
+    idx_to = list(zip(hops["pid"].astype(str), hops["hop_to_stpid"]))
+    hops["dist_ft"] = pdist.reindex(idx_to).to_numpy() - pdist.reindex(idx).to_numpy()  # NaN when either pdist is unknown
+
+    straight = np.full(len(hops), np.nan)
+    for n, r in enumerate(hops.itertuples(index=False)):
+        ll = lonlat[r.rtdir]
+        a, b = ll.loc[r.hop_from_stpid], ll.loc[r.hop_to_stpid]
+        straight[n] = straight_line_feet(a["lat"], a["lon"], b["lat"], b["lon"])
+    hops["straight_ft"] = straight
+    hops["dt_s"] = (hops["bus_stop_time"] - hops["t_from"]).dt.total_seconds()
+
+    reason = pd.Series("", index=hops.index, dtype=object)  # first matching reason wins, in the documented priority
+    for name, bad in (
+        ("missing_pdist", hops["dist_ft"].isna()),
+        ("nonpositive_hop_distance", hops["dist_ft"] <= 0),
+        ("detour_hop", hops["dist_ft"] > MAX_HOP_DETOUR_RATIO * hops["straight_ft"]),
+        ("nonpositive_hop_time", hops["dt_s"] <= 0),
+    ):
+        reason = reason.mask((reason == "") & bad, name)
+
+    qa: dict[str, list[dict]] = {}
+    for pid in dict.fromkeys(s["pid"].astype(str)):
+        mine = hops["pid"].astype(str) == pid
+        counts = reason[mine & (reason != "")].value_counts().to_dict()
+        qa[pid] = qa_rows("hops", int(mine.sum()), int((mine & (reason == "")).sum()), counts)
+
+    ok = hops.loc[reason == ""].copy()
+    ok["speed_mph"] = ok["dist_ft"] / FEET_PER_MILE / (ok["dt_s"] / 3600.0)
+    ok["hop_n_segments"] = (ok["j"] - ok["i"]).astype("int64")
+    ok["start_time"] = ok["t_from"]
+    rep = ok.loc[ok.index.repeat(ok["hop_n_segments"])].copy()
+    offset = rep.groupby(level=0).cumcount()
+    rep["seg_index"] = (rep["i"] + offset).astype("int64")
+    rep["_dir"] = rep["rtdir"]
+    parts = []
+    for direction, seg in segs.items():
+        sub = rep[rep["_dir"] == direction].merge(
+            seg.rename(columns={"lat": "seg_lat", "stpnm": "seg_stpnm"}), on="seg_index", how="left", validate="m:1"
+        )
+        parts.append(sub)
+    out = pd.concat(parts, ignore_index=True) if parts else rep.iloc[0:0]
+    out = out.assign(
+        lat=out.get("seg_lat"),
+        stpnm=out.get("seg_stpnm"),
+        bus_stop_time=out.get("start_time"),
+        bracket_gap_s=out.get("gap"),
+        speed_basis=SPEED_BASIS_SEGMENT,
+    )
+    out = out.sort_values(["pid", "unique_trip_vehicle_day", "seg_index"], kind="mergesort").reset_index(drop=True)
+    return out[SEGMENT_SPEED_COLUMNS], _qa_table(qa)
+
+
+def corridor_segment_min_per_mile_stats(
+    sub: pd.DataFrame,
+    segment_sequence: pd.DataFrame,
+    *,
+    min_obs: int = 10,
+) -> pd.DataFrame:
+    """Per-segment pooled quantiles on segment-sequence order (one direction); ``lat`` is the segment midpoint."""
+    rows: list[dict] = []
+    for row in segment_sequence.sort_values("seg_index").itertuples(index=False):
+        seg_sub = sub.loc[sub["seg_index"] == row.seg_index]
+        mph = pooled_stop_speed_quantiles(seg_sub, min_obs=min_obs)
+        rows.append(
+            {
+                "seg_index": int(row.seg_index),
+                "from_stpid": str(row.from_stpid),
+                "to_stpid": str(row.to_stpid),
+                "lat": float(row.lat),
+                "stpnm": str(row.stpnm),
+                **mph,
+                **speed_quantiles_to_min_per_mile(mph),
+            }
+        )
     return pd.DataFrame(rows)
