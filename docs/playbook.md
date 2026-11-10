@@ -143,7 +143,7 @@ Tags: `kind:pattern topic:thresholds`
 
 ### Build a committed fixture from a public file
 Tags: `kind:pattern topic:fixtures stage:fetch`
-- Copy `scripts/build_archive_fixtures.py` (one archive day, filtered to the kept PIDs, plus an index manifest) or `scripts/build_mansueto_fixtures.py` (parquet cuts, footer sample, `mansueto.manifest.json` with bytes, SHA-256 and rows). One archive day at most (Rule 3); tests never write to `data/` (Rule 4). A `/fixture` skill that generalizes both is a Foundation TODO item.
+- Run `/fixture` (`.claude/skills/fixture/SKILL.md`): it picks the builder to copy by source (`scripts/build_archive_fixtures.py` for one archive day filtered to kept PIDs with an `index.json`-shaped manifest; `scripts/build_mansueto_fixtures.py` for parquet cuts, footer sample and `mansueto.manifest.json`), names the source-moved guard for each source (index SHA-256; `Last-Modified` on `MANSUETO_DATA_EDGE`; a recorded HEAD for the raw CSVs, which have no manifest), and prints the deviations from the spec's `~N` estimates. One archive day per fixture file and a 20 MB fixture budget (Rule 3); tests never write to `data/` (Rule 4); bytes deterministic (gzip mtime 0, sorted zstd parquet).
 
 ### Probe a remote parquet without downloading it
 Tags: `kind:pattern source:mansueto stage:fetch topic:network`

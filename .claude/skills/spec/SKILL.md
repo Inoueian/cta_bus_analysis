@@ -28,7 +28,7 @@ Arguments: a TODO.md line, a sentence, or a path to an existing `specs/*.md` to 
 
    Reference by file and function rather than re-deriving. The scorecard pipeline cited in ADR-004 and the
    helpers in `notebooks/*.py` count as prior art.
-4. If a fixture is needed and none exists under `tests/fixtures/`, the spec must say how to build it, from what public file, and its expected SHA-256 or row count.
+4. If a fixture is needed and none exists under `tests/fixtures/`, the spec's Fixtures section must say how to build it, from what public file, with what cut, and its expected row count (marked as an estimate until measured). `/fixture` builds it from that row.
 
 ## Writing
 

@@ -7,13 +7,16 @@ Two independent parts, each off by default:
                   is in --pids-file, and write tests/fixtures/archive_<day>_michigan.ndjson.gz plus a
                   manifest archive_<day>_michigan.index.json (rows, bytes, sha256, known_gaps) that
                   cta.archive.ingest_day verifies against. Deterministic gzip (mtime 0).
-  --getpatterns   Fetch Bus Tracker getpatterns for the same pids through cta.bustracker (uses the
-                  daily budget counter under data/cta_api_cache, cache hits cost nothing) and copy the
-                  JSON into tests/fixtures/getpatterns/. Needs CTA_API_KEY in .env.
+  --getpatterns   Fetch Bus Tracker getpatterns for the pids that have no committed file yet, through
+                  cta.bustracker (uses the daily budget counter under data/cta_api_cache, cache hits cost
+                  nothing), and copy the JSON into tests/fixtures/getpatterns/. Committed files are never
+                  overwritten unless --refresh is passed (patterns drift; a refresh moves pinned test
+                  numbers). Needs CTA_API_KEY in .env.
 
 Examples:
   python scripts/build_archive_fixtures.py --day 2026-10-29 --day-file
   python scripts/build_archive_fixtures.py --getpatterns
+  python scripts/build_archive_fixtures.py --getpatterns --refresh   # deliberate: overwrite every pid
 """
 
 from __future__ import annotations
@@ -76,24 +79,45 @@ def build_day_fixture(day: str, index_location: str, raw_dir: Path, pids: list[s
     print(f"wrote {out} ({n:,} rows, {out.stat().st_size:,} bytes, sha256 {sha})")
 
 
-def build_getpatterns_fixture(pids: list[str]) -> None:
+def getpatterns_to_write(pids: list[str], dest: Path, refresh: bool) -> list[str]:
+    """Pids whose getpatterns fixture file should be written: missing ones, or all of them with ``refresh``.
+
+    Committed pattern files are never overwritten by default: patterns drift (route 3 lost 108 + 113 stops
+    between July and November 2026, docs/2026-11-04-mansueto-adapter-qa.md), and a silent refresh moves
+    pinned numbers in every adapter test that joins on them. A refresh is a deliberate, Rule 2-sized change.
+    """
+    if refresh:
+        return list(pids)
+    return [p for p in pids if not (dest / f"getpatterns_{p}.json").is_file()]
+
+
+def build_getpatterns_fixture(pids: list[str], refresh: bool = False) -> None:
+    dest = FIXTURES / "getpatterns"
+    todo = getpatterns_to_write(pids, dest, refresh)
+    kept = len(pids) - len(todo)
+    if not todo:
+        print(f"getpatterns: all {len(pids)} pids already committed in {dest}; nothing fetched (pass --refresh to overwrite)")
+        return
     from cta import bustracker
 
     bustracker.load_dotenv()
     cache_dir = bustracker.api_cache_dir()
     before = bustracker.daily_api_request_count(cache_dir)
-    result = bustracker.batch_pattern_stops(pids, use_cache=True, cache_dir=cache_dir, progress_every=0)
+    result = bustracker.batch_pattern_stops(todo, use_cache=True, cache_dir=cache_dir, progress_every=0)
     after = bustracker.daily_api_request_count(cache_dir)
-    dest = FIXTURES / "getpatterns"
     dest.mkdir(parents=True, exist_ok=True)
     copied = 0
-    for pid in pids:
+    for pid in todo:
         src = cache_dir / f"getpatterns_{pid}.json"
         if src.is_file():
             shutil.copy(src, dest / src.name)
             copied += 1
-    missing = [p for p in pids if p not in result]
-    print(f"getpatterns: {copied}/{len(pids)} pids copied to {dest}; live calls this run: {after - before}; missing: {missing}")
+    missing = [p for p in todo if p not in result]
+    verb = "overwrote" if refresh else "added"
+    print(
+        f"getpatterns: {verb} {copied}/{len(todo)} pids in {dest}; {kept} committed files left untouched; "
+        f"live calls this run: {after - before}; missing: {missing}"
+    )
 
 
 def main() -> None:
@@ -101,6 +125,7 @@ def main() -> None:
     ap.add_argument("--day", default="2026-10-29", help="archive day for --day-file")
     ap.add_argument("--day-file", action="store_true", help="build the filtered day file and manifest")
     ap.add_argument("--getpatterns", action="store_true", help="fetch/copy getpatterns JSON for the pids")
+    ap.add_argument("--refresh", action="store_true", help="with --getpatterns: overwrite committed pattern files")
     ap.add_argument("--pids-file", type=Path, default=DEFAULT_PIDS_FILE)
     ap.add_argument("--label", default="michigan", help="fixture name suffix")
     ap.add_argument("--index", default=archive.INDEX_URL, help="archive index URL or pinned local copy")
@@ -108,11 +133,13 @@ def main() -> None:
     args = ap.parse_args()
     if not (args.day_file or args.getpatterns):
         ap.error("nothing to do: pass --day-file and/or --getpatterns")
+    if args.refresh and not args.getpatterns:
+        ap.error("--refresh only applies to --getpatterns")
     pids = load_pids(args.pids_file)
     if args.day_file:
         build_day_fixture(args.day, args.index, args.raw_dir, pids, args.label, args.pids_file)
     if args.getpatterns:
-        build_getpatterns_fixture(pids)
+        build_getpatterns_fixture(pids, refresh=args.refresh)
 
 
 if __name__ == "__main__":

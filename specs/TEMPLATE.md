@@ -33,6 +33,14 @@ Numbered steps. Name every threshold and its evidence. Reference prior art
 | Name | Value | Evidence | Sensitivity if changed |
 |---|---|---|---|
 
+## Fixtures
+
+Every committed file the acceptance tests read, built with `/fixture`. Existing ones: path only.
+
+| Fixture | Built from (public file) | Cut | Rows / bytes | Builder |
+|---|---|---|---|---|
+| e.g. `tests/fixtures/archive_2026-10-29_<label>.ndjson.gz` | archive day `positions/bus/2026/10/2026-10-29.ndjson.gz` | pids in `<file>` | ~N rows (estimate; measure, then pin) | `scripts/build_archive_fixtures.py --day-file` |
+
 ## Acceptance tests
 
 Concrete, runnable. Each becomes one pytest; start each item with its test function name and
