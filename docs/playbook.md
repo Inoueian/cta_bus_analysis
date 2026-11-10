@@ -111,7 +111,7 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:identifiers`
 Tags: `kind:gotcha source:mansueto stage:view topic:calendar`
 - Symptom: late-night runs are cut in two, or a post-midnight trip carries the next day's date.
 - Cause: each `full_day_data/YYYY-MM-DD.csv` holds local 00:00 to 23:55 and has no scheduled start, so the run key's `data_date` is the calendar date. On 2026-10-22, 23 of 1,559 Michigan runs started by 00:05 and 31 ended after 23:50; route 66 had 4.6% of its fixes before 04:00.
-- Fix: none; accepted and documented (`specs/mansueto-raw-adapter.md`, Method 8). Stitching across files needs its own spec before late-night numbers for routes 8 and 66 are used.
+- Fix: none; accepted and documented (`specs/mansueto-raw-adapter.md`, Method 8). A file can also hold a few stale rows dated the evening before (4 on 2026-10-22); the adapter drops them as `other_data_date`. Stitching across files needs its own spec before late-night numbers for routes 8 and 66 are used.
 
 ### Mansueto imputed times can run backwards along a pattern
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
