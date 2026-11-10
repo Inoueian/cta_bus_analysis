@@ -24,7 +24,7 @@ route views and the Phase 3 cross-source checks wait on it. Evidence for every n
 | Output | Path / function | Schema | Grain |
 |---|---|---|---|
 | Cached day + metadata | `cta.mansueto_raw.fetch_day(day, dest_dir) -> Path`, writes `YYYY-MM-DD.meta.json` | url, bytes, last_modified, fetched_at, rows | one per day file |
-| Positions | `cta.mansueto_raw.read_day(path, pids=None) -> DataFrame` | route, pid, vehicle_id, origtatripno, data_date (str); tmstmp (str); vehicle_ts (UTC, NaT if ambiguous); pdist, lat, lon (float) | one row per CSV row, nothing dropped |
+| Positions | `cta.mansueto_raw.read_day(path, pids=None) -> DataFrame` | route, pid, vehicle_id, origtatripno, data_date (str); tmstmp (str); vehicle_ts (UTC, NaT if ambiguous); pdist, lat, lon (float) | one row per CSV row of the requested pids (all rows when `pids` is None), nothing dropped |
 | Clean fixes | `cta.mansueto_raw.clean_fixes(con, day, positions) -> DataFrame` | `cta.archive.CLEAN_FIX_COLUMNS` | one row per (run_id, vehicle_ts) |
 | Run-level view + QA | `cta.views.run_level_from_mansueto_raw_with_qa(days, pids, *, csv_dir, pattern_stops=None, pattern_cache_dir=None, con=None) -> (view, qa)`; `run_level_from_mansueto_raw(...)` returns the view | view: `RUN_LEVEL_COLUMNS`, `source='mansueto_raw'`, `bracket_gap_s` populated; qa: `day` + `cta.archive.QA_COLUMNS` | view: one row per (run, stop); qa: one row per (day, stage, reason) |
 
@@ -44,7 +44,7 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
    leaves no file or metadata behind. Tests replace both network functions.
 2. `read_day`: DuckDB `read_csv(all_varchar=true)` on `.csv` or `.csv.gz`; identifiers through
    `cta.mansueto._id_str` (gotcha "Identifiers arrive as `6410.0`"); `vehicle_ts` = `cta.mansueto.to_utc` of the
-   parsed `tmstmp` (`RAW_TZ`), no correction for the truncated seconds; ambiguous or nonexistent DST times become
+   parsed `tmstmp` (it localizes with `MANSUETO_TZ`, which `RAW_TZ` aliases), no correction for the truncated seconds; ambiguous or nonexistent DST times become
    NaT (gotcha "naive Chicago wall time"; none in the 2026 window, which ends before 2026-11-01).
 3. Stage `read`: rows_in = rows_out = rows for the requested pids. Stage `clean`: drop rows with null `vid`,
    `pid`, `origtatripno`, `data_date`, `pdist` or `tmstmp` (`null_run_key_or_pdist`), then rows whose `data_date`
@@ -81,7 +81,7 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
 | Name | Value | Evidence | Sensitivity if changed |
 |---|---|---|---|
 | `MAX_RAW_BRACKET_GAP_S` | 660.0 | 2026-10-22 profile: 97% of pairs at 240/300/360 s; a second cluster, one missed poll, ends at 660 s (full day: 438 pairs at 660 s, 27 at 720 s); drops 85 of 21,834 pairs (0.4%). Owner chose 660 over 420 on 2026-11-10 | 420 drops the missed-poll pairs: 1.8% fewer arrivals; 180 keeps 190 pairs |
-| `RAW_TZ` | `America/Chicago` | day file spans 00:00 to 23:55; localized as Chicago, fixes land within 60 s of the archive's UTC `vehicle_ts` | wrong tz shifts every arrival 5 to 6 h |
+| `RAW_TZ` | `cta.mansueto.MANSUETO_TZ` (`America/Chicago`), an alias because `to_utc` takes no timezone | day file spans 00:00 to 23:55; localized as Chicago, fixes land within 60 s of the archive's UTC `vehicle_ts` | wrong tz shifts every arrival 5 to 6 h |
 | `SOURCE_MANSUETO_RAW` | `"mansueto_raw"` | ADR-009 | n/a |
 | `MAX_IMPLIED_MPH`, `GEOMETRY_SLACK_FT` | archive values, reused | 0 and 23 pairs dropped at 300 s cadence on the cut | n/a |
 
