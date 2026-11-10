@@ -95,6 +95,24 @@ Tags: `kind:gotcha stage:view source:mansueto topic:thresholds`
 - Cause: Mansueto publishes no ping times, so `cta.views.run_level_from_mansueto` fills `bracket_gap_s` with NaN; the archive fills it from real fix pairs.
 - Fix: filters on `bracket_gap_s` must treat NaN as "not assessable" (pass through, count separately), never as 0.
 
+### Mansueto raw `tmstmp` is truncated to the minute
+Tags: `kind:gotcha source:mansueto stage:impute topic:timezone`
+- Symptom: raw-CSV arrivals run about 46 s ahead of archive arrivals for the same bus.
+- Cause: `full_day_data/*.csv` `tmstmp` is `YYYYMMDD HH:MM` Chicago wall time with the seconds cut off, not rounded: 10,145 of 10,933 fixes matched to the archive on 2026-10-22 were 0 to 60 s early, mean 46 s (`docs/2026-11-10-mansueto-raw-day-profile.md`).
+- Fix: not corrected, by owner decision (`specs/mansueto-raw-adapter.md`, Method 8). Travel times and headways within the source are unaffected; compare absolute times with the archive knowing the bias.
+
+### Mansueto raw `origtatripno` can be null
+Tags: `kind:gotcha source:mansueto stage:clean topic:identifiers`
+- Symptom: a route almost vanishes from one raw-CSV day, counted as `null_run_key_or_pdist`.
+- Cause: on 2026-10-22, route 47's six patterns 502450 to 502455 had no `origtatripno` (3,265 of the route's 3,295 rows); none were null on 2026-09-15. The ADR-009 run key needs it. `tatripid` is never null but coarser (16,380 against 18,286 run keys), so it cannot replace it.
+- Fix: rows are dropped and counted (`specs/mansueto-raw-adapter.md`); check the QA table per day before relying on a route.
+
+### Mansueto raw day files are calendar days, not service days
+Tags: `kind:gotcha source:mansueto stage:view topic:calendar`
+- Symptom: late-night runs are cut in two, or a post-midnight trip carries the next day's date.
+- Cause: each `full_day_data/YYYY-MM-DD.csv` holds local 00:00 to 23:55 and has no scheduled start, so the run key's `data_date` is the calendar date. On 2026-10-22, 23 of 1,559 Michigan runs started by 00:05 and 31 ended after 23:50; route 66 had 4.6% of its fixes before 04:00.
+- Fix: none; accepted and documented (`specs/mansueto-raw-adapter.md`, Method 8). Stitching across files needs its own spec before late-night numbers for routes 8 and 66 are used.
+
 ### Mansueto imputed times can run backwards along a pattern
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 - Symptom: a trip's `bus_stop_time` decreases between consecutive stops.
