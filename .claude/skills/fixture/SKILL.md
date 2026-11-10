@@ -1,6 +1,6 @@
 ---
 name: fixture
-description: Build or rebuild a committed test fixture under tests/fixtures/ from a public file, with its manifest (source URL, bytes, SHA-256, rows, fetch time). Use when a spec names a fixture that does not exist, when the user says "build the fixture for", "cut a fixture from", "refresh the getpatterns fixture", or when /implement finds a fixture missing. Enforces the one-archive-day limit, refuses if the source moved, and prints every deviation from the spec's estimates.
+description: Build or rebuild a committed test fixture under tests/fixtures/ from a public file, with its manifest (source URL, bytes, SHA-256, rows, fetch time). Use when a spec names a fixture that does not exist, when the user says "build the fixture for", "cut a fixture from", "refresh the getpatterns fixture", or when /implement finds a fixture missing. Enforces one archive day per fixture and the fixture size budget, refuses if the source moved, and prints every deviation from the spec's estimates.
 ---
 
 # /fixture — cut a committed fixture from a public file
@@ -38,8 +38,9 @@ specification; this skill is the procedure for writing the next one, not a gener
 
 ## Rules the builder enforces
 
-- **One archive day** (Rule 3), ever, per builder run and per fixture. A spec that needs two days needs
-  two specs or a synthetic fixture. Mansueto parquets are not archive days, but the full files are up to
+- **One archive day per fixture file** (Rule 3). A spec that needs more days lists each day in its
+  Fixtures section with the reason, and gets one small cut per day (or a synthetic fixture); the size
+  budget below is what bounds the total. Tests and CI never download an archive day at all. Mansueto parquets are not archive days, but the full files are up to
   400 MB each: fetch into `data/` (gitignored) with `cta.mansueto.fetch_parquet`, never into
   `tests/fixtures/`, and cut by row group as `cut_one_day` does.
 - **Refuse if the source moved.** Before cutting, compare the source against the guard in the table above
@@ -66,8 +67,13 @@ specification; this skill is the procedure for writing the next one, not a gener
 - **Tests never build.** The builder lives in `scripts/build_<source>_fixtures.py`, reads `.env` only for
   `CTA_API_KEY` (never printed, Rule 5), and tests read only what is committed. `data/` is never committed
   (Rule 4).
-- **Size.** Aim under 1 MB per file, under 5 MB per spec; state the measured size in the report. A cut
-  that cannot get there (a route's whole history) is the wrong fixture: cut a window or a day.
+- **Size.** Per file: aim under 1 MB; up to 5 MB is allowed with a one-line reason in the spec's
+  Fixtures section (the 3.7 MB archive day is the example: 45 pids over one day is the smallest cut that
+  covers the corridor). Over 5 MB: cut smaller (fewer pids, a time window) unless the owner approves.
+  All of `tests/fixtures/`: 20 MB; check with `du -sh tests/fixtures` and report before and after.
+  Rebuilds: git keeps every version, so rewriting a file over 1 MB with new bytes needs a reason in the
+  report; a byte-identical rebuild costs nothing. A cut that cannot fit (a route's whole history) is the
+  wrong fixture: cut a window or a day.
 
 ## Manifest
 
@@ -133,7 +139,7 @@ are deviations too; list them with the HTTP status.
 
 ## Report
 
-The fixture paths with rows, bytes and SHA-256; the manifest path; the guard values checked and their
+The fixture paths with rows, bytes and SHA-256; `tests/fixtures/` size before and after; the manifest path; the guard values checked and their
 result; the deviation table; getpatterns files added (and, after an owner-requested `--refresh`, the
 test numbers that moved); live calls spent; the determinism check with the pyarrow version; pytest's
 summary line; every file touched outside `scripts/` and `tests/fixtures/` and why.

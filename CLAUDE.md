@@ -71,7 +71,9 @@ A `git commit` that is blocked hit `.claude/hooks/precommit.sh` (pytest, rules 4
 1. **No unreviewed LLM prose reaches app users** (ADR-002). Numbers computed by our code are fine.
 2. Never change a published threshold or exclusion without updating the spec, the QA table and
    DECISIONS.md if it is a decision.
-3. Do not download more than one archive day in tests or CI. Fixtures live in `tests/fixtures/`.
+3. Tests and CI never download archive days; they read committed fixtures in `tests/fixtures/`, built with
+   `/fixture`. One archive day per fixture file; a spec needing more lists each day and why. Fixture budget:
+   under 1 MB per file (5 MB with a reason in the spec), 20 MB for `tests/fixtures/` in total.
 4. Do not write to `data/` from tests. Do not commit anything under `data/`.
 5. Secrets come from `.env` (gitignored). Never print `CTA_API_KEY`.
 6. Mansueto `speed_mph` is a ping-interval speed, not stop-to-stop. Do not compare it with imputed speeds.
