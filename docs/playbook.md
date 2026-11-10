@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-10-mansueto-raw-day-profile.md` | `kind:measurement source:mansueto source:archive stage:impute topic:thresholds` | Raw CSV day 2026-10-22 through the archive pair and imputation stages: 420 s keeps 98.3% of pairs (180 s keeps 190 of 21,834), `tmstmp` truncated about 46 s early, route 47 has no `origtatripno`, calendar-day files split midnight runs, day files exist back to 2022-05-19 |
 | `2026-11-06-mansueto-raw-positions.md` | `kind:measurement source:mansueto source:archive stage:fetch topic:calendar` | Raw 5-minute position CSVs on the Mansueto bucket cover 2026-08-13 to 2026-10-27 (71 days, 25 overlapping the archive), nothing since; parquets still frozen; schema and one-day profile |
 | `2026-11-05-model-routing.md` | `kind:owner-note topic:process` | Which model and effort runs `/spec`, `/implement` and the clerical skills, and where that is enforced |
 | `2026-11-04-mansueto-data-edge.md` | `kind:measurement source:mansueto topic:calendar topic:timezone` | Every Mansueto parquet ends 2026-07-28; `bus_stop_time` is naive Chicago wall time; row groups are not time-ordered; corrects the kept-pids window to 2026-06-28..07-28 |
