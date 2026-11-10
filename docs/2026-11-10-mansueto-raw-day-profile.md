@@ -58,6 +58,10 @@ At 420 s: zero (run, stop) duplicates, `bracket_gap_s` p10 / p50 / p90 / max = 2
   `sched_start_date` would give the previous day.
 - **`origtatripno` is null for route 47** on this day (zero nulls on 2026-09-15); a run key built from it
   drops that route.
+- **The route 47 nulls are all on six patterns, 502450 to 502455**; its pattern 3449 has none. Routes 8,
+  65 and 66 have zero null `origtatripno` on this day. `tatripid` is coarser than `origtatripno`
+  (16,380 against 18,286 run keys over the non-null rows; route 65: 167 against 185), so it cannot replace it.
+- **Fixes before 04:00 Chicago**: route 66 239 of 5,184, route 8 123 of 5,020, route 65 5 of 2,375.
 - **No pid carries a `.0` suffix** in the CSV (0 of 212,797 rows).
 - **History exists before the ADR-009 window.** HEAD 200 for 2022-05-19 (1.06 MB, a partial first day),
   2022-05-20 (28.3 MB), 2023-06-15 (31.1 MB), 2025-03-12 (43.1 MB) and 2026-07-27; 404 for 2026-10-28 and

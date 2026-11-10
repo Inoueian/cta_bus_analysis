@@ -16,7 +16,7 @@ route views and the Phase 3 cross-source checks wait on it. Evidence for every n
 
 | Input | Where | Schema / keys | Notes |
 |---|---|---|---|
-| Raw day CSV | `{cta.mansueto.BASE}/full_day_data/YYYY-MM-DD.csv`, cached as `data/mansueto_raw/YYYY-MM-DD.csv` | `vid, tmstmp, lat, lon, hdg, pid, rt, des, pdist, dly, tatripid, origtatripno, tablockid, zone, scrape_file, data_time, data_hour, data_date` | 26 to 45 MB; no manifest or checksum; `tmstmp` is `YYYYMMDD HH:MM` Chicago wall time, truncated to the minute; a calendar day, not a service day |
+| Raw day CSV | `{cta.mansueto.BASE}/full_day_data/YYYY-MM-DD.csv`, cached as `data/mansueto_raw/YYYY-MM-DD.csv` | `vid, tmstmp, lat, lon, hdg, pid, rt, des, pdist, dly, tatripid, origtatripno, tablockid, zone, scrape_file, data_time, data_hour, data_date` | 26 to 45 MB; no manifest or checksum; `tmstmp` is `YYYYMMDD HH:MM` Chicago wall time, truncated to the minute (about 46 s early on average); a calendar day, not a service day |
 | Pattern stops | `cta.bustracker.pattern_stops_table` (getpatterns cache) | pid, rtdir, seq, stop_rank, stpid, pdist_ft | passed in or read from `pattern_cache_dir`; never fetched here |
 
 ## Outputs
@@ -43,7 +43,7 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
    network functions.
 2. `read_day`: DuckDB `read_csv(all_varchar=true)` on `.csv` or `.csv.gz`; identifiers through
    `cta.mansueto._id_str` (gotcha "Identifiers arrive as `6410.0`"); `vehicle_ts` = `tmstmp` localized with
-   `RAW_TZ` plus `TMSTMP_OFFSET_S`, UTC; an ambiguous fall-back time becomes NaT (gotcha "naive Chicago wall
+   `RAW_TZ`, UTC, with no correction for the truncated seconds; an ambiguous fall-back time becomes NaT (gotcha "naive Chicago wall
    time"; none in the 2026 window, which ends before 2026-11-01).
 3. Stage `read`: rows_in = rows_out = rows for the requested pids.
 4. Stage `clean`: drop rows with null `vid`, `pid`, `origtatripno`, `data_date`, `pdist` or `tmstmp`
@@ -60,20 +60,23 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
    `calendar_flag` from `cta.calendar.calendar_flag(..., index=None)` (holidays only; gotcha "Holidays and
    archive outages are flags"). `csv_dir` holds `<day>.csv`, or any file whose name contains the day (the
    fixture). A day with no file raises; the view function never touches the network.
-9. Known limits, stated in the module docstring and not fixed here: a run crossing local midnight is two
-   run_ids in two files (23 runs start by 00:05 and 31 end after 23:50, of ~1,559); post-midnight arrivals
-   carry the calendar date (1,394 arrivals on the cut) where the archive gives the scheduled date.
+9. Known limits, stated in the module docstring and not fixed here (owner, 2026-11-10):
+   - `tmstmp` is truncated to the minute, so every arrival is early by 0 to 60 s, 46 s on average against
+     archive `vehicle_ts` on 2026-10-22. Differences within this source (travel time, headway) are unaffected.
+   - A run crossing local midnight is two run_ids in two files (23 runs start by 00:05 and 31 end after
+     23:50, of ~1,559); post-midnight arrivals carry the calendar date where the archive gives the scheduled date.
+   - Rows with a null `origtatripno` are dropped: route 47's six `5024xx` patterns on 2026-10-22 (3,265 rows).
+   - Arrivals across one missed poll are kept (`bracket_gap_s` 540 to 660); downstream filters decide.
 10. No speed column (Rule 6). ADR-010 excludes this source from segment speeds in figure code via `source`.
 
 ## Thresholds and exclusions
 
 | Name | Value | Evidence | Sensitivity if changed |
 |---|---|---|---|
-| `MAX_RAW_BRACKET_GAP_S` | 420.0 | 2026-10-22 profile: 97% of pairs at 240/300/360 s; max poll spacing 348 s + 60 s truncation; drops 334 of 21,834 pairs (1.5%) | 660 keeps one-missed-poll pairs: +1.8% arrivals, each with a 10-minute bracket; 180 keeps 190 pairs |
-| `TMSTMP_OFFSET_S` | 46.0 | archive `vehicle_ts` minus CSV `tmstmp` on 10,145 matched fixes: all in [0, 60), mean 45.8 s | 0 leaves arrivals ~46 s early against the archive; headways and travel times do not move |
+| `MAX_RAW_BRACKET_GAP_S` | 660.0 | 2026-10-22 profile: 97% of pairs at 240/300/360 s, a second cluster at 540 to 660 s is one missed poll (two poll spacings + 60 s truncation); drops 85 of 21,834 pairs (0.4%). Owner chose 660 over 420 on 2026-11-10 | 420 drops the missed-poll pairs: 1.8% fewer arrivals; 180 keeps 190 pairs |
 | `RAW_TZ` | `America/Chicago` | day file spans 00:00 to 23:55; localized as Chicago, fixes land within 60 s of the archive's UTC `vehicle_ts` | wrong tz shifts every arrival 5 to 6 h |
 | `SOURCE_MANSUETO_RAW` | `"mansueto_raw"` | ADR-009 | n/a |
-| `MAX_IMPLIED_MPH`, `GEOMETRY_SLACK_FT` | archive values, reused | 0 and 20 pairs dropped at 300 s cadence on the cut | n/a |
+| `MAX_IMPLIED_MPH`, `GEOMETRY_SLACK_FT` | archive values, reused | 0 and 23 pairs dropped at 300 s cadence on the cut | n/a |
 
 ## Fixtures
 
@@ -92,12 +95,12 @@ file, because `scripts/build_mansueto_fixtures.py` rewrites `mansueto.manifest.j
 
 All in `tests/test_mansueto_raw.py` and `tests/test_views_mansueto_raw.py`, on the fixture above unless hand-built.
 
-- [ ] `test_read_day_rows_and_types`: ~23,453 rows matching the manifest's rows and SHA-256, ~44 pids, identifiers `str`, `vehicle_ts` tz-aware UTC with second 46 on every row, no nulls introduced.
+- [ ] `test_read_day_rows_and_types`: ~23,453 rows matching the manifest's rows and SHA-256, ~44 pids, identifiers `str`, `vehicle_ts` tz-aware UTC with second 0 on every row, no nulls introduced.
 - [ ] `test_clean_fixes_counts`: ~23,393 fixes, ~1,559 runs, reasons `duplicate_fix` ~60 and nothing else.
-- [ ] `test_known_case_arrivals` (hand-built): pings at 08:00, 08:05, 08:10 Chicago on 2026-09-15 with pdist 0, 3000, 6000 and stops at 1500 and 4500 ft arrive at 13:03:16 and 13:08:16 UTC exactly, `bracket_gap_s == 300`; a repeated `tmstmp` keeps the lower pdist; a null `origtatripno` row and a 2025-11-02 01:30 row are dropped as `null_run_key_or_pdist` and `dst_ambiguous_time`.
-- [ ] `test_gap_threshold_is_per_source` (hand-built): a 300 s pair survives and a 600 s pair is `gap_over_max` under `MAX_RAW_BRACKET_GAP_S`; the same 300 s pair is dropped by `fix_pairs` with no `max_gap_s`; `cta.archive.MAX_BRACKET_GAP_S == 180`.
-- [ ] `test_run_level_view`: columns exactly `RUN_LEVEL_COLUMNS`; `source == "mansueto_raw"`; ~95,925 rows, ~1,531 runs; zero (run_id, stop_id) duplicates; `bracket_gap_s` never null, max ≤ 420, median 300; `stop_sequence_index` strictly increasing within a run when sorted by `arrival_time` then index; `service_date == "2026-10-22"`; `calendar_flag == ""`.
-- [ ] `test_qa_table`: stages `read`, `clean`, `pairs`, `impute` for the day; reason counts sum to rows_in − rows_out at each; pairs rows_in = fixes − runs (~21,834); `gap_over_max` ~334, `backward_pdist` ~26, `geometry_unsupported` ~20, `later_crossing` ~5.
+- [ ] `test_known_case_arrivals` (hand-built): pings at 08:00, 08:05, 08:10 Chicago on 2026-09-15 with pdist 0, 3000, 6000 and stops at 1500 and 4500 ft arrive at 13:02:30 and 13:07:30 UTC exactly, `bracket_gap_s == 300`; a repeated `tmstmp` keeps the lower pdist; a null `origtatripno` row and a 2025-11-02 01:30 row are dropped as `null_run_key_or_pdist` and `dst_ambiguous_time`.
+- [ ] `test_gap_threshold_is_per_source` (hand-built): 300 s and 600 s pairs survive and a 900 s pair is `gap_over_max` under `MAX_RAW_BRACKET_GAP_S`; the same 300 s pair is dropped by `fix_pairs` with no `max_gap_s`; `cta.archive.MAX_BRACKET_GAP_S == 180`.
+- [ ] `test_run_level_view`: columns exactly `RUN_LEVEL_COLUMNS`; `source == "mansueto_raw"`; ~97,663 rows, ~1,532 runs; zero (run_id, stop_id) duplicates; `bracket_gap_s` never null, max ≤ 660, median 300; `stop_sequence_index` strictly increasing within a run when sorted by `arrival_time` then index; `service_date == "2026-10-22"`; `calendar_flag == ""`.
+- [ ] `test_qa_table`: stages `read`, `clean`, `pairs`, `impute` for the day; reason counts sum to rows_in − rows_out at each; pairs rows_in = fixes − runs (~21,834); `gap_over_max` ~85, `backward_pdist` ~30, `geometry_unsupported` ~23, `later_crossing` ~5.
 - [ ] `test_fetch_day_records_and_refuses` (monkeypatched `http_head` / `download`, `tmp_path`): writes the metadata file; a second call with a changed `Last-Modified` raises; a 404 raises `FileNotFoundError`; nothing touches the network or `data/`.
 - [ ] `test_refuses_archive_connection`: a connection with a row in `archive_ingest` raises; `tests/test_archive.py` and `tests/test_views_archive.py` pass unmodified.
 
@@ -105,6 +108,7 @@ All in `tests/test_mansueto_raw.py` and `tests/test_views_mansueto_raw.py`, on t
 
 - Comparing these arrivals with the archive or the parquet, per-pid medians, any ADR-006 bound: the Phase 3 cross-source item, which also owns the same-day archive fixture.
 - Stitching runs across midnight or deriving a service day; reading two day files as one.
+- Shifting `tmstmp` to correct the truncation; falling back to `tatripid` for a null `origtatripno`.
 - Days before 2026-08-13. Files exist back to 2022-05-19 (sampled), but ADR-009 bounds this source; history is a new decision.
 - Coverage holes and the CSV edge in `cta/calendar.py` (calendar item); the refresh probe (Phase 3).
 - A CLI script; `scripts/route_run_level.py` (Phase 1) calls the view function.
@@ -113,7 +117,6 @@ All in `tests/test_mansueto_raw.py` and `tests/test_views_mansueto_raw.py`, on t
 
 ## Open questions
 
-1. `TMSTMP_OFFSET_S = 46`: shift every fix by the measured mean truncation, as specified, or leave times unshifted and let the cross-source check report the bias? One day of evidence; the offset is unmeasured before 2026-09-28.
-2. Route 47 has null `origtatripno` on 2026-10-22 (3,265 of 3,295 rows) and is dropped by the ADR-009 key. Accept for now, or fall back to `tatripid` (never null, upstream's key), which amends ADR-009?
-3. `MAX_RAW_BRACKET_GAP_S`: 420 as specified, or 660 to keep arrivals across one missed poll and leave the filtering to `bracket_gap_s` downstream?
-4. Is calendar-date `service_date` with midnight-split runs acceptable for the Phase 1 route views (routes 8, 65, 66), or should stitching be specced before they use this source?
+None. Resolved 2026-11-10 by the owner: `tmstmp` is not shifted, the truncation is documented;
+rows with a null `origtatripno` are dropped under the ADR-009 key; `MAX_RAW_BRACKET_GAP_S` is 660;
+calendar-date `service_date` and midnight-split runs are accepted and documented.
