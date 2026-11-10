@@ -21,7 +21,7 @@ Argument: a path under `specs/`.
    one. Do not read other modules until a test fails for want of one.
 2. If the spec's status is not `ready`, stop and say so; offer `/spec` to review it. Do not implement a draft because it looks fine.
 3. If the spec contradicts itself or an Accepted ADR, stop and ask. Otherwise do not ask; write assumptions down and continue.
-4. Confirm every fixture the acceptance tests name exists under `tests/fixtures/`. If one is missing and the spec says how to build it, build it first, from the public file it names, and verify the stated SHA-256 or row count. Never download more than one archive day.
+4. Confirm every fixture the acceptance tests name exists under `tests/fixtures/`. If one is missing and the spec's Fixtures section says how to build it, build it first with `/fixture` (it owns the source-moved guard, the manifest and the deviation table) and carry its deviation table into this skill's report. Never download more than one archive day, and never pass `--refresh` to the getpatterns builder from here: a missing pattern file is added, a committed one is not rewritten.
 
 ## Plan before code
 

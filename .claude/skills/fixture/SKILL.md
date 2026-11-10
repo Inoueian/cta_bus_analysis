@@ -15,8 +15,9 @@ specification; this skill is the procedure for writing the next one, not a gener
 
 ## Before building
 
-1. Read `CLAUDE.md` Rules 3 and 4, the spec's Inputs, Acceptance tests and "Fixtures to build"
-   paragraph, and the playbook entries for the source:
+1. Read `CLAUDE.md` Rules 3 and 4, the spec's Inputs, Fixtures and Acceptance tests sections (specs
+   written before the template had a Fixtures section describe fixtures in a paragraph under Acceptance
+   tests, as `specs/mansueto-adapter.md` does), and the playbook entries for the source:
 
    ```
    grep -n 'Tags:.*source:<x>' docs/playbook.md          # gotchas and patterns for this source
@@ -30,7 +31,7 @@ specification; this skill is the procedure for writing the next one, not a gener
    | Transit Alerts archive (`positions/bus/…ndjson.gz`) | `scripts/build_archive_fixtures.py` `build_day_fixture` | `index.json` `sha256` and `rows` for the day, via `cta.archive.ensure_day_file` | same shape as `index.json` (`days[].files.bus.{path,rows,bytes,sha256}`, `known_gaps`), so `cta.archive.ingest_day` verifies it unchanged |
    | Mansueto parquet (`processed_by_pid/trips_<pid>_full.parquet`) | `scripts/build_mansueto_fixtures.py` `ensure_source`, `cut_one_day`, `cut_last30d` | `Last-Modified` on `cta.mansueto.MANSUETO_DATA_EDGE` and last row within `MAX_EDGE_LAG_DAYS` of it; footer `rows` equals a scan | `mansueto.manifest.json` (`sources` per pid with the `data_edge` dict, `files` per fixture) |
    | Mansueto raw day CSV (`full_day_data/YYYY-MM-DD.csv`) | the Mansueto builder's structure; `cta.mansueto.http_head` + `download` | none upstream (no manifest, ADR-009): record `bytes` and `Last-Modified` from a HEAD at build time and refuse on a later rebuild if either differs | same core as Mansueto, `sources` keyed by day |
-   | Bus Tracker `getpatterns` | `scripts/build_archive_fixtures.py` `build_getpatterns_fixture` | none (the pattern is the current truth; a refresh is a deliberate rebuild) | the JSON files themselves; the builder prints live calls spent against the 10k/day budget |
+   | Bus Tracker `getpatterns` | `scripts/build_archive_fixtures.py` `build_getpatterns_fixture` | add-only: `getpatterns_to_write` fetches only pids with no committed file; `--refresh` overwrites, and is a deliberate change (below) | the JSON files themselves; the builder prints files added, files left untouched and live calls spent against the 10k/day budget |
 
 3. Check `tests/fixtures/` for a fixture that already covers the ask (same source, superset of pids
    or days). Reuse it and stop; a second fixture of the same rows costs every clone a download.
@@ -46,13 +47,22 @@ specification; this skill is the procedure for writing the next one, not a gener
   which ADR or note to re-measure: ADR-007 for the parquet edge, ADR-009 for the raw CSVs, the
   `index.json` `generated_at` for the archive). Never widen the guard to make a build pass; a moved
   source is a finding (`/finding`) before it is a fixture.
-- **Deterministic bytes.** gzip with `mtime=0, filename=""`; parquet sorted by (run, sequence, time)
-  and written with `compression="zstd"`; CSV rows in source order; JSON with `indent=1` and a trailing
-  newline. Running the builder twice on an unchanged source must produce identical SHA-256s; check it
-  once and say so in the report.
+- **Deterministic bytes, within one environment.** gzip with `mtime=0, filename=""`; parquet sorted by
+  (run, sequence, time) and written with `compression="zstd"`; CSV rows in source order; JSON with
+  `indent=1` and a trailing newline. Running the builder twice on an unchanged source in the same
+  environment must give fixture files with identical SHA-256s; check it once and say so in the report.
+  Two things are expected to differ and are not a failure: the manifest (`built_at`, `fetched_at`), and
+  parquet bytes across library versions (pyarrow writes its version into the file's `created_by`
+  field). A rebuild that changes a parquet SHA-256 but not its rows, columns or values is a library
+  change; say so, and record the pyarrow version in the report.
 - **Rows kept verbatim.** A fixture filters rows (by pid, route, day, window); it never edits columns,
   renames, re-types or drops nulls. Cleaning is the adapter's job and the QA table must see the raw rows.
   The one exception is a byte-range sample (the parquet footer) which is labelled as such.
+- **Committed getpatterns files are not refreshed in passing.** Patterns drift (route 3 lost 108 + 113
+  stops between July and November 2026, `docs/2026-11-04-mansueto-adapter-qa.md`), and every adapter
+  test joins on these files, so overwriting them moves pinned numbers in both adapters at once. Adding
+  pids is routine. `--refresh` is a Rule 2-sized change: only when the owner asks for it, with the
+  before/after test numbers in the report and the spec(s) whose pinned values moved updated.
 - **Tests never build.** The builder lives in `scripts/build_<source>_fixtures.py`, reads `.env` only for
   `CTA_API_KEY` (never printed, Rule 5), and tests read only what is committed. `data/` is never committed
   (Rule 4).
@@ -61,18 +71,24 @@ specification; this skill is the procedure for writing the next one, not a gener
 
 ## Manifest
 
-Every fixture has one, next to it or in the source's shared manifest, with at least:
+Every fixture has one, next to it or in the source's shared manifest. There are two shapes, one per
+bucket; do not unify them, and add keys rather than rename.
 
-```
-title        what and for which spec                 builder     scripts/build_<source>_fixtures.py
-built_at     UTC ISO timestamp
-sources      per source file: url, bytes, last_modified, fetched_at, and the guard values
-             (archive: index sha256/rows and generated_at; parquet: data_edge dict; raw CSV: head bytes/last_modified)
-files        per fixture file: rows, bytes, sha256, the cut (pids, route, day or window, timezone)
-```
+- **Archive**: the `index.json` shape, because `cta.archive.ingest_day` verifies the fixture against it
+  exactly as it verifies a real day: `title`, `source_index_generated_at`, `timezone`, `source_day`
+  (the published day's `path`, `rows`, `bytes`, `sha256`), `filter`, `known_gaps`, and `days[].files.bus`
+  (`path`, `rows`, `bytes`, `sha256` of the fixture). Copy `archive_2026-10-29_michigan.index.json`.
+- **Mansueto bucket** (parquets, `rt_to_pid.csv`, raw day CSVs): copy `mansueto.manifest.json`:
 
-Keep the archive manifest in `index.json` shape (the adapter verifies against it); keep the Mansueto shape
-for anything from that bucket. Do not unify them; add keys, do not rename.
+  ```
+  title        what and for which spec                 builder     scripts/build_<source>_fixtures.py
+  built_at     UTC ISO timestamp
+  sources      per source file: url, bytes, last_modified, fetched_at, and the guard values
+               (parquet: data_edge dict; raw CSV: HEAD bytes and last_modified)
+  files        per fixture file: rows, bytes, sha256, the cut (pids, route, day or window, timezone)
+  ```
+
+- **getpatterns**: no manifest; the files are the raw API responses, named `getpatterns_<pid>.json`.
 
 Record every self-check the builder runs as a dict under the file entry
 (`service_date_check` in the Mansueto manifest is the model), so the test that pins the number can
@@ -104,8 +120,9 @@ are deviations too; list them with the HTTP status.
 
 ## After
 
-- The spec's "Fixtures to build" paragraph gets the measured rows, bytes and SHA-256 prefix and a
-  "Built YYYY-MM-DD by `scripts/…`" line; estimates it carried are re-marked as measured.
+- The spec's Fixtures section (or, in an older spec, its fixture paragraph) gets the measured rows,
+  bytes and SHA-256 prefix and a "Built YYYY-MM-DD by `scripts/…`" line; estimates it carried are
+  re-marked as measured.
 - If the deviation table changed a number the spec relied on, or the source moved, record it with
   `/finding` (a dated note; the Mansueto QA note shows the shape under "Data facts that corrected the
   spec").
@@ -117,5 +134,6 @@ are deviations too; list them with the HTTP status.
 ## Report
 
 The fixture paths with rows, bytes and SHA-256; the manifest path; the guard values checked and their
-result; the deviation table; getpatterns live calls spent, if any; the determinism check; pytest's
+result; the deviation table; getpatterns files added (and, after an owner-requested `--refresh`, the
+test numbers that moved); live calls spent; the determinism check with the pyarrow version; pytest's
 summary line; every file touched outside `scripts/` and `tests/fixtures/` and why.
