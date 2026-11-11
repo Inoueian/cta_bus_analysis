@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-10-mansueto-raw-day-profile.md` | `kind:measurement source:mansueto source:archive stage:impute topic:thresholds` | Raw CSV day 2026-10-22 through the archive pair and imputation stages: 420 s keeps 98.3% of pairs (180 s keeps 190 of 21,834), `tmstmp` truncated about 46 s early, route 47 has no `origtatripno`, calendar-day files split midnight runs, day files exist back to 2022-05-19 |
 | `2026-11-06-mansueto-raw-positions.md` | `kind:measurement source:mansueto source:archive stage:fetch topic:calendar` | Raw 5-minute position CSVs on the Mansueto bucket cover 2026-08-13 to 2026-10-27 (71 days, 25 overlapping the archive), nothing since; parquets still frozen; schema and one-day profile |
 | `2026-11-05-model-routing.md` | `kind:owner-note topic:process` | Which model and effort runs `/spec`, `/implement` and the clerical skills, and where that is enforced |
 | `2026-11-04-mansueto-data-edge.md` | `kind:measurement source:mansueto topic:calendar topic:timezone` | Every Mansueto parquet ends 2026-07-28; `bus_stop_time` is naive Chicago wall time; row groups are not time-ordered; corrects the kept-pids window to 2026-06-28..07-28 |
@@ -93,6 +94,24 @@ Tags: `kind:gotcha stage:view source:mansueto topic:thresholds`
 - Symptom: a gap filter keeps or drops every Mansueto row.
 - Cause: Mansueto publishes no ping times, so `cta.views.run_level_from_mansueto` fills `bracket_gap_s` with NaN; the archive fills it from real fix pairs.
 - Fix: filters on `bracket_gap_s` must treat NaN as "not assessable" (pass through, count separately), never as 0.
+
+### Mansueto raw `tmstmp` is truncated to the minute
+Tags: `kind:gotcha source:mansueto stage:impute topic:timezone`
+- Symptom: raw-CSV arrivals run about 46 s ahead of archive arrivals for the same bus.
+- Cause: `full_day_data/*.csv` `tmstmp` is `YYYYMMDD HH:MM` Chicago wall time with the seconds cut off, not rounded: 10,145 of 10,933 fixes matched to the archive on 2026-10-22 were 0 to 60 s early, mean 46 s (`docs/2026-11-10-mansueto-raw-day-profile.md`).
+- Fix: not corrected, by owner decision (`specs/mansueto-raw-adapter.md`, Method 8). Travel times and headways within the source are unaffected; compare absolute times with the archive knowing the bias.
+
+### Mansueto raw `origtatripno` can be null
+Tags: `kind:gotcha source:mansueto stage:clean topic:identifiers`
+- Symptom: a route almost vanishes from one raw-CSV day, counted as `null_run_key_or_pdist`.
+- Cause: on 2026-10-22, route 47's six patterns 502450 to 502455 had no `origtatripno` (3,265 of the route's 3,295 rows); none were null on 2026-09-15. The ADR-009 run key needs it. `tatripid` is never null but coarser (16,380 against 18,286 run keys), so it cannot replace it.
+- Fix: rows are dropped and counted (`specs/mansueto-raw-adapter.md`); check the QA table per day before relying on a route.
+
+### Mansueto raw day files are calendar days, not service days
+Tags: `kind:gotcha source:mansueto stage:view topic:calendar`
+- Symptom: late-night runs are cut in two, or a post-midnight trip carries the next day's date.
+- Cause: each `full_day_data/YYYY-MM-DD.csv` holds local 00:00 to 23:55 and has no scheduled start, so the run key's `data_date` is the calendar date. On 2026-10-22, 23 of 1,559 Michigan runs started by 00:05 and 31 ended after 23:50; route 66 had 4.6% of its fixes before 04:00.
+- Fix: none; accepted and documented (`specs/mansueto-raw-adapter.md`, Method 8). A file can also hold a few stale rows dated the evening before (4 on 2026-10-22); the adapter drops them as `other_data_date`. Stitching across files needs its own spec before late-night numbers for routes 8 and 66 are used.
 
 ### Mansueto imputed times can run backwards along a pattern
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
