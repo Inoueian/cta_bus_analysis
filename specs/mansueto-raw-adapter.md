@@ -1,7 +1,7 @@
 # Spec: Mansueto raw-positions adapter → run-level view
 
-Status: draft
-Owner: Satoru  ·  Date: 2026-11-10  ·  TODO item (Foundation): "Mansueto raw-positions adapter (`cta/mansueto_raw.py`, `source='mansueto_raw'`, ADR-009): read `full_day_data/YYYY-MM-DD.csv` (71 day files 2026-08-13 to 2026-10-27, 300 s cadence, minute timestamps, `pdist` in feet, no manifest; `docs/2026-11-06-mansueto-raw-positions.md`) into the archive's pair and imputation stages with its own named gap threshold (`MAX_BRACKET_GAP_S = 180` would drop every pair), a run key from `vid`, `pid`, `origtatripno`, `data_date`, one committed day cut as the fixture (`/fixture`, Rule 3) and the per-stage QA table; `cta.views.run_level_from_mansueto_raw` with `bracket_gap_s` populated. Day files exist back to 2022-05-19 (HEAD on four sampled days, `docs/2026-11-10-mansueto-raw-day-profile.md`), but ADR-009 bounds the source to the 2026 window; reading history is a new decision. Unblocks the Phase 3 cross-source checks. Spec: specs/mansueto-raw-adapter.md (draft)"
+Status: ready
+Owner: Satoru  ·  Date: 2026-11-10  ·  TODO item (Foundation): "Mansueto raw-positions adapter (`cta/mansueto_raw.py`, `source='mansueto_raw'`, ADR-009): read `full_day_data/YYYY-MM-DD.csv` (71 day files 2026-08-13 to 2026-10-27, 300 s cadence, minute timestamps, `pdist` in feet, no manifest; `docs/2026-11-06-mansueto-raw-positions.md`) into the archive's pair and imputation stages with its own named gap threshold (`MAX_BRACKET_GAP_S = 180` would drop every pair), a run key from `vid`, `pid`, `origtatripno`, `data_date`, one committed day cut as the fixture (`/fixture`, Rule 3) and the per-stage QA table; `cta.views.run_level_from_mansueto_raw` with `bracket_gap_s` populated. Day files exist back to 2022-05-19 (HEAD on four sampled days, `docs/2026-11-10-mansueto-raw-day-profile.md`), but ADR-009 bounds the source to the 2026 window; reading history is a new decision. Unblocks the Phase 3 cross-source checks. Spec: specs/mansueto-raw-adapter.md (ready)"
 Tags: `kind:spec source:mansueto stage:clean stage:impute stage:view`
 
 ## Question
@@ -53,8 +53,8 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
    (`dst_ambiguous_time`), then keep one fix per (run_id, vehicle_ts) with min `pdist` (`duplicate_fix`). So
    `service_date` always equals the file's day and (run_id, stop_id) is unique across days.
 4. Stage `pairs`: `cta.archive.fix_pairs(con, day, fixes, known_gaps=None, max_gap_s=MAX_RAW_BRACKET_GAP_S)`.
-   This adds one keyword, `max_gap_s: float = MAX_BRACKET_GAP_S`, to `fix_pairs`; archive behaviour and
-   tests are unchanged. Transit Alerts `known_gaps` are not Mansueto outages, so none are passed.
+   This adds one keyword, `max_gap_s: float = MAX_BRACKET_GAP_S`, to `fix_pairs`; archive behaviour is unchanged and
+   `tests/test_archive.py`, `tests/test_views_archive.py` pass unmodified. Transit Alerts `known_gaps` are not Mansueto outages, so none are passed.
 5. Stage `impute`: `cta.archive.impute_arrivals` unchanged.
 6. QA lives in `archive_qa` on a connection from `cta.mansueto_raw.open_db()` (in-memory by default), which also
    creates a one-row marker table `mansueto_raw_db`; `cta.mansueto_raw.qa(con, day)` returns it. The adapter
@@ -101,15 +101,14 @@ archive side of the same day. Own manifest, as `scripts/build_mansueto_fixtures.
 
 In `tests/test_mansueto_raw.py` and `tests/test_views_mansueto_raw.py`.
 
-- [ ] `test_read_day_rows_and_types` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`): ~23,453 rows matching the manifest's rows and SHA-256, ~44 pids, identifiers `str`, `vehicle_ts` tz-aware UTC with second 0 on every row, no nulls introduced.
-- [ ] `test_clean_fixes_counts` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`): ~23,393 fixes, ~1,559 runs, reasons `duplicate_fix` ~60 and nothing else.
-- [ ] `test_known_case_arrivals` (hand-built, no fixture): pings at 08:00, 08:05, 08:10 Chicago on 2026-09-15 with pdist 0, 3000, 6000 and stops at 1500 and 4500 ft arrive at 13:02:30 and 13:07:30 UTC exactly, `bracket_gap_s == 300`; a repeated `tmstmp` keeps the lower pdist; a null `origtatripno` row and a 2025-11-02 01:30 row are dropped as `null_run_key_or_pdist` and `dst_ambiguous_time`.
+- [ ] `test_read_and_clean_fixture` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`): `read_day` gives ~23,453 rows matching the manifest's rows and SHA-256, ~44 pids, identifiers `str`, `vehicle_ts` tz-aware UTC with second 0 on every row, no nulls introduced; `clean_fixes` gives ~23,393 fixes, ~1,559 runs, reasons `duplicate_fix` ~60 and nothing else.
+- [ ] `test_known_case_arrivals` (hand-built, no fixture): pings at 08:00, 08:05, 08:10 Chicago on 2026-09-15 (every row `data_date` 2026-09-15) with pdist 0, 3000, 6000 and stops at 1500 and 4500 ft arrive at 13:02:30 and 13:07:30 UTC exactly, `bracket_gap_s == 300`; a repeated `tmstmp` keeps the lower pdist; a null `origtatripno` row and a 2025-11-02 01:30 row are dropped as `null_run_key_or_pdist` and `dst_ambiguous_time`.
 - [ ] `test_two_days_no_shared_runs` (hand-built, no fixture; `tmp_path`): files for 2026-09-15 and 2026-09-16 hold one bus's trip each, and the second also holds two fixes of the first day's trip with `data_date` 2026-09-15; the view over both days counts 2 `other_data_date` on 2026-09-16, has zero (run_id, stop_id) duplicates, and every row's `service_date` is its file's day.
 - [ ] `test_gap_threshold_is_per_source` (hand-built, no fixture): 300 s and 600 s pairs survive and a 900 s pair is `gap_over_max` under `MAX_RAW_BRACKET_GAP_S`; the same 300 s pair is dropped by `fix_pairs` with no `max_gap_s`; `cta.archive.MAX_BRACKET_GAP_S == 180`.
-- [ ] `test_run_level_view` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`, `tests/fixtures/getpatterns/`): columns exactly `RUN_LEVEL_COLUMNS`; `source == "mansueto_raw"`; ~97,663 rows, ~1,532 runs; zero (run_id, stop_id) duplicates; `bracket_gap_s` never null, max ≤ 660, median 300; `stop_sequence_index` strictly increasing within a run when sorted by `arrival_time` then index; `service_date == "2026-10-22"`; `calendar_flag == ""`.
+- [ ] `test_run_level_view` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`, `tests/fixtures/getpatterns/`): columns exactly `RUN_LEVEL_COLUMNS`; `source == "mansueto_raw"`; ~97,663 rows, ~1,532 runs; zero (run_id, stop_id) duplicates; `bracket_gap_s` never null, max ≤ 660, median 300 (estimate; measure, then pin); `stop_sequence_index` strictly increasing within a run when sorted by `arrival_time` then index; `service_date == "2026-10-22"`; `calendar_flag == ""`.
 - [ ] `test_qa_table` (`tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`, `tests/fixtures/getpatterns/`): stages `read`, `clean`, `pairs`, `impute` for the day; reason counts sum to rows_in − rows_out at each; pairs rows_in = fixes − runs (~21,834); `gap_over_max` ~85, `backward_pdist` ~30, `geometry_unsupported` ~23, `later_crossing` ~5.
 - [ ] `test_fetch_day_records_and_refuses` (hand-built, no fixture: monkeypatched `http_head` / `download`, `tmp_path`): writes the metadata file; a second call with an unchanged HEAD returns the same path and `download` has been called once; a changed `Last-Modified` raises; a download shorter than the HEAD `bytes` raises and leaves no file or metadata; a 404 raises `FileNotFoundError`; nothing touches the network or `data/`.
-- [ ] `test_refuses_foreign_connection_and_files` (hand-built, no fixture; `tmp_path`): a `cta.archive.open_archive_db()` connection (no marker) raises, and so does an `open_db()` connection with a row in `archive_ingest`; `2026-10-22.csv` beside `mansueto_raw_2026-10-22_x.csv.gz` raises, an `archive_2026-10-22_x.ndjson.gz` beside one of them is ignored; `tests/test_archive.py` and `tests/test_views_archive.py` pass unmodified.
+- [ ] `test_refuses_foreign_connection_and_files` (hand-built, no fixture; `tmp_path`): a `cta.archive.open_archive_db()` connection (no marker) raises, and so does an `open_db()` connection with a row in `archive_ingest`; `2026-10-22.csv` beside `mansueto_raw_2026-10-22_x.csv.gz` raises, an `archive_2026-10-22_x.ndjson.gz` beside one of them is ignored.
 
 ## Out of scope
 
@@ -125,4 +124,5 @@ In `tests/test_mansueto_raw.py` and `tests/test_views_mansueto_raw.py`.
 ## Open questions
 
 None. Resolved by the owner 2026-11-10: no `tmstmp` shift; null `origtatripno` rows dropped; gap cap 660 s;
-calendar-date `service_date` and midnight-split runs accepted. Review fixes applied the same day.
+calendar-date `service_date` and midnight-split runs accepted. Review fixes applied the same day;
+marked ready by the owner 2026-11-11 after a final review (two fixture tests merged, estimates marked).
