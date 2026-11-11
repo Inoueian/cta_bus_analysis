@@ -1,0 +1,102 @@
+{
+ "title": "Fixture manifest: Mansueto raw day-CSV cut for specs/mansueto-raw-adapter.md",
+ "built_at": "2026-11-11T03:14:24.774567+00:00",
+ "builder": "scripts/build_mansueto_raw_fixtures.py",
+ "timezone": "America/Chicago",
+ "sources": {
+  "2026-10-22": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/full_day_data/2026-10-22.csv",
+   "bytes": 43877441,
+   "last_modified": "2026-10-23T10:02:16+00:00",
+   "fetched_at": "2026-11-11T03:13:57.626899+00:00"
+  }
+ },
+ "files": {
+  "mansueto_raw_2026-10-22_michigan.csv.gz": {
+   "rows": 23453,
+   "bytes": 728627,
+   "sha256": "d27f1d9971772091f380d73b5513c0784e396f3ec0fbdacbff3971192365216e",
+   "cut": {
+    "day": "2026-10-22",
+    "pids_from": "notebooks/michigan_ave_kept_pids.json",
+    "pids": [
+     "1054",
+     "14130",
+     "14132",
+     "14134",
+     "18414",
+     "18415",
+     "19372",
+     "19373",
+     "19374",
+     "19378",
+     "19379",
+     "19381",
+     "25899",
+     "4511",
+     "4512",
+     "4522",
+     "4524",
+     "4526",
+     "6351",
+     "6394",
+     "6395",
+     "6398",
+     "6399",
+     "6400",
+     "6402",
+     "6403",
+     "6410",
+     "6414",
+     "6581",
+     "6582",
+     "6586",
+     "7445",
+     "7448",
+     "7449",
+     "7450",
+     "7451",
+     "7452",
+     "7724",
+     "8085",
+     "8097",
+     "8102",
+     "8119",
+     "8120",
+     "8121",
+     "8130"
+    ],
+    "lines": "header plus lines whose pid column is in pids, verbatim, source order",
+    "gzip": "mtime 0, no file name, level 9"
+   },
+   "self_checks": {
+    "source_rows": 212797,
+    "pids_requested": 45,
+    "pids_present": 44,
+    "pids_absent": [
+     "1054"
+    ],
+    "columns": [
+     "vid",
+     "tmstmp",
+     "lat",
+     "lon",
+     "hdg",
+     "pid",
+     "rt",
+     "des",
+     "pdist",
+     "dly",
+     "tatripid",
+     "origtatripno",
+     "tablockid",
+     "zone",
+     "scrape_file",
+     "data_time",
+     "data_hour",
+     "data_date"
+    ]
+   }
+  }
+ }
+}

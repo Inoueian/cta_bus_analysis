@@ -1,6 +1,6 @@
 # Spec: Mansueto raw-positions adapter → run-level view
 
-Status: ready
+Status: done (branch `claude/pensive-ramanujan-j7dqpf`, 2026-11-11)
 Owner: Satoru  ·  Date: 2026-11-10  ·  TODO item (Foundation): "Mansueto raw-positions adapter (`cta/mansueto_raw.py`, `source='mansueto_raw'`, ADR-009): read `full_day_data/YYYY-MM-DD.csv` (71 day files 2026-08-13 to 2026-10-27, 300 s cadence, minute timestamps, `pdist` in feet, no manifest; `docs/2026-11-06-mansueto-raw-positions.md`) into the archive's pair and imputation stages with its own named gap threshold (`MAX_BRACKET_GAP_S = 180` would drop every pair), a run key from `vid`, `pid`, `origtatripno`, `data_date`, one committed day cut as the fixture (`/fixture`, Rule 3) and the per-stage QA table; `cta.views.run_level_from_mansueto_raw` with `bracket_gap_s` populated. Day files exist back to 2022-05-19 (HEAD on four sampled days, `docs/2026-11-10-mansueto-raw-day-profile.md`), but ADR-009 bounds the source to the 2026 window; reading history is a new decision. Unblocks the Phase 3 cross-source checks. Spec: specs/mansueto-raw-adapter.md (ready)"
 Tags: `kind:spec source:mansueto stage:clean stage:impute stage:view`
 
@@ -87,7 +87,8 @@ Prior art to copy: `cta/archive.py` `clean_fixes` → `fix_pairs` → `impute_ar
 
 ## Fixtures
 
-Numbers marked `~` were measured on an uncommitted cut on 2026-11-10; `/fixture` pins them.
+Built 2026-11-11 by `scripts/build_mansueto_raw_fixtures.py`: 23,453 rows (44 of 45 pids; 1054 has no rows), 728,627 bytes,
+SHA-256 `d27f1d99…`, rebuild byte-identical. Every `~` number below was measured on it and equals the estimate.
 
 | Fixture | Built from (public file) | Cut | Rows / bytes | Builder |
 |---|---|---|---|---|
