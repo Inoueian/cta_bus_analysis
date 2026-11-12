@@ -71,7 +71,8 @@ def run_level_from_archive(
 
     Days already in ``con`` (``archive_ingest``) are used as they are; any other day is downloaded
     into ``raw_dir`` from ``index`` (which also supplies ``known_gaps``) and ingested first.
-    ``pattern_stops`` defaults to the getpatterns cache under ``pattern_cache_dir``.
+    ``pattern_stops`` defaults to the getpatterns cache under ``pattern_cache_dir``. ``calendar_flag``
+    adds ``coverage_gap`` outside the archive's coverage (``cta.calendar.source_coverage(index)``).
     """
     pids = list(dict.fromkeys(str(p) for p in pids))
     if con is None:
@@ -106,7 +107,7 @@ def run_level_from_archive(
             "service_date": arr["service_date"].astype(str),
         }
     )
-    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=index)
+    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=index, source=SOURCE_ARCHIVE)
     view["source"] = SOURCE_ARCHIVE
     view = view.sort_values(["service_date", "pattern_id", "run_id", "stop_sequence_index"]).reset_index(drop=True)
     return view[RUN_LEVEL_COLUMNS]
@@ -127,8 +128,8 @@ def mansueto_view_from_trips(
     Cleaning runs per pid through ``cta.mansueto.clean_trips``; the QA table gets a ``pid`` column in
     front of the stage rows. ``pids`` lists the pids that must appear in the QA table even with no rows.
     ``bracket_gap_s`` is NaN: Mansueto does not publish ping times, so downstream code must treat NaN
-    as unknown, not zero. ``calendar_flag`` carries holidays only: archive ``known_gaps`` are Transit
-    Alerts outages, not Mansueto outages.
+    as unknown, not zero. ``calendar_flag`` carries holidays and ``coverage_gap`` (a run dated on or after
+    ``MANSUETO_DATA_EDGE``), never ``known_gap_day``: archive ``known_gaps`` are Transit Alerts outages.
     """
     pattern_stops = bustracker.with_stop_rank(pattern_stops)
     wanted = list(dict.fromkeys(str(p) for p in (pids or [])))
@@ -161,7 +162,7 @@ def mansueto_view_from_trips(
             "service_date": clean["service_date"].astype(str),
         }
     )
-    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=None)
+    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=None, source=SOURCE_MANSUETO)
     view["source"] = SOURCE_MANSUETO
     view = view.sort_values(["service_date", "pattern_id", "run_id", "stop_sequence_index"]).reset_index(drop=True)
     return view[RUN_LEVEL_COLUMNS], qa_table
@@ -265,8 +266,8 @@ def run_level_from_mansueto_raw_with_qa(
             "service_date": arr["service_date"].astype(str),
         }
     )
-    # Holidays only: archive known_gaps are Transit Alerts outages, not Mansueto ones.
-    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=None)
+    # No index: archive known_gaps are Transit Alerts outages, not Mansueto ones.
+    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=None, source=SOURCE_MANSUETO_RAW)
     view["source"] = SOURCE_MANSUETO_RAW
     view = view.sort_values(["service_date", "pattern_id", "run_id", "stop_sequence_index"]).reset_index(drop=True)
     return view[RUN_LEVEL_COLUMNS], qa_table
@@ -284,6 +285,7 @@ def run_level_from_mansueto_raw(
     """One row per (run, stop) from Mansueto raw day CSVs through our imputation (ADR-003 view, ``source='mansueto_raw'``).
 
     ``bracket_gap_s`` is populated (~300 s), never NaN: filter this source by ``source`` as well (ADR-009, ADR-010).
+    ``calendar_flag`` adds ``coverage_gap`` on a day outside the declared raw-CSV window or declared missing.
     """
     view, _ = run_level_from_mansueto_raw_with_qa(
         days, pids, csv_dir=csv_dir, pattern_stops=pattern_stops, pattern_cache_dir=pattern_cache_dir, con=con

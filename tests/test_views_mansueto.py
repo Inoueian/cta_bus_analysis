@@ -203,3 +203,15 @@ def test_stop_sequence_index_increases_with_arrival_time_within_runs(one_day):
     t_step = v.groupby("run_id")["arrival_time"].diff().dropna()
     assert (t_step >= pd.Timedelta(0)).all()
     assert view.groupby("pattern_id")["stop_sequence_index"].max().lt(130).all()
+
+
+@needs_fixtures
+def test_views_pass_source_to_calendar_flag(monkeypatch: pytest.MonkeyPatch):
+    """specs/calendar-module.md: the Mansueto view flags rows on or after the parquet data edge."""
+    from cta import calendar
+
+    monkeypatch.setattr(mansueto, "MANSUETO_DATA_EDGE", "2026-06-01")  # before the 6410 fixture's 30-day window
+    stops = bustracker.pattern_stops_table(["6410"], GETPATTERNS_DIR)
+    view = views.run_level_from_mansueto(["6410"], parquet_dir=FIXTURES, pattern_stops=stops)
+    assert len(view) > 0
+    assert view["calendar_flag"].str.endswith(calendar.FLAG_COVERAGE_GAP).all()
