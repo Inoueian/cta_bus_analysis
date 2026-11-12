@@ -176,6 +176,11 @@ Tags: `kind:pattern topic:process`
 Tags: `kind:pattern topic:calendar stage:clean`
 - Copy `cta.calendar.calendar_flag`: return a label column, let downstream decide. New calendar facts (Mansueto freshness, source-coverage holes) go in `cta/calendar.py`, not in the adapter.
 
+### Check that a refactor changed nothing
+Tags: `kind:pattern stage:qa topic:process topic:fixtures`
+- In the suite: copy `tests/test_bustracker.py` `test_parser_equivalence` (`pd.testing.assert_frame_equal` of the new path against the old one on a fixture) while both paths exist; `specs/split-cta-api.md` is the shape of a spec whose whole job is a refactor. Existing tests pass with import changes only (CLAUDE.md rule 7).
+- Beyond the suite, for cleaning or imputation code: each fixture is one archive day cut to a few PIDs, so it cannot see every branch. Before the refactor, run `scripts/archive_run_level.py --days <a cached day> --out <path outside the repo>/before.parquet`; after it, the same with `after.parquet`; then `assert_frame_equal` the two parquets and the two `.qa.csv` files. Use a day already under `data/archive/raw/` (no download) and write both outputs outside the repo.
+
 ### Record a durable fact
 Tags: `kind:pattern topic:process`
 - A measurement: `/finding` writes a dated `docs/` note (`docs/2026-11-04-mansueto-data-edge.md` is the shape). A gotcha or a pattern: `/finding` appends here. A choice future work must respect: `/adr`. A step every task follows: the skill file. CLAUDE.md holds only rules an agent acts on.
