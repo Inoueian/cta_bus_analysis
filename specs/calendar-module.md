@@ -9,14 +9,15 @@ Tags: `kind:spec source:mansueto source:archive stage:clean topic:calendar`
 Which service dates does each source cover, and has a frozen Mansueto source moved? ADR-007 and ADR-009 require every
 time series to show the 2026-07-28 to 2026-08-12 hole and the missing raw-CSV days rather than bridge them, and ADR-009
 declares those gaps "in `cta/calendar.py`". Today they live in prose and in adapter comments, so a wait-time or drift
-chart cannot tell "no buses" from "no data". This spec adds the two missing calendar facts (declared source coverage,
+chart cannot tell "no buses" from "no data" (playbook gotcha "Mansueto imputed history stops at 2026-07-28 and never
+overlaps the archive"). This spec adds the two missing calendar facts (declared source coverage,
 Mansueto freshness) to the module that already holds holidays and `known_gaps`. Holidays and `known_gaps` do not change.
 
 ## Inputs
 
 | Input | Where | Schema / keys | Notes |
 |---|---|---|---|
-| Parquet data edge | `cta.mansueto.MANSUETO_DATA_EDGE` | `"2026-07-28"` | stays in `cta.mansueto` (ADR-007 names it there); `cta.calendar` imports it, no copy |
+| Parquet data edge | `cta.mansueto.MANSUETO_DATA_EDGE` | `"2026-07-28"` | stays in `cta.mansueto` (ADR-007 names it there); `cta.calendar` reads `mansueto.MANSUETO_DATA_EDGE` at call time (no `from` import, so one monkeypatch reaches both modules) |
 | Parquet download metadata | `<parquet_dir>/trips_<pid>_full.meta.json` (`cta.mansueto.write_meta`) | `pid`, `last_modified` (ISO UTC), `max_bus_stop_time` (naive Chicago wall time), `fetched_at` (ISO UTC) | written by `fetch_parquet`; read only |
 | Raw-CSV download metadata | `<raw_dir>/YYYY-MM-DD.meta.json` (`cta.mansueto_raw.fetch_day`) | `url`, `last_modified`, `fetched_at`; the day is the file name | read only |
 | Archive index | `index` dict (`cta.archive.fetch_index`) | `known_gaps`; `days[].date` with a `files.bus` entry | archive rows only; `days` gives the archive's last day and whole-day gaps (Method 3) |
@@ -29,8 +30,8 @@ Mansueto freshness) to the module that already holds holidays and `known_gaps`. 
 | Declared coverage | `cta.calendar.source_coverage(index=None) -> DataFrame` | `source` str, `first_day` str or None, `last_day` str or None (inclusive, `YYYY-MM-DD`, None = open), `missing_days` tuple of str, `evidence` str | one row per source (`mansueto`, `mansueto_raw`, `archive`) |
 | Row flag | `cta.calendar.calendar_flag(service_date, *, index=None, source=None) -> Series` | str; adds `coverage_gap` after the existing parts, order `holiday:<name>;known_gap_day;coverage_gap` | one value per input row; `source=None` returns today's output unchanged |
 | Date spine | `cta.calendar.coverage_days(start, end, *, sources=None, index=None) -> (DataFrame, DataFrame)` | `service_date` str, `source` str, `covered` bool, `reason` str (`""`, `before_first_day`, `after_edge`, `missing_day_file`), `calendar_flag` str | one row per (service date, source), both ends inclusive |
-| QA table | second element of the tuple | `source`, `stage`, `rows_in`, `rows_out`, `reason`, `count` | one row per (source, reason); rows are days, one stage `coverage`, `rows_out` = covered days |
-| Freshness | `cta.calendar.source_freshness(*, parquet_dir=None, raw_dir=None) -> DataFrame` | `source` str, `declared_edge` str, `observed_edge` str or None, `newest_last_modified` / `oldest_fetched_at` tz-aware UTC, `files` int64, `status` str (`not_moved`, `moved`, `no_metadata`) | one row per source whose directory was passed (`mansueto`, `mansueto_raw`) |
+| QA table | second element of the tuple | `source`, `stage`, `rows_in`, `rows_out`, `reason`, `count` | one row per (source, reason); rows are days, one stage `coverage`, `rows_out` = covered days; columns `COVERAGE_QA_COLUMNS = ["source"] + mansueto.QA_COLUMNS` (shape of `views.MANSUETO_QA_COLUMNS`) |
+| Freshness | `cta.calendar.source_freshness(*, parquet_dir=None, raw_dir=None) -> DataFrame` | `source` str, `declared_edge` str, `observed_edge` str or None, `newest_last_modified` / `oldest_fetched_at` tz-aware UTC, `files` int64, `status` str (`not_moved`, `moved`, `no_metadata`); a `no_metadata` row has `observed_edge` None, both timestamps NaT, `files` 0 | one row per source whose directory was passed (`mansueto`, `mansueto_raw`) |
 
 `cta.views.run_level_from_archive`, `run_level_from_mansueto` and `run_level_from_mansueto_raw` pass their own source
 constant as `source=`. No column is added to `RUN_LEVEL_COLUMNS` (ADR-003); only the flag vocabulary grows.
@@ -47,11 +48,15 @@ QA rows from `cta/mansueto.py` `qa_rows`; `tests/test_calendar.py` `test_calenda
    `missing_day_file` or `""`, in that priority. An unknown source raises `ValueError`. `source_coverage`,
    `calendar_flag` and `coverage_days` all go through it; nothing else decides coverage.
 3. The archive's upper edge comes from the index, not a constant. Without `index` the archive is open-ended from
-   `ARCHIVE_FIRST_DAY` with no missing days. With `index`, its last day is the newest `days[].date` that has a
-   `files.bus` entry (later days are `after_edge`), and a day between `ARCHIVE_FIRST_DAY` and that last day with no
-   such entry is `missing_day_file`. The index must therefore list every day being read: the full `index.json`, or a
-   cut manifest that lists the days in the cut (as `archive_2026-10-29_michigan.index.json` does for its one day).
-   `index` never affects the two Mansueto sources.
+   `ARCHIVE_FIRST_DAY` with no missing days. With `index`, the listed days are the `days[].date` values that have a
+   `files.bus` entry; the index speaks only for the span from the first to the last listed day. Days after the last
+   listed day are `after_edge`; an unlisted day inside the span is `missing_day_file`; days from `ARCHIVE_FIRST_DAY`
+   up to the first listed day are covered, because the index makes no claim about them. This matters for cut
+   manifests: `archive_2026-10-29_michigan.index.json` lists one day, yet its day file holds 1,091 rows whose
+   `service_date` (`sched_start_date`) is 2026-10-28, and those must not be flagged. The full `index.json` starts
+   2026-09-28, so the rule changes nothing there. `index` never affects the two Mansueto sources.
+   Accepted, not flagged: a run that crosses midnight after the last listed day, or into a missing day, has its tail
+   in a file that is not there. These are late-night fragments of an otherwise complete service day.
 4. `calendar_flag(..., source=)` appends the single value `coverage_gap` when the reason is non-empty; the reason
    itself appears only in `coverage_days`. A missing day has no rows, so on rows the flag marks fragments, such as a
    `mansueto` run dated on the edge day. Rows are flagged, never dropped (playbook gotcha "Holidays and archive
@@ -69,7 +74,8 @@ QA rows from `cta/mansueto.py` `qa_rows`; `tests/test_calendar.py` `test_calenda
    `MANSUETO_RAW_EDGE`. A directory with no metadata gives one `no_metadata` row. `moved` means "re-measure and
    reopen ADR-007 / ADR-009", not "extend the window": the constants change only through Rule 2.
 8. Update the module docstring, the three view docstrings and `cta/__init__.py`; update the playbook gotcha
-   "Holidays and archive outages are flags, not drops" with the new flag through `/finding`. No ADR: ADR-009 already
+   "Holidays and archive outages are flags, not drops" with the new flag, and the gotcha "Mansueto imputed history
+   stops at 2026-07-28 and never overlaps the archive" to point at `source_coverage`, through `/finding`. No ADR: ADR-009 already
    decided that coverage gaps are declared in `cta/calendar.py` (owner, 2026-11-12).
 
 ## Thresholds and exclusions
@@ -100,18 +106,19 @@ No new fixture. Metadata files for the freshness tests are written to `tmp_path`
 All in `tests/test_calendar.py` unless named. Counts below are calendar arithmetic on the constants, not estimates.
 
 - [ ] `test_source_coverage_windows`: no fixture. Without an index, three rows; `mansueto` (None, `2026-07-27`, `()`), `mansueto_raw` (`2026-08-13`, `2026-10-27`, the five missing days), `archive` (`2026-09-28`, None, `()`).
-- [ ] `test_coverage_days_known_case`: no fixture, range 2026-07-25 to 2026-10-31. 297 rows (99 days × 3 sources); covered days: `mansueto` 3, `mansueto_raw` 71, `archive` 34; days covered by no source: 16, exactly 2026-07-28 to 2026-08-12; days covered by both `archive` and `mansueto_raw`: 25; 2026-09-07 carries `holiday:Labor Day` on all three.
+- [ ] `test_coverage_days_known_case`: no fixture, range 2026-07-25 to 2026-10-31. 297 rows (99 days × 3 sources); covered days: `mansueto` 3, `mansueto_raw` 71, `archive` 34; days covered by no source: 16, exactly 2026-07-28 to 2026-08-12; days covered by both `archive` and `mansueto_raw`: 25; 2026-09-07 has `calendar_flag` `holiday:Labor Day;coverage_gap` for `mansueto` and `archive` and `holiday:Labor Day` for `mansueto_raw`.
 - [ ] `test_coverage_days_qa`: same range. Per source `rows_in` 99 and reason counts sum to `rows_in − rows_out`: `mansueto` `after_edge` 96; `archive` `before_first_day` 65; `mansueto_raw` `before_first_day` 19, `missing_day_file` 5, `after_edge` 4.
 - [ ] `test_calendar_flag_coverage_gap`: `tests/fixtures/archive_2026-10-29_michigan.index.json`. `source="mansueto"` on [`2026-07-27`, `2026-07-28`, `2026-07-04`] gives [`""`, `coverage_gap`, `holiday:Independence Day`]; `source="mansueto_raw"` on `2026-10-16` gives `coverage_gap`; `source="archive"` without an index on [`2026-09-27`, `2026-10-16`] gives [`coverage_gap`, `""`], and with the index on `2026-10-29` gives `""`; `source="mansueto_raw"` on `2026-11-26` gives `holiday:Thanksgiving Day;coverage_gap`; an unknown source raises `ValueError`; `source=None` output equals the existing test's.
 - [ ] `test_archive_coverage_from_index`: hand-built index listing 2026-09-28 to 2026-10-05 except 2026-10-02 (each with a `files.bus` entry) and one bus `known_gaps` window inside 2026-10-03. `coverage_days("2026-09-27", "2026-10-07", sources=["archive"], index=index)` has 11 rows, 7 covered; QA reasons `before_first_day` 1, `missing_day_file` 1 (2026-10-02), `after_edge` 2, summing to `rows_in − rows_out`; 2026-10-03 is covered with `known_gap_day`; `source_coverage(index)` gives the archive `last_day` `2026-10-05` and `missing_days` `("2026-10-02",)`; the same range with `sources=["mansueto_raw"]` is identical with and without the index.
-- [ ] `test_views_pass_source_to_calendar_flag` (`tests/test_views_mansueto_raw.py`): on `tests/fixtures/mansueto_raw_2026-10-22_michigan.csv.gz`, with `MANSUETO_RAW_MISSING_DAYS` monkeypatched to include `2026-10-22`, every row of the view has `calendar_flag == "coverage_gap"`; unpatched, the existing all-`""` assertions of the three view tests still pass (measured 2026-11-12: neither Mansueto parquet fixture has a `bus_stop_time` on or after 2026-07-28).
+- [ ] `test_views_pass_source_to_calendar_flag` (one case in each of `tests/test_views_archive.py`, `test_views_mansueto.py`, `test_views_mansueto_raw.py`, on the view fixture each file already uses): with `ARCHIVE_FIRST_DAY` monkeypatched to `2026-10-30`, `cta.mansueto.MANSUETO_DATA_EDGE` to `2026-06-01` (before the 6410 fixture's 30-day window), and `MANSUETO_RAW_MISSING_DAYS` to include `2026-10-22` respectively, every row has `calendar_flag` ending in `coverage_gap`. Unpatched, the existing all-`""` assertions still pass (measured 2026-11-12: neither Mansueto parquet fixture has a `bus_stop_time` on or after 2026-07-28; the archive fixture's 1,091 rows dated 2026-10-28 fall before its index's first listed day, Method 3).
 - [ ] `test_source_freshness_not_moved`: metadata written to `tmp_path` from `tests/fixtures/mansueto.manifest.json` and `tests/fixtures/mansueto_raw.manifest.json`. Two rows, both `not_moved`; `mansueto` `observed_edge` `2026-07-28`, `files` 3; `mansueto_raw` `observed_edge` `2026-10-22`, `files` 1; timestamps tz-aware UTC.
 - [ ] `test_source_freshness_moved_and_empty`: hand-built in `tmp_path`. A parquet metadata file with `max_bus_stop_time` `2026-11-01T08:00:00` gives `moved`; one with `last_modified` `2026-11-02T10:00:00+00:00` and an old `max_bus_stop_time` gives `moved`; a raw `2026-10-28.meta.json` gives `moved`; an empty directory gives `no_metadata` with `files` 0.
 
 ## Out of scope
 
 - Probing the bucket or the archive (`data_edge`, HEAD sweeps): that is the Phase 3 refresh job, which calls `source_freshness` after fetching. No network in `cta/calendar.py`.
-- Changing any constant because `source_freshness` says `moved`, or a staleness threshold on `fetched_at`.
+- Changing any constant because `source_freshness` says `moved`, or a staleness threshold on `fetched_at`; detecting a
+  missing raw day that reappears upstream (only a sweep can).
 - Dropping or filtering rows anywhere; a `covered` or flag column on `RUN_LEVEL_COLUMNS`.
 - The holiday list, observed-day rules, non-Sunday holiday schedules, and migrating the vault note (TODO Foundation, "Migrate the durable knowledge-vault notes").
 - Applying flags to the DLSD and Michigan figures (the "Reopens if the calendar retro-apply changes its figures" work).
