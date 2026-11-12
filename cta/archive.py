@@ -361,11 +361,13 @@ def fix_pairs(
     day: str,
     fixes: pd.DataFrame,
     known_gaps: pd.DataFrame | None = None,
+    max_gap_s: float = MAX_BRACKET_GAP_S,
 ) -> pd.DataFrame:
     """Consecutive-fix pairs within a run, filtered as scorecard [T3]-[T6] plus known-gap spans.
 
     ``known_gaps`` is the ``cta.calendar.known_gaps`` table (UTC start/end). A pair is dropped for the
-    first reason in ``PAIR_REASON_PRIORITY`` that applies, so the QA counts are additive.
+    first reason in ``PAIR_REASON_PRIORITY`` that applies, so the QA counts are additive. ``max_gap_s``
+    is the [T3] cap; a source with a slower poll passes its own (``cta.mansueto_raw``, ADR-009).
     """
     con.register("_fixes", fixes[CLEAN_FIX_COLUMNS])
     if known_gaps is not None and len(known_gaps):
@@ -391,7 +393,7 @@ def fix_pairs(
               FROM pr WHERE t0_ms IS NOT NULL)
             SELECT *, CASE
                 WHEN spans_gap THEN {_q(REASON_SPANS_KNOWN_GAP)}
-                WHEN dt > {MAX_BRACKET_GAP_S} THEN {_q(REASON_GAP)}
+                WHEN dt > {float(max_gap_s)} THEN {_q(REASON_GAP)}
                 WHEN dd < 0 THEN {_q(REASON_BACKWARD)}
                 WHEN dd > 2 * crow + {GEOMETRY_SLACK_FT} THEN {_q(REASON_GEOMETRY)}
                 WHEN dt > 0 AND (dd / dt) * 3600 / {FT_PER_MILE} > {MAX_IMPLIED_MPH} THEN {_q(REASON_SPEED)}

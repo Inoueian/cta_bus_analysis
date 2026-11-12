@@ -80,7 +80,7 @@ Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 ### Mansueto imputed history stops at 2026-07-28 and never overlaps the archive
 Tags: `kind:gotcha source:mansueto source:archive topic:calendar`
 - Symptom: a cross-source comparison finds no common service day.
-- Cause: the per-pattern parquets have been frozen since 2026-07-28 (`MANSUETO_DATA_EDGE`, ADR-007) and the archive starts 2026-09-28. The same bucket's raw 5-minute position CSVs (`full_day_data/`) do continue, 2026-08-13 to 2026-10-27 with gaps (`docs/2026-11-06-mansueto-raw-positions.md`), but they are positions, not imputed arrivals, and no adapter reads them; 2026-07-28 to 2026-08-12 is covered by nothing.
+- Cause: the per-pattern parquets have been frozen since 2026-07-28 (`MANSUETO_DATA_EDGE`, ADR-007) and the archive starts 2026-09-28. The same bucket's raw 5-minute position CSVs (`full_day_data/`) do continue, 2026-08-13 to 2026-10-27 with gaps (`docs/2026-11-06-mansueto-raw-positions.md`), but they are positions, not imputed arrivals, read through our own imputation by `cta.mansueto_raw` (`source='mansueto_raw'`, ADR-009); 2026-07-28 to 2026-08-12 is covered by nothing.
 - Fix: same-source self-consistency is the adapter gate (`MAX_SELF_CONSISTENCY_DEVIATION`); the cross-source test stays skipped until `cta.mansueto.data_edge` moves. Re-measure before assuming the edge changed.
 
 ### The kept-PIDs "30-day" medians are a midsummer window

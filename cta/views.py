@@ -1,5 +1,5 @@
-"""Canonical views (ADR-003): ``run_level_from_archive`` and ``run_level_from_mansueto`` produce the same
-run-level table (ADR-004) from the two sources; ``stop_sequence_index`` is the dense getpatterns ``stop_rank``
+"""Canonical views (ADR-003): ``run_level_from_archive``, ``run_level_from_mansueto`` and
+``run_level_from_mansueto_raw`` produce the same run-level table (ADR-004, ADR-009) from the three sources; ``stop_sequence_index`` is the dense getpatterns ``stop_rank``
 on both (specs/mansueto-adapter.md)."""
 
 from __future__ import annotations
@@ -10,10 +10,12 @@ import duckdb
 import numpy as np
 import pandas as pd
 
-from cta import archive, bustracker, calendar, mansueto
+from cta import archive, bustracker, calendar, mansueto, mansueto_raw
 
 SOURCE_ARCHIVE = "archive"
 SOURCE_MANSUETO = mansueto.SOURCE_MANSUETO
+SOURCE_MANSUETO_RAW = mansueto_raw.SOURCE_MANSUETO_RAW
+MANSUETO_RAW_QA_COLUMNS = ["day"] + archive.QA_COLUMNS
 MANSUETO_QA_COLUMNS = ["pid"] + mansueto.QA_COLUMNS
 
 RUN_LEVEL_COLUMNS = [
@@ -211,5 +213,79 @@ def run_level_from_mansueto(
     """One row per (run, stop) from the Mansueto StopWatch parquets (ADR-003 run-level view, ``source='mansueto'``)."""
     view, _ = run_level_from_mansueto_with_qa(
         pids, parquet_dir=parquet_dir, pattern_stops=pattern_stops, pattern_cache_dir=pattern_cache_dir, start=start, end=end
+    )
+    return view
+
+
+def run_level_from_mansueto_raw_with_qa(
+    days: list[str],
+    pids: list[str],
+    *,
+    csv_dir: Path,
+    pattern_stops: pd.DataFrame | None = None,
+    pattern_cache_dir: Path | None = None,
+    con: duckdb.DuckDBPyConnection | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """``run_level_from_mansueto_raw`` plus its QA table (one row per day, stage, reason).
+
+    Each day is read from its one file in ``csv_dir`` (``cta.mansueto_raw.day_file``); never touches the
+    network. ``pattern_stops`` defaults to the getpatterns cache under ``pattern_cache_dir``. ``con`` must
+    come from ``cta.mansueto_raw.open_db`` (in-memory one when None).
+    """
+    pids = list(dict.fromkeys(str(p) for p in pids))
+    if con is None:
+        con = mansueto_raw.open_db()
+    mansueto_raw.check_db(con)
+    if pattern_stops is None:
+        pattern_stops = bustracker.pattern_stops_table(pids, pattern_cache_dir)
+    frames, qas = [], []
+    for day in days:
+        positions = mansueto_raw.read_day(mansueto_raw.day_file(csv_dir, day), pids)
+        fixes = mansueto_raw.clean_fixes(con, day, positions)
+        pairs = mansueto_raw.fix_pairs(con, day, fixes)
+        frames.append(archive.impute_arrivals(con, day, pairs, pattern_stops))
+        q = mansueto_raw.qa(con, day)
+        q.insert(0, "day", day)
+        qas.append(q)
+    qa_table = pd.concat(qas, ignore_index=True)[MANSUETO_RAW_QA_COLUMNS] if qas else pd.DataFrame(columns=MANSUETO_RAW_QA_COLUMNS)
+    if not frames or all(f.empty for f in frames):
+        return _empty_run_level(), qa_table
+    arr = pd.concat([f for f in frames if len(f)], ignore_index=True)
+    view = pd.DataFrame(
+        {
+            "run_id": arr["run_id"].astype(str),
+            "route": arr["route"].astype(str),
+            "direction": arr["rtdir"].astype(str),
+            "pattern_id": arr["pid"].astype(str),
+            "stop_id": arr["stpid"].astype(str),
+            "stop_sequence_index": arr["stop_rank"].astype("int64"),
+            "arrival_time": arr["arrival_time"],
+            "bracket_gap_s": arr["bracket_gap_s"].astype("float64"),
+            "vehicle_id": arr["vehicle_id"].astype(str),
+            "service_date": arr["service_date"].astype(str),
+        }
+    )
+    # Holidays only: archive known_gaps are Transit Alerts outages, not Mansueto ones.
+    view["calendar_flag"] = calendar.calendar_flag(view["service_date"], index=None)
+    view["source"] = SOURCE_MANSUETO_RAW
+    view = view.sort_values(["service_date", "pattern_id", "run_id", "stop_sequence_index"]).reset_index(drop=True)
+    return view[RUN_LEVEL_COLUMNS], qa_table
+
+
+def run_level_from_mansueto_raw(
+    days: list[str],
+    pids: list[str],
+    *,
+    csv_dir: Path,
+    pattern_stops: pd.DataFrame | None = None,
+    pattern_cache_dir: Path | None = None,
+    con: duckdb.DuckDBPyConnection | None = None,
+) -> pd.DataFrame:
+    """One row per (run, stop) from Mansueto raw day CSVs through our imputation (ADR-003 view, ``source='mansueto_raw'``).
+
+    ``bracket_gap_s`` is populated (~300 s), never NaN: filter this source by ``source`` as well (ADR-009, ADR-010).
+    """
+    view, _ = run_level_from_mansueto_raw_with_qa(
+        days, pids, csv_dir=csv_dir, pattern_stops=pattern_stops, pattern_cache_dir=pattern_cache_dir, con=con
     )
     return view
