@@ -34,6 +34,17 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-10-02-michigan-ave-corridor-stops.md` | `kind:measurement source:bustracker stage:clean topic:pattern-catalog` | Migrated from the vault: how the 40-stop corridor snapshot was built (name and latitude filter, 51 stops, 11 excluded by id), the exclusion list the JSON does not hold, the stale `roosevelt_stpids` |
+| `2026-10-02-michigan-ave-corridor-scope.md` | `kind:measurement source:bustracker source:mansueto topic:thresholds topic:pattern-catalog` | Migrated from the vault: Michigan Ave baseline scope (Roosevelt to Delaware, anchor stops, 19 candidate routes, 45 patterns kept at a 5-minute median) and what ADR-010 changed |
+| `2026-10-02-michigan-ave-6402-pattern-trim.md` | `kind:measurement source:bustracker source:mansueto topic:pattern-catalog topic:fixtures` | Migrated from the vault: four stops after Hubbard hand-removed from the cached pattern of PID 6402 (148 SB), median 7.37 min on 479 trips; the trim is local only and the committed fixture is untrimmed |
+| `2026-09-24-dlsd-rush-hour-min-sample.md` | `kind:measurement source:mansueto stage:figure topic:thresholds` | Migrated from the vault: evidence for the 30-run Mon to Thu gate on DLSD rush plots (weekday median 62 runs per cell, Friday 12) and how each day slice uses the one gate |
+| `2026-09-24-dlsd-rush-express-routes.md` | `kind:measurement source:bustracker stage:figure topic:pattern-catalog` | Migrated from the vault: DLSD entry and exit stops for routes 134, 135, 136, 143, 148 (11 PIDs), the expected geography, and the 13x against 14x comparison panes |
+| `2026-09-23-dlsd-segment-boundaries-146-147.md` | `kind:measurement source:bustracker stage:clean topic:thresholds topic:pattern-catalog` | Migrated from the vault: the DLSD segment is the one pattern hop over 10,000 ft; entry and exit stops for routes 146 and 147 (18 PIDs); PID 839 has no DLSD hop |
+| `2026-08-10-mansueto-freshness-probe.md` | `kind:measurement source:mansueto stage:fetch topic:calendar` | Migrated from the vault: HEAD walk of the raw day files on 2026-08-10 (2026-07-27 present, 2026-07-28 missing), the earliest sighting of the stall; other freshness signals |
+| `2026-10-02-michigan-ave-legacy-segment-view-check.md` | `kind:qa source:mansueto stage:view topic:qa-table` | Migrated from the vault: what the deprecated `build_michigan_segment_view` does and its 2026-10-03 check (461,215 rows, 37,651 trips, 43 of 45 PIDs, 137 backwards trips); corrects 14130/14132 to route 157 |
+| `2026-09-23-mansueto-imputation-method.md` | `kind:measurement source:mansueto stage:impute topic:thresholds` | Migrated from the vault: Mansueto interpolates stop times linearly in distance between ~5-minute pings, extrapolates trip ends, clamps `speed_mph` to [1, 115] and fills; the DLSD `analysis_ok` filter |
+| `2026-09-23-bustracker-api-endpoints.md` | `kind:measurement source:bustracker stage:fetch topic:budget topic:pattern-catalog` | Migrated from the vault: `getpatterns` and `getstops` response shapes, the 10,000-a-day cap and how `cta.bustracker` rations it, the batch that fails on one unknown pid |
+| `2026-08-10-mansueto-parquet-column-mapping.md` | `kind:measurement source:mansueto stage:view topic:identifiers` | Migrated from the vault: Mansueto column to ADR-003 column mapping verified on PID 6662 (11 columns, 0 null or duplicate trip keys), query-to-view mapping, the stop-level row shape |
 | `2026-11-10-mansueto-raw-day-profile.md` | `kind:measurement source:mansueto source:archive stage:impute topic:thresholds` | Raw CSV day 2026-10-22 through the archive pair and imputation stages: 420 s keeps 98.3% of pairs (180 s keeps 190 of 21,834), `tmstmp` truncated about 46 s early, route 47 has no `origtatripno`, calendar-day files split midnight runs, day files exist back to 2022-05-19 |
 | `2026-11-06-mansueto-raw-positions.md` | `kind:measurement source:mansueto source:archive stage:fetch topic:calendar` | Raw 5-minute position CSVs on the Mansueto bucket cover 2026-08-13 to 2026-10-27 (71 days, 25 overlapping the archive), nothing since; parquets still frozen; schema and one-day profile |
 | `2026-11-05-model-routing.md` | `kind:owner-note topic:process` | Which model and effort runs `/spec`, `/implement` and the clerical skills, and where that is enforced |
@@ -74,8 +85,8 @@ Tags: `kind:gotcha topic:identifiers source:mansueto source:bustracker`
 ### `rt_to_pid.csv` is stale and incomplete
 Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 - Symptom: a route has no Mansueto PIDs, or a listed PID returns 404.
-- Cause: the catalog was last modified 2025-01-16. Route 10 is absent (no `10.0` variant either); route 65 PIDs 7906 and 7907 return 404 on CloudFront; patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
-- Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
+- Cause: the catalog was last modified 2025-01-16 and is not a list of published files. Two different failures: a route with no rows at all, so there is no pid and no URL to probe (route 10, seen 2026-10-02, no `10.0` variant either); and a listed pid whose parquet returns 404 (route 65 PIDs 7906 and 7907, seen 2026-09-21, while 7905, 3213 and 6652 of the same route return 200). Also patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
+- Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID, union only over pids that answer 200 or are cached locally, and log each skipped pid with its route and status instead of failing the run; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
 
 ### Mansueto imputed history stops at 2026-07-28 and never overlaps the archive
 Tags: `kind:gotcha source:mansueto source:archive topic:calendar`
@@ -122,7 +133,7 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 ### Mansueto `speed_mph` is a ping-interval speed
 Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Symptom: Mansueto speeds look faster and smoother than imputed stop-to-stop speeds.
-- Cause: it is the speed over the ~5-minute ping interval, not between stops.
+- Cause: it is the speed over the ~5-minute ping interval that encloses the stop, not between stops. Values outside [1, 115] mph are blanked and forward- and back-filled upstream, so a speed can belong to a neighbouring interval (`docs/2026-09-23-mansueto-imputation-method.md`).
 - Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed is defined on segments between consecutive corridor stops, from run-level arrivals and getpatterns `pdist` (ADR-010, `specs/michigan-segment-from-view.md`); until that lands, the legacy segment view and `notebooks/michigan_ave_speed_plots.ipynb` still plot this ping-interval speed.
 
 ### GTFS `arrival_time` runs past 24:00
@@ -135,13 +146,77 @@ Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
 Tags: `kind:gotcha source:archive stage:clean topic:calendar`
 - Symptom: a holiday or an outage day is filtered inline in a notebook.
 - Cause: the six Sunday-schedule holidays and the archive `known_gaps` windows are easy to hard-code.
+- Source of the list: CTA's schedules page, `https://www.transitchicago.com/schedules/`, quoted by the owner on 2026-11-13: "Sunday schedules apply on New Year’s Day, Memorial Day, Independence Day, Labor Day, Thanksgiving and Christmas (and/or on their dates of observance)." The six names match `cta.calendar.cta_holidays` exactly. The vault note the code used to cite (`cta-holiday-schedule-filtering`, migrated 2026-11-13) held no list.
+- Open: "and/or on their dates of observance". `cta_holidays` flags the holiday's own date only. When a fixed-date holiday falls on a weekend, CTA may run a Sunday schedule on the observed weekday as well or instead, and that day is not flagged. The first case in our data: Independence Day 2026 was a Saturday, so Friday 2026-07-03 may have run a Sunday schedule; it is inside the Mansueto history and inside the 2026-06-28 to 2026-07-28 kept-PIDs window, counted as a Friday. Whether it did is not measured (a Sunday-like trip count on that day would show it). Adding observed days changes the list, which is Rule 2 (`specs/calendar-module.md` leaves it out of scope).
 - Fix: `cta.calendar.calendar_flag` labels each service date (`holiday:<name>`, `known_gap_day`, and with `source=` also `coverage_gap` for a date outside that source's declared coverage; the views pass their source); pairs that span a `known_gaps` window are dropped as `spans_known_gap`, the day itself stays. Exclusions and coverage windows live only in `cta/calendar.py`.
 
 ### `getpatterns` has a daily budget
 Tags: `kind:gotcha source:bustracker stage:fetch topic:budget`
 - Symptom: Bus Tracker returns an error after many pattern fetches, or a test tries to go online.
-- Cause: 10,000 calls per day (`CTA_API_DAILY_MAX`), one call per pid.
-- Fix: `cta.bustracker.batch_pattern_stops` caches each pid's response forever under `data/cta_api_cache/` and counts calls; tests read the committed `tests/fixtures/getpatterns/` only. Never print `CTA_API_KEY`.
+- Cause: 10,000 calls per day per key (`CTA_API_DAILY_MAX`), one call per pid.
+- Fix: `cta.bustracker.batch_pattern_stops` caches each pid's response forever under `data/cta_api_cache/` and counts live calls in `request_log.json` by Chicago date (cache hits are free; warning at `CTA_API_DAILY_WARN`, 9,500; `daily_api_request_count()` reads the count). Calls are spaced by `CTA_API_MIN_INTERVAL_SEC` and retried three times on 429 / 503. Tests read the committed `tests/fixtures/getpatterns/` only. Never print `CTA_API_KEY`. Endpoint shapes: `docs/2026-09-23-bustracker-api-endpoints.md`.
+
+### `getpatterns` fails the whole batch when one pid is unknown
+Tags: `kind:gotcha source:bustracker stage:fetch topic:pattern-catalog`
+- Symptom: a comma-delimited `getpatterns` call (up to 10 pids) returns `No data found for parameter` and no patterns at all.
+- Cause: the live API rejects the whole call if any one pid is unknown to it, and Mansueto has parquets for historical pids the live API no longer serves (`docs/2026-09-23-bustracker-api-endpoints.md`).
+- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view.
+
+### The Mansueto parquet has no direction column
+Tags: `kind:gotcha source:mansueto source:bustracker stage:clean`
+- Symptom: a stop-level key (`stop_id`, `route`, `direction`) cannot be built from the parquet alone.
+- Cause: the eleven published columns hold no direction (`docs/2026-08-10-mansueto-parquet-column-mapping.md`).
+- Fix: `cta.mansueto.clean_trips` joins the getpatterns `rtdir` from `cta.bustracker.pattern_stops_table`; the view exposes it as `direction`. Route 157's patterns are labelled Westbound / Eastbound although they run on Michigan, so a corridor direction is not always the `rtdir` (`corridor_stops_from_view` places them by stop membership).
+
+### Mansueto arrivals at the ends of a trip can be extrapolated
+Tags: `kind:gotcha source:mansueto stage:impute`
+- Symptom: the first or last stop of a Mansueto trip has an odd arrival time.
+- Cause: stops before the first ping or after the last one are extrapolated from the implied segment speed, not interpolated between two pings (`docs/2026-09-23-mansueto-imputation-method.md`). No ping time is published, so `bracket_gap_s` cannot show it.
+- Fix: nothing in `cta/` flags these rows. Prefer interior stops for timing endpoints on Mansueto data, and say so when a segment starts or ends at a terminal.
+
+### Day slices do not exclude holidays
+Tags: `kind:gotcha stage:figure topic:calendar`
+- Symptom: a Mon to Thu or Friday bucket includes a day on which CTA ran holiday service.
+- Cause: `cta.dlsd_run_quality.day_slice_mask` and `cta.michigan_ave_segment.michigan_day_slice_mask` look at the day of week only. The DLSD comparison plots were made that way and have not been redone.
+- Fix: filter on the view's `calendar_flag` (`holiday:` prefix) before slicing; `dlsd_runs_from_view` and `corridor_stops_from_view` carry the column. Whether a holiday joins the weekend slice or gets its own bucket is undecided: say which in the figure. The DLSD figures are redone when the notebooks are re-pointed (TODO.md Foundation, first item; "Completed workstreams").
+
+### PID 6402's hand trim exists only in a local cache file
+Tags: `kind:gotcha source:bustracker topic:pattern-catalog topic:fixtures`
+- Symptom: 148 Southbound PID 6402 shows stops after Michigan & Hubbard (`1104`, `1105`, `1106`, `18396`) that published trips never serve, and its corridor exit moves to Monroe.
+- Cause: the four stops were deleted by hand from `data/cta_api_cache/getpatterns_6402.json`, which is gitignored. A fresh clone, a deleted cache or a refetch has the untrimmed pattern, and so does the committed `tests/fixtures/getpatterns/getpatterns_6402.json` (`docs/2026-10-02-michigan-ave-6402-pattern-trim.md`).
+- Fix: nothing in `cta/` re-applies the trim. `TRIM_6402_STPIDS` names the stops and `segment_view_report` lists an issue when the legacy view has rows there. The kept record in `notebooks/michigan_ave_kept_pids.json` still says Delaware to Hubbard, so read entry and exit from it, not from the pattern's last corridor stop. Making the trim reproducible is a behaviour change and needs a spec.
+
+### Corridor stops next to the Lake Shore Drive ramp carry express speeds
+Tags: `kind:gotcha source:mansueto source:archive stage:figure topic:thresholds`
+- Symptom: the north end of a Michigan Ave speed chart looks much faster than the rest.
+- Cause: the 14x express routes join the Drive at Delaware, and Mansueto `speed_mph` is a ping-interval speed, so a ping pair around Delaware, Chestnut or Pearson can span part of the Drive. The vault note records the exclusion as a "DLSD speed leak"; the size of the effect was not measured.
+- Why it is worst on Mansueto data: the pings are about 5 minutes apart (`docs/2026-09-23-mansueto-imputation-method.md`), and a bus covers a mile or more of the Drive in that time, so the interval that encloses a stop several blocks from the ramp can be mostly Drive. The leak reaches as far down Michigan as one ping interval does. The raw day CSVs (`source='mansueto_raw'`, about 300 s) share this.
+- Expected, not measured, on the archive: fixes are about 60 s apart (30 s from 2026-11-01) and pairs over `cta.archive.MAX_BRACKET_GAP_S` (180 s) are dropped, and ADR-010 speeds come from arrivals at consecutive corridor stops, not from a ping interval. The Drive can then only enter through the one fix pair that brackets the arrival at the ramp-side stop, so the leak should shrink roughly with the fix interval and may not reach Chestnut or Pearson at all. `bracket_gap_s` on each row says how wide that pair was.
+- Fix: `cta.michigan_ave_segment.filter_dlsd_leak_stops` drops `1128` and `1127` northbound and `1097` and `1098` southbound (`NORTHBOUND_DLSD_LEAK_STPIDS`, `SOUTHBOUND_DLSD_LEAK_STPIDS`) from charts only; the stops stay in the corridor definition, and Chicago (`1126`) stays in the charts. It is a published exclusion (Rule 2). The same four stops are excluded on every source today: on segment frames the filter drops any segment touching one (`specs/michigan-segment-from-view.md`, Method 7), so archive charts lose the north end although they may not need to. Whether the list can be shortened for the archive is open (TODO.md, Michigan Ave, "DLSD leak stops by source").
+
+### The corridor snapshot's metadata does not match its stop list
+Tags: `kind:gotcha source:bustracker stage:clean topic:pattern-catalog`
+- Symptom: `corridor.roosevelt_stpids` in `notebooks/michigan_ave_stops_snapshot.json` names four stops, two of which are not among the 40 `stops`.
+- Cause: `15362` and `17084` are Roosevelt-named side-street stops that the discovery notebook excluded afterwards; the metadata was not updated, and the eleven-id exclusion list is not in the JSON at all (`docs/2026-10-02-michigan-ave-corridor-stops.md`).
+- Fix: use `1591` (southbound) and `1580` (northbound) as the Roosevelt anchors and take stops only from `stops`. The exclusion list is in the dated note and in section 4.5 of `notebooks/michigan_ave_stop_discovery.ipynb`.
+
+### Rush-route plot cells are gated on Mon to Thu counts, whatever slice is drawn
+Tags: `kind:gotcha stage:figure topic:thresholds`
+- Symptom: a Friday pane for routes 134, 135, 136, 143 or 148 comes out almost empty, or shows cells resting on a handful of runs.
+- Cause: Friday cells have a median of 12 runs, weekday cells 62 (`docs/2026-09-24-dlsd-rush-hour-min-sample.md`). A per-slice `min_runs=30` empties Friday; no gate at all draws noise.
+- Fix: pass `valid_cells=cta.dlsd_run_quality.valid_rush_plot_cells(dlsd_runs)` to `hour_dlsd_stats` for every slice. The set is built from Mon to Thu runs at `MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY` (30); Friday reuses it and may rest on few runs, so say so on the figure. Routes 146 and 147 are not gated; the weekend slice holds only them.
+
+### Not every pattern of a Lake Shore Drive route uses the Drive
+Tags: `kind:gotcha source:bustracker stage:clean topic:pattern-catalog`
+- Symptom: a pid of route 147 has no entry in `notebooks/dlsd_boundaries_snapshot.json`, or a route-wide DLSD statistic is short of runs.
+- Cause: PID 839 (147 Northbound, about 9,300 trips) starts north of the Drive at Sheridan & Foster; its largest hop is about 1,000 ft (`docs/2026-09-23-dlsd-segment-boundaries-146-147.md`).
+- Fix: DLSD timing joins on `pid` through `load_dlsd_boundaries`, so such patterns drop out by construction. Count runs per pid, not per route, when checking coverage. Stop names say "Lake Shore Drive", never "DLSD".
+
+### The legacy segment view builds empty when parquet reads fail
+Tags: `kind:gotcha source:mansueto stage:view`
+- Symptom: `build_michigan_segment_view` returns zero rows although `kept_pid_cache_status` shows every cache file present.
+- Cause: the builder wraps `pd.read_parquet` in `except Exception: continue`, so a missing pyarrow or a corrupt file skips the pid silently (seen 2026-10-03, `docs/2026-10-02-michigan-ave-legacy-segment-view-check.md`).
+- Fix: `segment_view_report` warns about it; install `requirements.txt` first. The builder is deprecated: use `corridor_stops_from_view`, which reads the run-level view and emits a QA table.
 
 ## Patterns
 
@@ -167,6 +242,20 @@ Tags: `kind:pattern topic:fixtures stage:fetch`
 ### Probe a remote parquet without downloading it
 Tags: `kind:pattern source:mansueto stage:fetch topic:network`
 - Copy `cta.mansueto.data_edge`: `http_head` for size and `Last-Modified`, `parquet_footer` by range request, `footer_summary` for per-row-group statistics. `docs/2026-11-04-mansueto-data-edge.md` shows what it answers.
+- For the raw day files, which have no footer to read, walk the dates with HEAD requests, newest first; the first 200 is the newest day (`docs/2026-08-10-mansueto-freshness-probe.md` has the loop). `cta.calendar.source_freshness` answers the same question offline from the download metadata.
+
+### Verify a parquet's schema before naming its columns in code
+Tags: `kind:pattern source:mansueto stage:qa topic:identifiers`
+- Copy `scripts/verify_parquet.py` (`verify`, tested in `tests/test_verify_parquet.py`): on one real file, list the columns, find the trip key and count its nulls, count duplicate (trip, stop) pairs, read the min and max arrival time, describe stops per trip, and check dtypes (the arrival column must be a datetime, ids consistently typed). Record the result in a dated note (`docs/2026-08-10-mansueto-parquet-column-mapping.md` is the one for Mansueto). A missing stop is never given a fabricated time.
+
+### Find the express segment of a pattern
+Tags: `kind:pattern source:bustracker stage:clean topic:thresholds`
+- Copy section 2 of `notebooks/dlsd_stop_discovery_rush_routes.ipynb`: order the `getpatterns` stops, take the largest gap between consecutive stops, call it the express segment when it exceeds 10,000 ft, and keep the stop before and after as entry and exit. Review the result against the expected geography (`docs/2026-09-24-dlsd-rush-express-routes.md`) before writing `notebooks/dlsd_boundaries_snapshot.json`. The 10,000 ft is inline in the notebooks, not yet a named constant in `cta/`.
+
+### Draw a corridor speed chart
+Tags: `kind:pattern stage:figure topic:thresholds`
+- Copy `notebooks/michigan_ave_speed_plots.ipynb`: one figure per day slice, a Northbound and a Southbound panel with a shared y axis; x is latitude, south to north, with street ticks from `corridor_street_tick_positions`; y is minutes per mile, so slow is high, with `ax.secondary_yaxis` giving mph through `60 / x` both ways. Per stop: median line, interquartile band, and a dashed p95 minutes per mile computed as `60 / q05(speed)`. A stop with fewer than `MIN_OBS` (10) observations is a gap. Hours are the three slowest by pooled median (`slowest_hours`, within `DEFAULT_PLOT_HOURS`, the same hours for both directions; `SLOW_HOURS_OVERRIDE` in the notebook), over `shared_observation_window` (the 720 hours before the newest observation).
+- The notebook still feeds this layout with Mansueto ping-interval `speed_mph`. New charts keep the layout and take segment speeds from `corridor_segment_min_per_mile_stats` (ADR-010).
 
 ### Add a CLI entry point
 Tags: `kind:pattern topic:process`
@@ -174,12 +263,16 @@ Tags: `kind:pattern topic:process`
 
 ### Flag a service date instead of filtering it
 Tags: `kind:pattern topic:calendar stage:clean`
-- Copy `cta.calendar.calendar_flag`: return a label column, let downstream decide. New calendar facts (Mansueto freshness, source-coverage holes) go in `cta/calendar.py`, not in the adapter.
+- Copy `cta.calendar.calendar_flag`: return a label column, let downstream decide. A day slice reads the label before its day-of-week mask (gotcha "Day slices do not exclude holidays"). New calendar facts (Mansueto freshness, source-coverage holes) go in `cta/calendar.py`, not in the adapter.
 
 ### Check that a refactor changed nothing
 Tags: `kind:pattern stage:qa topic:process topic:fixtures`
 - In the suite: copy `tests/test_bustracker.py` `test_parser_equivalence` (`pd.testing.assert_frame_equal` of the new path against the old one on a fixture) while both paths exist; `specs/split-cta-api.md` is the shape of a spec whose whole job is a refactor. Existing tests pass with import changes only (CLAUDE.md rule 7).
 - Beyond the suite, for cleaning or imputation code: each fixture is one archive day cut to a few PIDs, so it cannot see every branch. Before the refactor, run `scripts/archive_run_level.py --days <a cached day> --out <path outside the repo>/before.parquet`; after it, the same with `after.parquet`; then `assert_frame_equal` the two parquets and the two `.qa.csv` files. Use a day already under `data/archive/raw/` (no download) and write both outputs outside the repo.
+
+### Filter runs by structure, not by a minute cap
+Tags: `kind:pattern stage:clean topic:thresholds`
+- Copy `cta.dlsd_run_quality.add_quality_flags`: `analysis_ok` is both times present, exit after entry, and exit index equal to entry index plus one. The old `[1, 120]` minute cap is kept only as the informational `legacy_drop` flag; posted speed limits are not filters. The reason is the ~5-minute resolution of Mansueto arrivals (`docs/2026-09-23-mansueto-imputation-method.md`).
 
 ### Record a durable fact
 Tags: `kind:pattern topic:process`

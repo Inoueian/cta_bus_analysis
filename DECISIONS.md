@@ -327,6 +327,6 @@ Consume the Mansueto processed parquet files at `https://d2v7z51jmtm0iq.cloudfro
 
 ### Consequences
 
-We inherit Mansueto's methodology and are bound by its update cadence (roughly two-week lag observed as of 2026-08-10). We do not have to build or maintain a spatial-imputation pipeline, which saves substantial engineering effort. If the Mansueto bucket ever goes offline or diverges from our needs, we would need to fall back to raw pings; the legacy branch documents what that path looks like. Freshness must be probed manually (see the knowledge-vault note `cta-stop-watch-freshness-check`) because the bucket exposes no manifest.
+We inherit Mansueto's methodology and are bound by its update cadence (roughly two-week lag observed as of 2026-08-10). We do not have to build or maintain a spatial-imputation pipeline, which saves substantial engineering effort. If the Mansueto bucket ever goes offline or diverges from our needs, we would need to fall back to raw pings; the legacy branch documents what that path looks like. Freshness must be probed manually (see `docs/2026-08-10-mansueto-freshness-probe.md`, migrated from the knowledge vault 2026-11-13) because the bucket exposes no manifest.
 
 ---

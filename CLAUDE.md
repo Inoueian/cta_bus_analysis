@@ -35,7 +35,8 @@ notebooks/      exploration and figures only; no logic that anything else import
 specs/          one markdown spec per unit of work (see "Working from specs")
 tests/          pytest; synthetic or tiny real fixtures; no network
 data/           local caches, gitignored
-docs/           dated measurement notes plus docs/playbook.md (tag vocabulary, note index, gotchas, patterns)
+docs/           dated measurement notes plus docs/playbook.md (tag vocabulary, note index, gotchas, patterns);
+                docs/vault-inbox/ stages the owner's vault notes until `/finding` migrates them (never cite it)
 ```
 
 `cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar and the

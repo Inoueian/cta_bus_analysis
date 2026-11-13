@@ -17,7 +17,7 @@ Arguments: what changed, in a sentence, or nothing (then ask which item and what
 - `### Now` / `### Next` only where they earn it: a section with more than about five items, or a gate
   between them (such as "each Next item gets a spec first"). Otherwise the section is flat.
 - A section with no active items retires: its intro shrinks to one line under `## Completed workstreams`,
-  just above Done, pointing at its notebooks and vault notes.
+  just above Done, pointing at its notebooks and `docs/` notes.
 - Adding, renaming, merging, reordering or retiring a section is the owner's call. When an item fits no
   section, propose one in the report rather than inventing it. When asked to restructure, date and explain
   the change in the section intro. Done is the one section never restructured.
