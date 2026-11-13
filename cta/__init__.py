@@ -8,9 +8,10 @@ Modules, one per data source plus the shared layers:
   ``data_edge`` probe, ``fetch_parquet`` (specs/mansueto-adapter.md).
 - ``archive``: Transit Alerts position archive ingest, cleaning, fix pairs, stop-arrival imputation
   (specs/archive-adapter.md).
-- ``calendar``: holiday and outage exclusions in one place; rows are flagged, never dropped.
-- ``views``: the ADR-003 run-level view from either source (``run_level_from_archive``,
-  ``run_level_from_mansueto``).
+- ``calendar``: holidays, archive outages, declared source coverage and Mansueto freshness in one
+  place; rows are flagged, never dropped (specs/calendar-module.md).
+- ``views``: the ADR-003 run-level view from any of the three sources (``run_level_from_archive``,
+  ``run_level_from_mansueto``, ``run_level_from_mansueto_raw``).
 - ``dlsd_run_quality``, ``michigan_ave_segment``: helpers migrated from ``notebooks/``
   (specs/package-migration.md); their JSON snapshots stay under ``notebooks/``.
 """

@@ -81,7 +81,7 @@ Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 Tags: `kind:gotcha source:mansueto source:archive topic:calendar`
 - Symptom: a cross-source comparison finds no common service day.
 - Cause: the per-pattern parquets have been frozen since 2026-07-28 (`MANSUETO_DATA_EDGE`, ADR-007) and the archive starts 2026-09-28. The same bucket's raw 5-minute position CSVs (`full_day_data/`) do continue, 2026-08-13 to 2026-10-27 with gaps (`docs/2026-11-06-mansueto-raw-positions.md`), but they are positions, not imputed arrivals, read through our own imputation by `cta.mansueto_raw` (`source='mansueto_raw'`, ADR-009); 2026-07-28 to 2026-08-12 is covered by nothing.
-- Fix: same-source self-consistency is the adapter gate (`MAX_SELF_CONSISTENCY_DEVIATION`); the cross-source test stays skipped until `cta.mansueto.data_edge` moves. Re-measure before assuming the edge changed.
+- Fix: same-source self-consistency is the adapter gate (`MAX_SELF_CONSISTENCY_DEVIATION`); the cross-source test stays skipped until `cta.mansueto.data_edge` moves. Each source's declared window is `cta.calendar.source_coverage()` (`coverage_days` gives the per-day spine; `calendar_flag(..., source=)` marks rows `coverage_gap`), and `cta.calendar.source_freshness` reads the download metadata and says `moved` when a frozen source passed its edge. Re-measure before assuming the edge changed; the constants change only through Rule 2.
 
 ### The kept-PIDs "30-day" medians are a midsummer window
 Tags: `kind:gotcha source:mansueto stage:view topic:calendar`
@@ -135,7 +135,7 @@ Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
 Tags: `kind:gotcha source:archive stage:clean topic:calendar`
 - Symptom: a holiday or an outage day is filtered inline in a notebook.
 - Cause: the six Sunday-schedule holidays and the archive `known_gaps` windows are easy to hard-code.
-- Fix: `cta.calendar.calendar_flag` labels each service date (`holiday:<name>`, `known_gap_day`); pairs that span a `known_gaps` window are dropped as `spans_known_gap`, the day itself stays. Exclusions live only in `cta/calendar.py`.
+- Fix: `cta.calendar.calendar_flag` labels each service date (`holiday:<name>`, `known_gap_day`, and with `source=` also `coverage_gap` for a date outside that source's declared coverage; the views pass their source); pairs that span a `known_gaps` window are dropped as `spans_known_gap`, the day itself stays. Exclusions and coverage windows live only in `cta/calendar.py`.
 
 ### `getpatterns` has a daily budget
 Tags: `kind:gotcha source:bustracker stage:fetch topic:budget`

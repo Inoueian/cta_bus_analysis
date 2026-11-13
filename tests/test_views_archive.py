@@ -137,3 +137,16 @@ def test_corridor_minutes_match_mansueto_medians(run_level):
         assert abs(ratio - 1.0) <= MAX_MEDIAN_RATIO_DEVIATION, (rec.pid, rec.route, rec.rtdir, ratio, len(minutes))
         checked += 1
     assert checked >= 10
+
+
+@needs_getpatterns
+def test_views_pass_source_to_calendar_flag(ingested_con, fixture_index, monkeypatch: pytest.MonkeyPatch):
+    """specs/calendar-module.md: the archive view flags rows outside the archive's declared coverage."""
+    from cta import calendar
+
+    pid = "6414"
+    stops = bustracker.pattern_stops_table([pid], GETPATTERNS_DIR)
+    monkeypatch.setattr(calendar, "ARCHIVE_FIRST_DAY", "2026-10-30")
+    view = views.run_level_from_archive([DAY], [pid], con=ingested_con, index=fixture_index, pattern_stops=stops)
+    assert len(view) > 0
+    assert view["calendar_flag"].str.endswith(calendar.FLAG_COVERAGE_GAP).all()

@@ -102,3 +102,15 @@ def test_two_days_no_shared_runs(tmp_path: Path):
         assert run_id.endswith(g["service_date"].iloc[0])
     assert set(view["service_date"]) == {d1, d2}
     assert (view[view["vehicle_id"] == "1"]["arrival_time"] < pd.Timestamp("2026-09-15 14:00", tz="UTC")).all()
+
+
+def test_views_pass_source_to_calendar_flag(monkeypatch: pytest.MonkeyPatch):
+    """specs/calendar-module.md: the raw view flags rows on a declared-missing day."""
+    from cta import calendar
+
+    monkeypatch.setattr(calendar, "MANSUETO_RAW_MISSING_DAYS", calendar.MANSUETO_RAW_MISSING_DAYS + (DAY,))
+    pids = ["6414", "18414"]
+    stops = bustracker.pattern_stops_table(pids, GETPATTERNS_DIR)
+    view = views.run_level_from_mansueto_raw([DAY], pids, csv_dir=FIXTURES, pattern_stops=stops)
+    assert len(view) > 0
+    assert view["calendar_flag"].str.endswith(calendar.FLAG_COVERAGE_GAP).all()
