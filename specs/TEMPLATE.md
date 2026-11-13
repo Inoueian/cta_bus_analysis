@@ -25,6 +25,10 @@ One paragraph. What rider- or analysis-facing question does this answer? Why now
 Prior art to copy: `cta/<module>.py` `<function or stage>`; `tests/test_<module>.py` `<test>`
 (or "none" and why).
 
+Preparatory refactor: `cta/<module>.py` `<function>` is extracted into / moved to `<where>`; no behaviour
+change (CLAUDE.md rule 7). Delete this line if existing code needs no reshaping. It is the only thing that
+lets `/implement` restructure files the Outputs table does not name.
+
 Numbered steps. Name every threshold and its evidence. Reference prior art
 (e.g. scorecard.sql step numbers) rather than re-deriving.
 

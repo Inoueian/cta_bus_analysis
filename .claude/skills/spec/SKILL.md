@@ -38,6 +38,11 @@ the ones that matter:
 
 - **Method** opens with `Prior art to copy: cta/<module>.py <function or stage>; tests/test_<module>.py <test>`
   so the implementer mirrors a shape instead of designing one. If nothing fits, write "none" and say why.
+- **Preparatory refactor** (the line after prior art) stays only when existing code must be reshaped before
+  the new work fits: name each file and function that moves, and what it moves into. It preserves behaviour
+  (CLAUDE.md rule 7) and `/implement` commits it on its own, before the feature. If it would touch more
+  files than the feature itself, or change the ADR-003 columns or the `cta/` import surface, it is its own
+  spec (shape: `specs/split-cta-api.md`), and this one waits for it.
 - **Outputs** need a schema (column names and types) and a grain (one row per what). "A DataFrame" is not a schema.
 - **Thresholds** need a value and evidence, or the word "unknown" and a plan to measure it. Name each as a module constant.
 - **Acceptance tests** must be runnable offline against a committed fixture, and each must become one pytest.
@@ -59,6 +64,7 @@ Return a checklist, each line pass or gap with the fix:
 
 - [ ] Question states a rider- or analysis-facing outcome, not a mechanism.
 - [ ] Method names prior art to copy, by file and function, or says why none fits.
+- [ ] A preparatory refactor, if any, names its files and functions and is smaller than the feature; otherwise the line is gone.
 - [ ] Every output has schema and grain; identifiers are strings; timestamps tz-aware UTC.
 - [ ] Every threshold has evidence or is marked unknown.
 - [ ] Every acceptance item starts with its test function name, names its fixture, and is offline.

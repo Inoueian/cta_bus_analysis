@@ -77,6 +77,8 @@ A `git commit` that is blocked hit `.claude/hooks/precommit.sh` (pytest, rules 4
 4. Do not write to `data/` from tests. Do not commit anything under `data/`.
 5. Secrets come from `.env` (gitignored). Never print `CTA_API_KEY`.
 6. Mansueto `speed_mph` is a ping-interval speed, not stop-to-stop. Do not compare it with imputed speeds.
+7. A refactor leaves every QA table and the run-level view identical on the committed fixtures and edits no
+   test assertion. If a number moves, it is a behaviour change and needs a spec.
 
 ## Working from specs
 
