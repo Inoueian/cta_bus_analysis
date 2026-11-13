@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Verify Mansueto trips_<PID>_full.parquet schema and trip-id behavior.
 
-See knowledge-vault: 2026-09-15-processed-parquet-verification-checklist.md
+The checklist it implements: docs/playbook.md, "Verify a parquet's schema before naming its columns in code".
+The result on PID 6662: docs/2026-08-10-mansueto-parquet-column-mapping.md
 """
 
 from __future__ import annotations

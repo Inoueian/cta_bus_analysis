@@ -34,6 +34,13 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-10-02-michigan-ave-corridor-stops.md` | `kind:measurement source:bustracker stage:clean topic:pattern-catalog` | Migrated from the vault: how the 40-stop corridor snapshot was built (name and latitude filter, 51 stops, 11 excluded by id), the exclusion list the JSON does not hold, the stale `roosevelt_stpids` |
+| `2026-10-02-michigan-ave-corridor-scope.md` | `kind:measurement source:bustracker source:mansueto topic:thresholds topic:pattern-catalog` | Migrated from the vault: Michigan Ave baseline scope (Roosevelt to Delaware, anchor stops, 19 candidate routes, 45 patterns kept at a 5-minute median) and what ADR-010 changed |
+| `2026-10-02-michigan-ave-6402-pattern-trim.md` | `kind:measurement source:bustracker source:mansueto topic:pattern-catalog topic:fixtures` | Migrated from the vault: four stops after Hubbard hand-removed from the cached pattern of PID 6402 (148 SB), median 7.37 min on 479 trips; the trim is local only and the committed fixture is untrimmed |
+| `2026-09-24-dlsd-rush-hour-min-sample.md` | `kind:measurement source:mansueto stage:figure topic:thresholds` | Migrated from the vault: evidence for the 30-run Mon to Thu gate on DLSD rush plots (weekday median 62 runs per cell, Friday 12) and how each day slice uses the one gate |
+| `2026-09-24-dlsd-rush-express-routes.md` | `kind:measurement source:bustracker stage:figure topic:pattern-catalog` | Migrated from the vault: DLSD entry and exit stops for routes 134, 135, 136, 143, 148 (11 PIDs), the expected geography, and the 13x against 14x comparison panes |
+| `2026-09-23-dlsd-segment-boundaries-146-147.md` | `kind:measurement source:bustracker stage:clean topic:thresholds topic:pattern-catalog` | Migrated from the vault: the DLSD segment is the one pattern hop over 10,000 ft; entry and exit stops for routes 146 and 147 (18 PIDs); PID 839 has no DLSD hop |
+| `2026-08-10-mansueto-freshness-probe.md` | `kind:measurement source:mansueto stage:fetch topic:calendar` | Migrated from the vault: HEAD walk of the raw day files on 2026-08-10 (2026-07-27 present, 2026-07-28 missing), the earliest sighting of the stall; other freshness signals |
 | `2026-10-02-michigan-ave-legacy-segment-view-check.md` | `kind:qa source:mansueto stage:view topic:qa-table` | Migrated from the vault: what the deprecated `build_michigan_segment_view` does and its 2026-10-03 check (461,215 rows, 37,651 trips, 43 of 45 PIDs, 137 backwards trips); corrects 14130/14132 to route 157 |
 | `2026-09-23-mansueto-imputation-method.md` | `kind:measurement source:mansueto stage:impute topic:thresholds` | Migrated from the vault: Mansueto interpolates stop times linearly in distance between ~5-minute pings, extrapolates trip ends, clamps `speed_mph` to [1, 115] and fills; the DLSD `analysis_ok` filter |
 | `2026-09-23-bustracker-api-endpoints.md` | `kind:measurement source:bustracker stage:fetch topic:budget topic:pattern-catalog` | Migrated from the vault: `getpatterns` and `getstops` response shapes, the 10,000-a-day cap and how `cta.bustracker` rations it, the batch that fails on one unknown pid |
@@ -78,8 +85,8 @@ Tags: `kind:gotcha topic:identifiers source:mansueto source:bustracker`
 ### `rt_to_pid.csv` is stale and incomplete
 Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 - Symptom: a route has no Mansueto PIDs, or a listed PID returns 404.
-- Cause: the catalog was last modified 2025-01-16. Route 10 is absent (no `10.0` variant either); route 65 PIDs 7906 and 7907 return 404 on CloudFront; patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
-- Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
+- Cause: the catalog was last modified 2025-01-16 and is not a list of published files. Two different failures: a route with no rows at all, so there is no pid and no URL to probe (route 10, seen 2026-10-02, no `10.0` variant either); and a listed pid whose parquet returns 404 (route 65 PIDs 7906 and 7907, seen 2026-09-21, while 7905, 3213 and 6652 of the same route return 200). Also patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
+- Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID, union only over pids that answer 200 or are cached locally, and log each skipped pid with its route and status instead of failing the run; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
 
 ### Mansueto imputed history stops at 2026-07-28 and never overlaps the archive
 Tags: `kind:gotcha source:mansueto source:archive topic:calendar`
@@ -172,6 +179,36 @@ Tags: `kind:gotcha stage:figure topic:calendar`
 - Cause: `cta.dlsd_run_quality.day_slice_mask` and `cta.michigan_ave_segment.michigan_day_slice_mask` look at the day of week only. The DLSD comparison plots were made that way and have not been redone.
 - Fix: filter on the view's `calendar_flag` (`holiday:` prefix) before slicing; `dlsd_runs_from_view` and `corridor_stops_from_view` carry the column. Whether a holiday joins the weekend slice or gets its own bucket is undecided: say which in the figure. The DLSD figures are redone when the notebooks are re-pointed (TODO.md Foundation, first item; "Completed workstreams").
 
+### PID 6402's hand trim exists only in a local cache file
+Tags: `kind:gotcha source:bustracker topic:pattern-catalog topic:fixtures`
+- Symptom: 148 Southbound PID 6402 shows stops after Michigan & Hubbard (`1104`, `1105`, `1106`, `18396`) that published trips never serve, and its corridor exit moves to Monroe.
+- Cause: the four stops were deleted by hand from `data/cta_api_cache/getpatterns_6402.json`, which is gitignored. A fresh clone, a deleted cache or a refetch has the untrimmed pattern, and so does the committed `tests/fixtures/getpatterns/getpatterns_6402.json` (`docs/2026-10-02-michigan-ave-6402-pattern-trim.md`).
+- Fix: nothing in `cta/` re-applies the trim. `TRIM_6402_STPIDS` names the stops and `segment_view_report` lists an issue when the legacy view has rows there. The kept record in `notebooks/michigan_ave_kept_pids.json` still says Delaware to Hubbard, so read entry and exit from it, not from the pattern's last corridor stop. Making the trim reproducible is a behaviour change and needs a spec.
+
+### Corridor stops next to the Lake Shore Drive ramp carry express speeds
+Tags: `kind:gotcha source:mansueto stage:figure topic:thresholds`
+- Symptom: the north end of a Michigan Ave speed chart looks much faster than the rest.
+- Cause: the 14x express routes join the Drive at Delaware, and Mansueto `speed_mph` is a ping-interval speed, so a ping pair around Delaware, Chestnut or Pearson can span part of the Drive. The vault note records the exclusion as a "DLSD speed leak"; the size of the effect was not measured.
+- Fix: `cta.michigan_ave_segment.filter_dlsd_leak_stops` drops `1128` and `1127` northbound and `1097` and `1098` southbound (`NORTHBOUND_DLSD_LEAK_STPIDS`, `SOUTHBOUND_DLSD_LEAK_STPIDS`) from charts only; the stops stay in the corridor definition, and Chicago (`1126`) stays in the charts. It is a published exclusion (Rule 2).
+
+### The corridor snapshot's metadata does not match its stop list
+Tags: `kind:gotcha source:bustracker stage:clean topic:pattern-catalog`
+- Symptom: `corridor.roosevelt_stpids` in `notebooks/michigan_ave_stops_snapshot.json` names four stops, two of which are not among the 40 `stops`.
+- Cause: `15362` and `17084` are Roosevelt-named side-street stops that the discovery notebook excluded afterwards; the metadata was not updated, and the eleven-id exclusion list is not in the JSON at all (`docs/2026-10-02-michigan-ave-corridor-stops.md`).
+- Fix: use `1591` (southbound) and `1580` (northbound) as the Roosevelt anchors and take stops only from `stops`. The exclusion list is in the dated note and in section 4.5 of `notebooks/michigan_ave_stop_discovery.ipynb`.
+
+### Rush-route plot cells are gated on Mon to Thu counts, whatever slice is drawn
+Tags: `kind:gotcha stage:figure topic:thresholds`
+- Symptom: a Friday pane for routes 134, 135, 136, 143 or 148 comes out almost empty, or shows cells resting on a handful of runs.
+- Cause: Friday cells have a median of 12 runs, weekday cells 62 (`docs/2026-09-24-dlsd-rush-hour-min-sample.md`). A per-slice `min_runs=30` empties Friday; no gate at all draws noise.
+- Fix: pass `valid_cells=cta.dlsd_run_quality.valid_rush_plot_cells(dlsd_runs)` to `hour_dlsd_stats` for every slice. The set is built from Mon to Thu runs at `MIN_RUNS_RUSH_WEEKDAY_ELIGIBILITY` (30); Friday reuses it and may rest on few runs, so say so on the figure. Routes 146 and 147 are not gated; the weekend slice holds only them.
+
+### Not every pattern of a Lake Shore Drive route uses the Drive
+Tags: `kind:gotcha source:bustracker stage:clean topic:pattern-catalog`
+- Symptom: a pid of route 147 has no entry in `notebooks/dlsd_boundaries_snapshot.json`, or a route-wide DLSD statistic is short of runs.
+- Cause: PID 839 (147 Northbound, about 9,300 trips) starts north of the Drive at Sheridan & Foster; its largest hop is about 1,000 ft (`docs/2026-09-23-dlsd-segment-boundaries-146-147.md`).
+- Fix: DLSD timing joins on `pid` through `load_dlsd_boundaries`, so such patterns drop out by construction. Count runs per pid, not per route, when checking coverage. Stop names say "Lake Shore Drive", never "DLSD".
+
 ### The legacy segment view builds empty when parquet reads fail
 Tags: `kind:gotcha source:mansueto stage:view`
 - Symptom: `build_michigan_segment_view` returns zero rows although `kept_pid_cache_status` shows every cache file present.
@@ -202,6 +239,20 @@ Tags: `kind:pattern topic:fixtures stage:fetch`
 ### Probe a remote parquet without downloading it
 Tags: `kind:pattern source:mansueto stage:fetch topic:network`
 - Copy `cta.mansueto.data_edge`: `http_head` for size and `Last-Modified`, `parquet_footer` by range request, `footer_summary` for per-row-group statistics. `docs/2026-11-04-mansueto-data-edge.md` shows what it answers.
+- For the raw day files, which have no footer to read, walk the dates with HEAD requests, newest first; the first 200 is the newest day (`docs/2026-08-10-mansueto-freshness-probe.md` has the loop). `cta.calendar.source_freshness` answers the same question offline from the download metadata.
+
+### Verify a parquet's schema before naming its columns in code
+Tags: `kind:pattern source:mansueto stage:qa topic:identifiers`
+- Copy `scripts/verify_parquet.py` (`verify`, tested in `tests/test_verify_parquet.py`): on one real file, list the columns, find the trip key and count its nulls, count duplicate (trip, stop) pairs, read the min and max arrival time, describe stops per trip, and check dtypes (the arrival column must be a datetime, ids consistently typed). Record the result in a dated note (`docs/2026-08-10-mansueto-parquet-column-mapping.md` is the one for Mansueto). A missing stop is never given a fabricated time.
+
+### Find the express segment of a pattern
+Tags: `kind:pattern source:bustracker stage:clean topic:thresholds`
+- Copy section 2 of `notebooks/dlsd_stop_discovery_rush_routes.ipynb`: order the `getpatterns` stops, take the largest gap between consecutive stops, call it the express segment when it exceeds 10,000 ft, and keep the stop before and after as entry and exit. Review the result against the expected geography (`docs/2026-09-24-dlsd-rush-express-routes.md`) before writing `notebooks/dlsd_boundaries_snapshot.json`. The 10,000 ft is inline in the notebooks, not yet a named constant in `cta/`.
+
+### Draw a corridor speed chart
+Tags: `kind:pattern stage:figure topic:thresholds`
+- Copy `notebooks/michigan_ave_speed_plots.ipynb`: one figure per day slice, a Northbound and a Southbound panel with a shared y axis; x is latitude, south to north, with street ticks from `corridor_street_tick_positions`; y is minutes per mile, so slow is high, with `ax.secondary_yaxis` giving mph through `60 / x` both ways. Per stop: median line, interquartile band, and a dashed p95 minutes per mile computed as `60 / q05(speed)`. A stop with fewer than `MIN_OBS` (10) observations is a gap. Hours are the three slowest by pooled median (`slowest_hours`, within `DEFAULT_PLOT_HOURS`, the same hours for both directions; `SLOW_HOURS_OVERRIDE` in the notebook), over `shared_observation_window` (the 720 hours before the newest observation).
+- The notebook still feeds this layout with Mansueto ping-interval `speed_mph`. New charts keep the layout and take segment speeds from `corridor_segment_min_per_mile_stats` (ADR-010).
 
 ### Add a CLI entry point
 Tags: `kind:pattern topic:process`
