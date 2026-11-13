@@ -97,11 +97,23 @@ than adding a second. When a gotcha becomes a code guarantee, keep the entry and
 
 ## Migrating a vault note
 
-Paste the note. Split it: each measurement becomes a dated note with the vault note's original date in
-the file name and "migrated YYYY-MM-DD from vault `<name>`" in its first paragraph; each quirk or
-limit becomes a gotcha; each procedure becomes a pattern. Then replace every reference to the vault
-note (README.md, TODO.md, module docstrings, DECISIONS.md context) with the new path or heading; TODO.md
-edits follow `/todo`.
+Agents cannot read the vault. The owner pastes the note or drops it in `docs/vault-inbox/` (one file per
+note, named as in the vault); read it from there. Split it: each measurement becomes a dated note with
+the vault note's original date in the file name and "migrated YYYY-MM-DD from vault `<name>`" in its first
+paragraph; each quirk or limit becomes a gotcha; each procedure becomes a pattern. A note with no
+measurement goes to the playbook only.
+
+A vault note is old. Before carrying a statement over, check it against the current code, constants and
+committed JSON snapshots, and put what has changed (moved modules, superseded ADRs, wrong numbers) under
+"Corrections" in the dated note. Do not re-measure and do not change a threshold or exclusion to match
+the note (Rule 2); say "nothing was re-measured" in the first paragraph. List the vault notes it points
+at that are not in the repo.
+
+Then replace every reference to the vault note (README.md, TODO.md active items and section intros,
+module docstrings, script docstrings, notebook markdown cells, DECISIONS.md context) with the new path or
+heading; grep the note's name without the word "vault", because some citations omit it. TODO.md edits
+follow `/todo`, so Done entries that name the vault note stay as written. Delete the inbox file in the
+same commit and update `docs/vault-inbox/README.md`.
 
 ## After
 

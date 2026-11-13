@@ -72,7 +72,7 @@ Scheduled data updates, richer metrics, and polish features that go beyond the i
 
 Sections with no active items (retired 2026-11-05, when section order became priority order). Their finished items are in Done.
 
-- **DLSD Express Analysis**: Lake Shore Drive express segment timing for all-day routes 146 & 147 (`notebooks/dlsd_travel_time_146_147.ipynb`) and rush-hour-only routes 134, 135, 136, 143, and 148; comparison plots in `notebooks/dlsd_express_comparison_plots.ipynb`; helpers in `cta.dlsd_run_quality`. Reopens if the calendar retro-apply (Foundation) changes its figures.
+- **DLSD Express Analysis**: Lake Shore Drive express segment timing for all-day routes 146 & 147 (`notebooks/dlsd_travel_time_146_147.ipynb`) and rush-hour-only routes 134, 135, 136, 143, and 148; comparison plots in `notebooks/dlsd_express_comparison_plots.ipynb`; helpers in `cta.dlsd_run_quality`; segment boundaries, comparison panes and the rush-plot gate in `docs/2026-09-23-dlsd-segment-boundaries-146-147.md`, `docs/2026-09-24-dlsd-rush-express-routes.md` and `docs/2026-09-24-dlsd-rush-hour-min-sample.md`. Reopens if the calendar retro-apply (Foundation) changes its figures.
 
 ## Done
 
