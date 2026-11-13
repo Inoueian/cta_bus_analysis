@@ -5,8 +5,9 @@ Rows are flagged, never dropped, by the views (ADR-004 consequences; specs/archi
 Method 7). The one exception is a consecutive-fix pair that spans a known gap, which
 ``cta.archive.fix_pairs`` drops and counts, because no arrival can be interpolated across it.
 
-Holiday list: CTA runs a Sunday schedule on the six holidays below. The list's source is not recorded in the
-repo (docs/playbook.md, "Holidays and archive outages are flags, not drops"); changing it is Rule 2.
+Holiday list: CTA runs a Sunday schedule on the six holidays below (https://www.transitchicago.com/schedules/,
+quoted in docs/playbook.md, "Holidays and archive outages are flags, not drops"). CTA adds "and/or on their
+dates of observance"; only the holiday's own date is flagged here, and changing that is Rule 2.
 
 Source coverage: ``source_coverage`` declares which service dates each source covers, from the constants
 below (the archive's upper edge and whole-day gaps from a passed ``index``); ``calendar_flag(..., source=)``

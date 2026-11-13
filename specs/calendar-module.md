@@ -96,7 +96,7 @@ QA rows from `cta/mansueto.py` `qa_rows`; `tests/test_calendar.py` `test_calenda
 | `MANSUETO_RAW_MISSING_DAYS` | `("2026-09-30", "2026-10-02", "2026-10-03", "2026-10-16", "2026-10-17")` | same sweep: 25 of 30 present | a day removed here must return HTTP 200 first |
 | `ARCHIVE_FIRST_DAY` | `"2026-09-28"` | archive `index.json`; ADR-004, ADR-007 | none expected |
 | archive last day and whole-day gaps | from the passed `index` (Method 3); open without one | live source, nightly (ADR-004); `known_gaps` only describes outages within a day | without the index a spine to today overstates coverage by the publishing lag and hides a day that was never published |
-| `cta_holidays` (existing) | six Sunday-schedule holidays, on the day itself | not recorded: the vault note `cta-holiday-schedule-filtering` once cited here holds no list (migrated 2026-11-13; `docs/playbook.md`, "Holidays and archive outages are flags, not drops") | unchanged by this spec |
+| `cta_holidays` (existing) | six Sunday-schedule holidays, on the day itself | CTA schedules page, `https://www.transitchicago.com/schedules/` (recorded 2026-11-13 in `docs/playbook.md`, "Holidays and archive outages are flags, not drops"; the vault note `cta-holiday-schedule-filtering` once cited here holds no list) | unchanged by this spec |
 
 ## Fixtures
 
