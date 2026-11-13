@@ -34,6 +34,10 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-10-02-michigan-ave-legacy-segment-view-check.md` | `kind:qa source:mansueto stage:view topic:qa-table` | Migrated from the vault: what the deprecated `build_michigan_segment_view` does and its 2026-10-03 check (461,215 rows, 37,651 trips, 43 of 45 PIDs, 137 backwards trips); corrects 14130/14132 to route 157 |
+| `2026-09-23-mansueto-imputation-method.md` | `kind:measurement source:mansueto stage:impute topic:thresholds` | Migrated from the vault: Mansueto interpolates stop times linearly in distance between ~5-minute pings, extrapolates trip ends, clamps `speed_mph` to [1, 115] and fills; the DLSD `analysis_ok` filter |
+| `2026-09-23-bustracker-api-endpoints.md` | `kind:measurement source:bustracker stage:fetch topic:budget topic:pattern-catalog` | Migrated from the vault: `getpatterns` and `getstops` response shapes, the 10,000-a-day cap and how `cta.bustracker` rations it, the batch that fails on one unknown pid |
+| `2026-08-10-mansueto-parquet-column-mapping.md` | `kind:measurement source:mansueto stage:view topic:identifiers` | Migrated from the vault: Mansueto column to ADR-003 column mapping verified on PID 6662 (11 columns, 0 null or duplicate trip keys), query-to-view mapping, the stop-level row shape |
 | `2026-11-10-mansueto-raw-day-profile.md` | `kind:measurement source:mansueto source:archive stage:impute topic:thresholds` | Raw CSV day 2026-10-22 through the archive pair and imputation stages: 420 s keeps 98.3% of pairs (180 s keeps 190 of 21,834), `tmstmp` truncated about 46 s early, route 47 has no `origtatripno`, calendar-day files split midnight runs, day files exist back to 2022-05-19 |
 | `2026-11-06-mansueto-raw-positions.md` | `kind:measurement source:mansueto source:archive stage:fetch topic:calendar` | Raw 5-minute position CSVs on the Mansueto bucket cover 2026-08-13 to 2026-10-27 (71 days, 25 overlapping the archive), nothing since; parquets still frozen; schema and one-day profile |
 | `2026-11-05-model-routing.md` | `kind:owner-note topic:process` | Which model and effort runs `/spec`, `/implement` and the clerical skills, and where that is enforced |
@@ -122,7 +126,7 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
 ### Mansueto `speed_mph` is a ping-interval speed
 Tags: `kind:gotcha source:mansueto stage:view topic:thresholds`
 - Symptom: Mansueto speeds look faster and smoother than imputed stop-to-stop speeds.
-- Cause: it is the speed over the ~5-minute ping interval, not between stops.
+- Cause: it is the speed over the ~5-minute ping interval that encloses the stop, not between stops. Values outside [1, 115] mph are blanked and forward- and back-filled upstream, so a speed can belong to a neighbouring interval (`docs/2026-09-23-mansueto-imputation-method.md`).
 - Fix: CLAUDE.md rule 6: never compare it with imputed speeds. Corridor speed is defined on segments between consecutive corridor stops, from run-level arrivals and getpatterns `pdist` (ADR-010, `specs/michigan-segment-from-view.md`); until that lands, the legacy segment view and `notebooks/michigan_ave_speed_plots.ipynb` still plot this ping-interval speed.
 
 ### GTFS `arrival_time` runs past 24:00
@@ -135,13 +139,44 @@ Tags: `kind:gotcha source:gtfs stage:clean topic:calendar`
 Tags: `kind:gotcha source:archive stage:clean topic:calendar`
 - Symptom: a holiday or an outage day is filtered inline in a notebook.
 - Cause: the six Sunday-schedule holidays and the archive `known_gaps` windows are easy to hard-code.
+- Open: the source of the six-holiday list in `cta.calendar.cta_holidays` is not recorded anywhere in the repo. The vault note it used to cite (`cta-holiday-schedule-filtering`, 2026-10-02, migrated 2026-11-13) holds no list: it asks for US federal holidays falling Mon to Fri at the least, and CTA's published holiday schedule if a stable source exists, checked against service anomalies in the data. Other federal holidays and observed days are not flagged. Changing the list is Rule 2 (`specs/calendar-module.md` leaves it out of scope).
 - Fix: `cta.calendar.calendar_flag` labels each service date (`holiday:<name>`, `known_gap_day`, and with `source=` also `coverage_gap` for a date outside that source's declared coverage; the views pass their source); pairs that span a `known_gaps` window are dropped as `spans_known_gap`, the day itself stays. Exclusions and coverage windows live only in `cta/calendar.py`.
 
 ### `getpatterns` has a daily budget
 Tags: `kind:gotcha source:bustracker stage:fetch topic:budget`
 - Symptom: Bus Tracker returns an error after many pattern fetches, or a test tries to go online.
-- Cause: 10,000 calls per day (`CTA_API_DAILY_MAX`), one call per pid.
-- Fix: `cta.bustracker.batch_pattern_stops` caches each pid's response forever under `data/cta_api_cache/` and counts calls; tests read the committed `tests/fixtures/getpatterns/` only. Never print `CTA_API_KEY`.
+- Cause: 10,000 calls per day per key (`CTA_API_DAILY_MAX`), one call per pid.
+- Fix: `cta.bustracker.batch_pattern_stops` caches each pid's response forever under `data/cta_api_cache/` and counts live calls in `request_log.json` by Chicago date (cache hits are free; warning at `CTA_API_DAILY_WARN`, 9,500; `daily_api_request_count()` reads the count). Calls are spaced by `CTA_API_MIN_INTERVAL_SEC` and retried three times on 429 / 503. Tests read the committed `tests/fixtures/getpatterns/` only. Never print `CTA_API_KEY`. Endpoint shapes: `docs/2026-09-23-bustracker-api-endpoints.md`.
+
+### `getpatterns` fails the whole batch when one pid is unknown
+Tags: `kind:gotcha source:bustracker stage:fetch topic:pattern-catalog`
+- Symptom: a comma-delimited `getpatterns` call (up to 10 pids) returns `No data found for parameter` and no patterns at all.
+- Cause: the live API rejects the whole call if any one pid is unknown to it, and Mansueto has parquets for historical pids the live API no longer serves (`docs/2026-09-23-bustracker-api-endpoints.md`).
+- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view.
+
+### The Mansueto parquet has no direction column
+Tags: `kind:gotcha source:mansueto source:bustracker stage:clean`
+- Symptom: a stop-level key (`stop_id`, `route`, `direction`) cannot be built from the parquet alone.
+- Cause: the eleven published columns hold no direction (`docs/2026-08-10-mansueto-parquet-column-mapping.md`).
+- Fix: `cta.mansueto.clean_trips` joins the getpatterns `rtdir` from `cta.bustracker.pattern_stops_table`; the view exposes it as `direction`. Route 157's patterns are labelled Westbound / Eastbound although they run on Michigan, so a corridor direction is not always the `rtdir` (`corridor_stops_from_view` places them by stop membership).
+
+### Mansueto arrivals at the ends of a trip can be extrapolated
+Tags: `kind:gotcha source:mansueto stage:impute`
+- Symptom: the first or last stop of a Mansueto trip has an odd arrival time.
+- Cause: stops before the first ping or after the last one are extrapolated from the implied segment speed, not interpolated between two pings (`docs/2026-09-23-mansueto-imputation-method.md`). No ping time is published, so `bracket_gap_s` cannot show it.
+- Fix: nothing in `cta/` flags these rows. Prefer interior stops for timing endpoints on Mansueto data, and say so when a segment starts or ends at a terminal.
+
+### Day slices do not exclude holidays
+Tags: `kind:gotcha stage:figure topic:calendar`
+- Symptom: a Mon to Thu or Friday bucket includes a day on which CTA ran holiday service.
+- Cause: `cta.dlsd_run_quality.day_slice_mask` and `cta.michigan_ave_segment.michigan_day_slice_mask` look at the day of week only. The DLSD comparison plots were made that way and have not been redone.
+- Fix: filter on the view's `calendar_flag` (`holiday:` prefix) before slicing; `dlsd_runs_from_view` and `corridor_stops_from_view` carry the column. Whether a holiday joins the weekend slice or gets its own bucket is undecided: say which in the figure. The DLSD figures are redone when the notebooks are re-pointed (TODO.md Foundation, first item; "Completed workstreams").
+
+### The legacy segment view builds empty when parquet reads fail
+Tags: `kind:gotcha source:mansueto stage:view`
+- Symptom: `build_michigan_segment_view` returns zero rows although `kept_pid_cache_status` shows every cache file present.
+- Cause: the builder wraps `pd.read_parquet` in `except Exception: continue`, so a missing pyarrow or a corrupt file skips the pid silently (seen 2026-10-03, `docs/2026-10-02-michigan-ave-legacy-segment-view-check.md`).
+- Fix: `segment_view_report` warns about it; install `requirements.txt` first. The builder is deprecated: use `corridor_stops_from_view`, which reads the run-level view and emits a QA table.
 
 ## Patterns
 
@@ -174,12 +209,16 @@ Tags: `kind:pattern topic:process`
 
 ### Flag a service date instead of filtering it
 Tags: `kind:pattern topic:calendar stage:clean`
-- Copy `cta.calendar.calendar_flag`: return a label column, let downstream decide. New calendar facts (Mansueto freshness, source-coverage holes) go in `cta/calendar.py`, not in the adapter.
+- Copy `cta.calendar.calendar_flag`: return a label column, let downstream decide. A day slice reads the label before its day-of-week mask (gotcha "Day slices do not exclude holidays"). New calendar facts (Mansueto freshness, source-coverage holes) go in `cta/calendar.py`, not in the adapter.
 
 ### Check that a refactor changed nothing
 Tags: `kind:pattern stage:qa topic:process topic:fixtures`
 - In the suite: copy `tests/test_bustracker.py` `test_parser_equivalence` (`pd.testing.assert_frame_equal` of the new path against the old one on a fixture) while both paths exist; `specs/split-cta-api.md` is the shape of a spec whose whole job is a refactor. Existing tests pass with import changes only (CLAUDE.md rule 7).
 - Beyond the suite, for cleaning or imputation code: each fixture is one archive day cut to a few PIDs, so it cannot see every branch. Before the refactor, run `scripts/archive_run_level.py --days <a cached day> --out <path outside the repo>/before.parquet`; after it, the same with `after.parquet`; then `assert_frame_equal` the two parquets and the two `.qa.csv` files. Use a day already under `data/archive/raw/` (no download) and write both outputs outside the repo.
+
+### Filter runs by structure, not by a minute cap
+Tags: `kind:pattern stage:clean topic:thresholds`
+- Copy `cta.dlsd_run_quality.add_quality_flags`: `analysis_ok` is both times present, exit after entry, and exit index equal to entry index plus one. The old `[1, 120]` minute cap is kept only as the informational `legacy_drop` flag; posted speed limits are not filters. The reason is the ~5-minute resolution of Mansueto arrivals (`docs/2026-09-23-mansueto-imputation-method.md`).
 
 ### Record a durable fact
 Tags: `kind:pattern topic:process`

@@ -13,17 +13,11 @@ Before committing a note, strip anything that should not be public: API keys, to
 
 ## Notes wanted
 
-First, in the order TODO.md gives:
+Migrated 2026-11-13 and removed from here: `canonical-data-views`, `cta-bus-tracker-api`,
+`cta-holiday-schedule-filtering`, `michigan-ave-segment-view`, `mansueto-imputed-stop-times` (where each
+went: TODO.md Done, 2026-11-13).
 
-| Vault note | Cited in |
-|---|---|
-| `canonical-data-views` | TODO.md |
-| `cta-bus-tracker-api` | TODO.md |
-| `cta-holiday-schedule-filtering` | TODO.md, `cta/calendar.py`, `specs/calendar-module.md` |
-| `michigan-ave-segment-view` | README.md, TODO.md |
-| `mansueto-imputed-stop-times` | TODO.md, `notebooks/mansueto_imputation_investigation.ipynb` |
-
-Then the rest of what the repo cites:
+Still wanted, because the repo cites them:
 
 | Vault note | Cited in |
 |---|---|
@@ -37,6 +31,10 @@ Then the rest of what the repo cites:
 | `lsd-express-segment-boundaries` | DLSD notebooks |
 | `2026-09-24-dlsd-rush-express-routes` | DLSD notebooks |
 | `2026-09-15-processed-parquet-verification-checklist` | `scripts/verify_parquet.py`, `notebooks/michigan_ave_route_identification.ipynb` |
+
+The migrated notes also pointed at these, which the repo does not cite: `cta-stop-watch-dataset`,
+`dlsd-cache-last30d-semantics`, `mansueto-processed-max-bus-stop-time`, `parquet-verification-results`,
+`michigan-ave-pattern-endpoint-coverage`. Add them if they hold something the notes above do not.
 
 Any other note in the vault project `cta-bus-analysis` that records an API limit, a dataset quirk or a
 measurement is welcome too, cited or not.
