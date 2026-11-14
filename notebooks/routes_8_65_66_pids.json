@@ -1,0 +1,1361 @@
+{
+ "title": "Patterns of CTA routes 8, 65 and 66 by source (notebooks/eda_routes_8_65_66.ipynb)",
+ "mansueto_data_edge": "2026-07-28",
+ "raw_csv_day": "2026-09-15",
+ "archive_days": [
+  "2026-09-28",
+  "2026-10-29",
+  "2026-11-12"
+ ],
+ "archive_manifest_generated_at": "2026-11-13T08:40:02.222Z",
+ "getpatterns_checked": "2026-11-13",
+ "usable_mansueto_means": "trips_<pid>_full.parquet answers 200 and getpatterns serves the pid",
+ "usable_archive_means": "pid seen in the raw CSV day or an archive day and getpatterns serves the pid",
+ "routes": [
+  "8",
+  "65",
+  "66"
+ ],
+ "geometry_changes_means": "raw CSV longest pdist per day changed between last_day_old and first_day_new; same pid, new geometry",
+ "geometry_changes": [
+  {
+   "route": "66",
+   "pid": "6662",
+   "direction": "Eastbound",
+   "last_day_old": "2025-09-26",
+   "first_day_new": "2025-09-27",
+   "old_miles": 9.01,
+   "new_miles": 9.5
+  },
+  {
+   "route": "66",
+   "pid": "6665",
+   "direction": "Westbound",
+   "last_day_old": "2025-09-27",
+   "first_day_new": "2025-09-28",
+   "old_miles": 8.89,
+   "new_miles": 9.45
+  },
+  {
+   "route": "66",
+   "pid": "6665",
+   "direction": "Westbound",
+   "last_day_old": "2025-11-23",
+   "first_day_new": "2025-11-24",
+   "old_miles": 9.45,
+   "new_miles": 9.36
+  },
+  {
+   "route": "8",
+   "pid": "9368",
+   "direction": "Southbound",
+   "last_day_old": "2025-08-16",
+   "first_day_new": "2025-08-17",
+   "old_miles": 14.15,
+   "new_miles": 15.54
+  },
+  {
+   "route": "8",
+   "pid": "9368",
+   "direction": "Southbound",
+   "last_day_old": "2025-11-24",
+   "first_day_new": "2025-11-25",
+   "old_miles": 15.54,
+   "new_miles": 14.91
+  },
+  {
+   "route": "8",
+   "pid": "9376",
+   "direction": "Northbound",
+   "last_day_old": "2025-08-16",
+   "first_day_new": "2025-08-17",
+   "old_miles": 14.06,
+   "new_miles": 15.14
+  },
+  {
+   "route": "8",
+   "pid": "9376",
+   "direction": "Northbound",
+   "last_day_old": "2025-11-22",
+   "first_day_new": "2025-11-23",
+   "old_miles": 15.14,
+   "new_miles": 14.81
+  }
+ ],
+ "pids": [
+  {
+   "route": "8",
+   "pid": "9368",
+   "direction": "Southbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 14886744,
+   "first_month": "2022-05",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 107,
+   "pattern_miles": 14.93,
+   "first_stop": "Halsted & Waveland/Broadway Terminal",
+   "last_stop": "Halsted & 79th Street Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 2168
+   },
+   "archive_runs": {
+    "2026-09-28": 117,
+    "2026-10-29": 110,
+    "2026-11-12": 112
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "8",
+   "pid": "9376",
+   "direction": "Northbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 13930491,
+   "first_month": "2022-05",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 104,
+   "pattern_miles": 14.82,
+   "first_stop": "Halsted & 79th Street Terminal",
+   "last_stop": "Halsted & Waveland/Broadway Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 2113
+   },
+   "archive_runs": {
+    "2026-09-28": 112,
+    "2026-10-29": 113,
+    "2026-11-12": 110
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "8",
+   "pid": "9345",
+   "direction": "Southbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 498414,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 64,
+   "pattern_miles": 10.55,
+   "first_stop": "Halsted & Waveland/Broadway Terminal",
+   "last_stop": "Halsted & Pershing",
+   "raw_csv_pings": {
+    "2026-09-15": 158
+   },
+   "archive_runs": {
+    "2026-09-28": 10,
+    "2026-10-29": 9,
+    "2026-11-12": 8
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "10949",
+   "direction": "Northbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 450982,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 63,
+   "pattern_miles": 10.11,
+   "first_stop": "Halsted & 41st Street",
+   "last_stop": "Halsted & Waveland/Broadway Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 138
+   },
+   "archive_runs": {
+    "2026-09-28": 7,
+    "2026-10-29": 7,
+    "2026-11-12": 7
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "10951",
+   "direction": "Southbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 373860,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 80,
+   "pattern_miles": 11.35,
+   "first_stop": "Division & Cherry",
+   "last_stop": "Halsted & 79th Street Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 113
+   },
+   "archive_runs": {
+    "2026-09-28": 8,
+    "2026-10-29": 9,
+    "2026-11-12": 8
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "10954",
+   "direction": "Northbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 265164,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 37,
+   "pattern_miles": 6.74,
+   "first_stop": "Halsted & 41st Street",
+   "last_stop": "Division & Hooker",
+   "raw_csv_pings": {
+    "2026-09-15": 79
+   },
+   "archive_runs": {
+    "2026-09-28": 8,
+    "2026-10-29": 8,
+    "2026-11-12": 7
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "9250",
+   "direction": "Northbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 222205,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 78,
+   "pattern_miles": 11.45,
+   "first_stop": "Halsted & 79th Street Terminal",
+   "last_stop": "Division & Hooker",
+   "raw_csv_pings": {
+    "2026-09-15": 89
+   },
+   "archive_runs": {
+    "2026-09-28": 6,
+    "2026-10-29": 6,
+    "2026-11-12": 6
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "8959",
+   "direction": "Southbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 216956,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 72,
+   "pattern_miles": 9.53,
+   "first_stop": "Halsted & Randolph/Washington",
+   "last_stop": "Halsted & 79th Street Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 24
+   },
+   "archive_runs": {
+    "2026-09-28": 4,
+    "2026-10-29": 4,
+    "2026-11-12": 4
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "9343",
+   "direction": "Southbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 184363,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 37,
+   "pattern_miles": 6.97,
+   "first_stop": "Division & Cherry",
+   "last_stop": "Halsted & Pershing",
+   "raw_csv_pings": {
+    "2026-09-15": 76
+   },
+   "archive_runs": {
+    "2026-09-28": 6,
+    "2026-10-29": 6,
+    "2026-11-12": 4
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "9344",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 45960,
+   "first_month": "2022-06",
+   "last_month": "2025-12",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "8957",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 29820,
+   "first_month": "2022-07",
+   "last_month": "2025-12",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "8",
+   "pid": "8388",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 5904,
+   "first_month": "2022-06",
+   "last_month": "2025-03",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "6656",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 6098623,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 76,
+   "pattern_miles": 10.58,
+   "first_stop": "Grand & Nordica Terminal",
+   "last_stop": "Navy Pier Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 1047
+   },
+   "archive_runs": {
+    "2026-09-28": 72,
+    "2026-10-29": 75,
+    "2026-11-12": 75
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "65",
+   "pid": "6657",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 5918417,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 76,
+   "pattern_miles": 10.56,
+   "first_stop": "Navy Pier Terminal",
+   "last_stop": "Grand & Nordica Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 1114
+   },
+   "archive_runs": {
+    "2026-09-28": 72,
+    "2026-10-29": 73,
+    "2026-11-12": 72
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "65",
+   "pid": "7908",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 448050,
+   "first_month": "2022-06",
+   "last_month": "2026-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "6655",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 408949,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 32,
+   "pattern_miles": 4.16,
+   "first_stop": "Grand & Nordica Terminal",
+   "last_stop": "Grand & Pulaski",
+   "raw_csv_pings": {
+    "2026-09-15": 73
+   },
+   "archive_runs": {
+    "2026-09-28": 17,
+    "2026-10-29": 21,
+    "2026-11-12": 17
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "2095",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 312021,
+   "first_month": "2022-06",
+   "last_month": "2026-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "3213",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 302904,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 35,
+   "pattern_miles": 4.86,
+   "first_stop": "Grand & Chicago",
+   "last_stop": "Navy Pier Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 130
+   },
+   "archive_runs": {
+    "2026-09-28": 19,
+    "2026-10-29": 19,
+    "2026-11-12": 18
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "6652",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 267902,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 31,
+   "pattern_miles": 4.24,
+   "first_stop": "Grand & Pulaski",
+   "last_stop": "Grand & Nordica Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 72
+   },
+   "archive_runs": {
+    "2026-09-28": 15,
+    "2026-10-29": 15,
+    "2026-11-12": 15
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "6653",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 103799,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 23,
+   "pattern_miles": 3.1,
+   "first_stop": "Grand & Cicero (Metra MD-W)",
+   "last_stop": "Grand & Nordica Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": true,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "7905",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 44161,
+   "first_month": "2022-06",
+   "last_month": "2026-03",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "3258",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 33480,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 36,
+   "pattern_miles": 4.71,
+   "first_stop": "Navy Pier Terminal",
+   "last_stop": "Grand & Chicago",
+   "raw_csv_pings": {
+    "2026-09-15": 31
+   },
+   "archive_runs": {
+    "2026-09-28": 6,
+    "2026-10-29": 6,
+    "2026-11-12": 6
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "7909",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 26677,
+   "first_month": "2022-06",
+   "last_month": "2026-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "14125",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 22678,
+   "first_month": "2022-06",
+   "last_month": "2025-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "3963",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 17273,
+   "first_month": "2024-06",
+   "last_month": "2026-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "24001",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 2410,
+   "first_month": "2024-06",
+   "last_month": "2026-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "8417",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 2380,
+   "first_month": "2023-01",
+   "last_month": "2026-05",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "8181",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 442,
+   "first_month": "2022-06",
+   "last_month": "2024-11",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "7906",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "65",
+   "pid": "7907",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "6665",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 14198038,
+   "first_month": "2022-05",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 70,
+   "pattern_miles": 9.36,
+   "first_stop": "Navy Pier Terminal",
+   "last_stop": "Chicago & Austin Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 2367
+   },
+   "archive_runs": {
+    "2026-09-28": 167,
+    "2026-10-29": 175,
+    "2026-11-12": 170
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "66",
+   "pid": "6662",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 13790170,
+   "first_month": "2022-05",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 69,
+   "pattern_miles": 9.52,
+   "first_stop": "Chicago & Austin Terminal",
+   "last_stop": "Navy Pier Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 2653
+   },
+   "archive_runs": {
+    "2026-09-28": 177,
+    "2026-10-29": 177,
+    "2026-11-12": 174
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": true
+  },
+  {
+   "route": "66",
+   "pid": "6982",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 535318,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 20,
+   "pattern_miles": 2.5,
+   "first_stop": "Chicago & Austin Terminal",
+   "last_stop": "Chicago & Pulaski",
+   "raw_csv_pings": {
+    "2026-09-15": 73
+   },
+   "archive_runs": {
+    "2026-09-28": 30,
+    "2026-10-29": 36,
+    "2026-11-12": 35
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "6661",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 526114,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 73,
+   "pattern_miles": 10.07,
+   "first_stop": "Chicago & Austin Terminal",
+   "last_stop": "State & Washington",
+   "raw_csv_pings": {
+    "2026-09-15": 84
+   },
+   "archive_runs": {
+    "2026-09-28": 7,
+    "2026-10-29": 7,
+    "2026-11-12": 8
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "6658",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 504852,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 72,
+   "pattern_miles": 9.99,
+   "first_stop": "State & Washington",
+   "last_stop": "Chicago & Austin Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 92
+   },
+   "archive_runs": {
+    "2026-09-28": 8,
+    "2026-10-29": 8,
+    "2026-11-12": 8
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4357",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 491898,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 51,
+   "pattern_miles": 6.8,
+   "first_stop": "Navy Pier Terminal",
+   "last_stop": "Chicago & Pulaski",
+   "raw_csv_pings": {
+    "2026-09-15": 140
+   },
+   "archive_runs": {
+    "2026-09-28": 11,
+    "2026-10-29": 12,
+    "2026-11-12": 11
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4601",
+   "direction": "Westbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 341344,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 16,
+   "pattern_miles": 2.02,
+   "first_stop": "Chicago & Kostner",
+   "last_stop": "Chicago & Austin Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 69
+   },
+   "archive_runs": {
+    "2026-09-28": 33,
+    "2026-10-29": 37,
+    "2026-11-12": 36
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4355",
+   "direction": "Eastbound",
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 241900,
+   "first_month": "2022-06",
+   "last_month": "2026-07",
+   "getpatterns_ok": true,
+   "pattern_stops": 42,
+   "pattern_miles": 5.95,
+   "first_stop": "Chicago & Troy",
+   "last_stop": "Navy Pier Terminal",
+   "raw_csv_pings": {
+    "2026-09-15": 11
+   },
+   "archive_runs": {
+    "2026-09-28": 1,
+    "2026-10-29": 1,
+    "2026-11-12": 1
+   },
+   "usable_mansueto": true,
+   "usable_archive": true,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4344",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 206290,
+   "first_month": "2022-06",
+   "last_month": "2025-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4353",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 204750,
+   "first_month": "2022-06",
+   "last_month": "2025-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4603",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 71750,
+   "first_month": "2022-06",
+   "last_month": "2025-06",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "20426",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 12000,
+   "first_month": "2023-06",
+   "last_month": "2025-03",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "25904",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 200,
+   "parquet_rows": 240,
+   "first_month": "2024-12",
+   "last_month": "2025-03",
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4347",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "4602",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "6659",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "6660",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "8182",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  },
+  {
+   "route": "66",
+   "pid": "8466",
+   "direction": null,
+   "in_rt_to_pid": true,
+   "parquet_http_status": 404,
+   "parquet_rows": null,
+   "first_month": null,
+   "last_month": null,
+   "getpatterns_ok": false,
+   "pattern_stops": null,
+   "pattern_miles": null,
+   "first_stop": null,
+   "last_stop": null,
+   "raw_csv_pings": {
+    "2026-09-15": null
+   },
+   "archive_runs": {
+    "2026-09-28": null,
+    "2026-10-29": null,
+    "2026-11-12": null
+   },
+   "usable_mansueto": false,
+   "usable_archive": false,
+   "dominant": false
+  }
+ ]
+}

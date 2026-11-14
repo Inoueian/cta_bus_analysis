@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-13-routes-8-65-66-eda.md` | `kind:measurement source:mansueto source:archive source:bustracker topic:pattern-catalog` | Routes 8, 65, 66: 24 of 49 listed pids usable (25 retired, 8 return 404), 95.6% of rows survive cleaning; the 2025 Chicago/Halsted detours kept their pids (geometry changed 2025-08-17, 2025-09-27 and late November 2025), Mansueto's stop lists switch on 2024-09-03; the archive is now a v2 manifest with parquet day files |
 | `2026-10-02-michigan-ave-corridor-stops.md` | `kind:measurement source:bustracker stage:clean topic:pattern-catalog` | Migrated from the vault: how the 40-stop corridor snapshot was built (name and latitude filter, 51 stops, 11 excluded by id), the exclusion list the JSON does not hold, the stale `roosevelt_stpids` |
 | `2026-10-02-michigan-ave-corridor-scope.md` | `kind:measurement source:bustracker source:mansueto topic:thresholds topic:pattern-catalog` | Migrated from the vault: Michigan Ave baseline scope (Roosevelt to Delaware, anchor stops, 19 candidate routes, 45 patterns kept at a 5-minute median) and what ADR-010 changed |
 | `2026-10-02-michigan-ave-6402-pattern-trim.md` | `kind:measurement source:bustracker source:mansueto topic:pattern-catalog topic:fixtures` | Migrated from the vault: four stops after Hubbard hand-removed from the cached pattern of PID 6402 (148 SB), median 7.37 min on 479 trips; the trim is local only and the committed fixture is untrimmed |
@@ -85,7 +86,7 @@ Tags: `kind:gotcha topic:identifiers source:mansueto source:bustracker`
 ### `rt_to_pid.csv` is stale and incomplete
 Tags: `kind:gotcha source:mansueto topic:pattern-catalog`
 - Symptom: a route has no Mansueto PIDs, or a listed PID returns 404.
-- Cause: the catalog was last modified 2025-01-16 and is not a list of published files. Two different failures: a route with no rows at all, so there is no pid and no URL to probe (route 10, seen 2026-10-02, no `10.0` variant either); and a listed pid whose parquet returns 404 (route 65 PIDs 7906 and 7907, seen 2026-09-21, while 7905, 3213 and 6652 of the same route return 200). Also patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing.
+- Cause: the catalog was last modified 2025-01-16 and is not a list of published files. Two different failures: a route with no rows at all, so there is no pid and no URL to probe (route 10, seen 2026-10-02, no `10.0` variant either); and a listed pid whose parquet returns 404 (route 65 PIDs 7906 and 7907, seen 2026-09-21, while 7905, 3213 and 6652 of the same route return 200; route 66 has six such pids and route 70 two, `docs/2026-11-13-routes-8-65-66-eda.md`). Also patterns added after January 2025 (route 6 PID 7107, route 4 PIDs 28326–28329, route 147 PID 839) are missing, and so are temporary pids (route 70 ran under 502149 to 502151 on 2026-09-28 and under its listed pids a month later). A listed pid can also be retired: getpatterns serves 24 of the 49 pids listed for routes 8, 65 and 66.
 - Fix: check `cta.mansueto.parquet_http_status(pid)` before planning on a PID, union only over pids that answer 200 or are cached locally, and log each skipped pid with its route and status instead of failing the run; discover current PIDs from the archive or Bus Tracker `getpatterns`; record archive-only routes in the TODO item (Michigan Ave "Route 10" item).
 
 ### Mansueto imputed history stops at 2026-07-28 and never overlaps the archive
@@ -160,7 +161,7 @@ Tags: `kind:gotcha source:bustracker stage:fetch topic:budget`
 Tags: `kind:gotcha source:bustracker stage:fetch topic:pattern-catalog`
 - Symptom: a comma-delimited `getpatterns` call (up to 10 pids) returns `No data found for parameter` and no patterns at all.
 - Cause: the live API rejects the whole call if any one pid is unknown to it, and Mansueto has parquets for historical pids the live API no longer serves (`docs/2026-09-23-bustracker-api-endpoints.md`).
-- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view.
+- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view. A skipped pid is not cached, so every later call asks the API for it again (failed requests are not counted in `request_log.json` either); keep the skipped list yourself, as `notebooks/eda_routes_8_65_66.ipynb` does under `data/`.
 
 ### The Mansueto parquet has no direction column
 Tags: `kind:gotcha source:mansueto source:bustracker stage:clean`
@@ -217,6 +218,24 @@ Tags: `kind:gotcha source:mansueto stage:view`
 - Symptom: `build_michigan_segment_view` returns zero rows although `kept_pid_cache_status` shows every cache file present.
 - Cause: the builder wraps `pd.read_parquet` in `except Exception: continue`, so a missing pyarrow or a corrupt file skips the pid silently (seen 2026-10-03, `docs/2026-10-02-michigan-ave-legacy-segment-view-check.md`).
 - Fix: `segment_view_report` warns about it; install `requirements.txt` first. The builder is deprecated: use `corridor_stops_from_view`, which reads the run-level view and emits a QA table.
+
+### Archive `index.json` has no `days` key
+Tags: `kind:gotcha source:archive stage:fetch topic:fixtures`
+- Symptom: `cta.archive.fetch_index` returns a dict with only `manifest_version`, `path`, `sha256` and `bytes`; `day_file_meta` raises `KeyError: 'days'`; a day file is a `.parquet`, which `ingest_day` cannot read.
+- Cause: since at least 2026-11-13 the archive publishes a small pointer at `positions/index.json` to a content-addressed manifest (`positions/manifests/<sha256>.json`, `manifest_version` 2) and zstd parquet day files (`positions/bus/YYYY/MM/<day>.<sha256>.parquet`). The manifest still has `days`, `known_gaps` and `timezone`; the twelve bus field names equal `cta.archive.BUS_SCHEMA`; 2026-10-29 has the same 1,083,422 rows as under the v1 index (`docs/2026-11-13-routes-8-65-66-eda.md`).
+- Fix: nothing in `cta/` reads the new format yet (TODO.md Foundation, "Archive adapter reads the v2 manifest"); the committed v1 fixture still passes, so tests do not show it. Until then read a day as `notebooks/eda_routes_8_65_66.ipynb` section 1.3 does: `cta.archive.run_curl` for the pointer, the manifest and the day file, `file_sha256` against the published hashes, DuckDB `read_parquet`.
+
+### A detour keeps the pid and changes its geometry
+Tags: `kind:gotcha source:bustracker source:archive stage:impute topic:pattern-catalog`
+- Symptom: a pattern's `pdist` values run past the cached pattern length, or imputed arrivals land at stops the bus was not serving; no new pid appears when a street closes.
+- Cause: CTA edits the pattern under the same pid. Route 8's 9368 was 14.15 miles until 2025-08-16, 15.54 from 2025-08-17 and 14.91 from 2025-11-25; route 66's 6662 went from 9.01 to 9.50 miles on 2025-09-27. The buses left Halsted on 2025-08-04, thirteen days before the geometry changed. `getpatterns` returns only today's version and the cache stores it forever with no date (`docs/2026-11-13-routes-8-65-66-eda.md`).
+- Fix: nothing guards it yet. Before imputing a day against a cached pattern, compare the day's longest `pdist` per pid with the pattern length (`ptr["ln"]`); more than about 0.05 miles apart means another geometry (notebook section 6.2b bisects for the change day; the dated changes for routes 8 and 66 are in `notebooks/routes_8_65_66_pids.json`). Today's cached patterns fit every archive day checked (2026-09-28 to 2026-11-12) and the raw CSV day 2026-09-15.
+
+### Mansueto stop lists do not follow the route the bus took
+Tags: `kind:gotcha source:mansueto stage:clean topic:pattern-catalog`
+- Symptom: `stop_not_in_pattern` is a flat 6.7% to 13.6% of a pattern's rows up to a date and near zero after it; or a stop has arrivals on days the bus was on another street.
+- Cause: the parquet's stop list for a pid changes on one day for every affected pattern at once (2024-09-03 for routes 8 and 66), not when the route changed (2025-08-04 and 2025-09-29). From 2024-09-03 the list is today's detour, so until late 2025 it holds arrivals at detour stops the buses did not pass (2,127,091 on the four dominant route 8 and 66 patterns) and none at the stops they did; before it, the stops really served are missing from today's getpatterns and the pattern join drops them (`docs/2026-11-13-routes-8-65-66-eda.md`).
+- Fix: nothing in `cta/` flags it. Travel time between two stops that exist through the whole history, outside the changed block, is unaffected (notebook section 6.6). For stop-level work, find the changed stops per pid from each stop's first and last arrival day (section 6.1) and treat arrivals inside the block as invalid for the dates the geometry did not match; the Phase 1 stop-level spec must state the rule.
 
 ## Patterns
 
