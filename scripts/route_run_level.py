@@ -69,7 +69,7 @@ def load_pid_file(path: Path) -> dict:
 
 
 def pids_where(pid_file: dict, flag: str) -> list[str]:
-    """Pids of the committed list whose record has ``flag`` true (``usable_mansueto``, ``usable_archive``)."""
+    """Pids of the committed list whose record has ``flag`` true (``usable_mansueto``, ``getpatterns_ok``)."""
     return [str(r["pid"]) for r in pid_file["pids"] if r.get(flag)]
 
 
@@ -334,7 +334,9 @@ def main() -> None:
         print(stage_totals(qa.assign(route=qa["pid"].map(route)), ["route"], ["pid", "year"]).to_string())
         print(detour.to_string(index=False))
     else:
-        pids = pids_where(pid_file, "usable_archive")
+        # Every pid getpatterns serves, not only "usable_archive": that flag comes from four sampled days, and
+        # route 65's 6653 runs on 28 other raw days (docs/2026-11-15-routes-8-65-66-run-level-qa.md).
+        pids = pids_where(pid_file, "getpatterns_ok")
         stops = ensure_patterns(pids, args.pattern_cache, args.fetch)
         qa, lengths = build_mansueto_raw(
             day_range(args.start, args.end), pids, csv_dir=args.raw_dir, pattern_stops=stops, out_dir=args.out_dir,

@@ -86,7 +86,7 @@ def test_rows_by_month_and_pid_lists(two_year_parquet: Path):
 
     pid_file = rrl.load_pid_file(rrl.DEFAULT_PIDS_FILE)
     assert len(rrl.pids_where(pid_file, "usable_mansueto")) == 24
-    assert len(rrl.pids_where(pid_file, "usable_archive")) == 23
+    assert len(rrl.pids_where(pid_file, "getpatterns_ok")) == 24
     assert len(rrl.retired_parquet_pids(pid_file)) == 17
     assert rrl.today_geometry_first_day(pid_file) == {"6662": "2025-09-27", "6665": "2025-11-24", "9368": "2025-11-25", "9376": "2025-11-23"}
 
