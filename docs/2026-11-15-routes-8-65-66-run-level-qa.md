@@ -110,8 +110,7 @@ others (0.4%).
 
 - **Sunday 2026-10-11 is half missing.** 56.6% of route 8's fixes, 48.0% of route 65's and 32.6% of route
   66's are under temporary pids, so the view has 327 runs against 521 to 570 on the other ten Sundays. The date is
-  the second Sunday of October; that it is the Chicago Marathon is an inference, not checked against a CTA
-  notice. `calendar_flag` is empty on that day.
+  the Chicago Marathon (confirmed by the owner, 2026-11-15). `calendar_flag` is empty on that day.
 - **On 28 other days route 65 has 0.6% to 1.8% of its fixes outside the list**, all under 29292 and 28316.
   Routes 8 and 66 have none outside 2026-10-11.
 - **Pid 6653 (65 west) is in the view** although the pid list marks it `usable_archive: false`: it has 469
