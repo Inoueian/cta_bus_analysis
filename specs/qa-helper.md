@@ -32,8 +32,8 @@ QA number, view row or public name changes. `specs/qa-skill.md` waits for this.
 | Summing | `cta.qa.stage_totals(qa, by, call_keys) -> DataFrame` | index `by + ["stage"]`; `rows_in`, `rows_out` int64, one int64 column per reason | one row per (group, stage) |
 | Aliases | `cta.mansueto.qa_rows`, `cta.mansueto.QA_COLUMNS`, `cta.archive.QA_COLUMNS`, `scripts.route_run_level.stage_totals` | the `cta.qa` objects themselves | — |
 | Tests | `tests/test_qa.py` | — | — |
-| Prose | `CLAUDE.md` Layout paragraph names `cta/qa.py`; playbook pattern rewritten with `/finding` to point at `cta.qa` | — | — |
-| QA table | in the report: `old_module, name, new_module, reason` ∈ `moved`, `alias`, `merged_duplicate` | — | one row per name touched; `names_in == moved + merged_duplicate` |
+| Prose | `CLAUDE.md` Layout paragraph and the `cta/__init__.py` module list name `cta/qa.py`; playbook pattern rewritten with `/finding` to point at `cta.qa` | — | — |
+| QA table | in the report: `old_module, name, new_module, reason` ∈ `moved_with_alias`, `merged_duplicate` | four rows: `moved_with_alias` for `cta.mansueto.qa_rows`, `cta.mansueto.QA_COLUMNS`, `scripts.route_run_level.stage_totals`; `merged_duplicate` for `cta.archive.QA_COLUMNS` | one row per name; all four stay importable, so `names_in == names_out == 4` |
 
 ## Method
 
@@ -42,7 +42,9 @@ Prior art to copy: `specs/split-cta-api.md` (the shape of a refactor spec and it
 `test_qa_reasons_sum_to_rows_dropped_and_stages_chain`. Playbook patterns "Emit a QA table from a pipeline
 stage" and "Check that a refactor changed nothing".
 
-1. `cta/qa.py` holds `QA_COLUMNS`, `qa_rows` and `stage_totals`, moved verbatim. It imports nothing from
+1. `cta/qa.py` holds `QA_COLUMNS`, `qa_rows` and `stage_totals`, moved verbatim, except that `stage_totals`
+   raises `AssertionError` explicitly instead of using a bare `assert` (`python -O` strips those; same
+   exception under pytest). It imports nothing from
    `cta` (every source module imports it). No ADR: ADR-005's decision already lists QA among the package's
    contents; the CLAUDE.md Layout paragraph gains the module name.
 2. `cta.mansueto` imports `qa_rows` and `QA_COLUMNS` from `cta.qa` and keeps both names; its importers are not
@@ -68,14 +70,14 @@ None. No constant moves or changes.
 
 ## Acceptance tests
 
-All in `tests/test_qa.py`; offline. Counts were measured on the committed fixture on 2026-11-16.
+All in `tests/test_qa.py`; offline. No test hard-codes a QA count from a fixture: those live in the `/qa` baseline (`specs/qa-skill.md`).
 
 - [ ] `test_qa_rows_known_case`: hand-built. `qa_rows("s", 10, 7, {"a": 2, "b": 1, "c": 0})` returns two rows (`a` 2, `b` 1) with `rows_in` 10 and `rows_out` 7; `qa_rows("s", 5, 5, {})` returns one row with `reason` None and `count` 0; `qa_rows("s", 10, 7, {"a": 2})` raises `AssertionError`.
-- [ ] `test_stage_totals_known_case`: hand-built. Two calls of stage `s` for one pid (10 → 7 with `a` 2, `b` 1; 5 → 5 with no reason), `by=["pid"]`, `call_keys=["pid", "year"]`: one row with `rows_in` 15, `rows_out` 12, `a` 2, `b` 1. A table whose counts do not sum raises `AssertionError`.
+- [ ] `test_stage_totals_known_case`: hand-built. Two calls of stage `s` for one pid, years 2025 (10 → 7 with `a` 2, `b` 1) and 2026 (5 → 5 with no reason), `by=["pid"]`, `call_keys=["pid", "year"]`: one row with `rows_in` 15, `rows_out` 12, `a` 2, `b` 1. A table whose counts do not sum raises `AssertionError`.
 - [ ] `test_old_names_are_the_shared_helper`: `cta.mansueto.qa_rows is cta.qa.qa_rows`; `cta.mansueto.QA_COLUMNS`, `cta.archive.QA_COLUMNS` and `cta.qa.QA_COLUMNS` are one object; `scripts.route_run_level.stage_totals is cta.qa.stage_totals`.
 - [ ] `test_qa_imports_nothing_from_cta`: parsing `cta/qa.py` with `ast` finds no import of `cta` or a `cta.` module.
-- [ ] `test_record_qa_failed_check_leaves_table_untouched`: on `cta.archive.open_archive_db()` in memory, record stage `s` for `2026-10-29` as 10 → 7 with `{"a": 3}`; a second call with `{"a": 2}` raises `AssertionError` whose message contains `s` and `2026-10-29`, and `cta.archive.qa(con, "2026-10-29")` still returns the first row.
-- [ ] `test_stage_totals_on_route3_fixture` (the QA-table case): on `tests/fixtures/mansueto_2026-07-27_route3.parquet`, the QA table of `run_level_from_mansueto_with_qa(["18414", "18415"], ...)` summed with `stage_totals(qa, ["pid"], ["pid"])` has `stop_not_in_pattern` 108 and 113 at `pattern_join`, `rows_out` 11,337 and 12,330 at `order`, and on every row the reason columns sum to `rows_in − rows_out`.
+- [ ] `test_record_qa_failed_check_leaves_table_untouched`: on `cta.archive.open_archive_db()` in memory, record stage `stage_x` for `2026-10-29` as 10 → 7 with `{"a": 3}`; a second call with `{"a": 2}` raises `AssertionError` whose message contains `stage_x` and `2026-10-29`, and `cta.archive.qa(con, "2026-10-29")` still returns the first row.
+- [ ] `test_stage_totals_on_route3_fixture` (the QA-table case): on `tests/fixtures/mansueto_2026-07-27_route3.parquet`, `run_level_from_mansueto_with_qa(["18414", "18415"], ...)` summed with `stage_totals(qa, ["pid"], ["pid"])` has one row per (pid, stage) for both pids and the four stages of `cta.mansueto.STAGES`; on every row the reason columns sum to `rows_in − rows_out`; and per pid, `rows_out` at `order` equals that pid's row count in the view. Identities only, so no threshold change edits it.
 
 ## Out of scope
 
