@@ -26,7 +26,7 @@ Waits for `specs/qa-helper.md` (`cta/qa.py`).
 | Output | Path / function | Schema | Grain |
 |---|---|---|---|
 | Fixture cases | `cta.qa_baseline.FIXTURE_CASES` (dict name → callable), `fixture_qa(name) -> DataFrame` | `case` str, `key` str (the pid or day), then `QA_COLUMNS`; `reason` is `""` when None; `rows_in`, `rows_out`, `count` int64 | one row per (case, key, stage, reason) |
-| Diff | `cta.qa_baseline.diff_qa(observed, baseline) -> DataFrame` | `case, key, stage, reason, field, baseline, observed`; `field` ∈ `rows_in, rows_out, count, missing_row, new_row` | one row per differing cell; empty when equal |
+| Diff | `cta.qa_baseline.diff_qa(observed, baseline) -> DataFrame` | `case, key, stage, reason, field, baseline, observed`; `field` ∈ `rows_in, rows_out, count, missing_row, new_row` | one row per differing cell; empty when equal. It compares exactly the rows it is given: callers filter the baseline by case |
 | Baseline I/O | `cta.qa_baseline.BASELINE_PATH`, `read_baseline(path)`, `write_baseline(df, path)` | columns of `fixture_qa`; CSV, `\n` line ends; read with `case`, `key`, `stage`, `reason` as str and `keep_default_na=False`, counts int64 | — |
 | Baseline | `tests/fixtures/qa_baseline.csv` | columns of `fixture_qa` | 4 cases in `FIXTURE_CASES` order, 25 rows |
 | CLI | `scripts/qa.py [case ...] [--baseline PATH] [--record]`; `main(argv=None) -> int` | prints each case's table and the diff; returns 1 on any difference, else 0 | thin: argparse + `cta.qa_baseline` |
@@ -61,7 +61,8 @@ Prior art to copy: `tests/test_views_archive.py` `ingested_con` and `run_level`,
 4. `scripts/qa.py` prints every requested case (default all), then `diff_qa` against the rows of `--baseline`
    (default `BASELINE_PATH`) for those cases only. `--record` replaces only the requested cases' rows in that
    file, keeping the others and `FIXTURE_CASES` order, and prints the diff it is accepting; it is the only
-   writer of the committed file.
+   writer of the committed file. With no case named it rewrites the whole file, which drops rows of a case no
+   longer in `FIXTURE_CASES`; a missing baseline file counts as empty.
 5. The baseline is a fixture, not a test assertion. `--record` is how it moves, in three cases only: (a) a
    spec whose Thresholds table names a threshold or exclusion change (Rule 2); (b) `/fixture` rebuilt a
    fixture a case reads; (c) a case is added. In (b) and (c) the report shows the accepted diff and the rows
@@ -70,8 +71,8 @@ Prior art to copy: `tests/test_views_archive.py` `ingested_con` and `run_level`,
 6. First baseline: the implementer records it once and compares it with the table under Fixtures, row by
    row, in the report. Any difference means the helper refactor or a fixture moved: stop and report.
 7. `.claude/skills/qa/SKILL.md`: run `python scripts/qa.py`; if the diff is empty say so and stop; if not,
-   name the stage and reason that moved and stop unless a spec covers the change; with a spec, `--record`,
-   add the new table to a dated `docs/*-qa.md` note via `/finding`, and report both.
+   name the stage and reason that moved and stop unless one of Method 5's three cases applies; if one does,
+   `--record`, add the new table to a dated `docs/*-qa.md` note via `/finding`, and report both.
 
 ## Thresholds and exclusions
 
@@ -99,10 +100,10 @@ New: `tests/fixtures/qa_baseline.csv`, not cut from a public file but written by
 In `tests/test_qa_baseline.py` unless named; offline, with the network refused as in `tests/test_views_*.py`.
 
 - [ ] `test_fixture_qa_schema`: for each of the four cases on its fixture above, `fixture_qa(case)` has columns `["case", "key"] + QA_COLUMNS`, string `key`, no null `reason`, int64 counts, and as many rows as that case has in `read_baseline(BASELINE_PATH)`, which reads `key` `6410` as the string `"6410"` and reason `""` as `""`.
-- [ ] `test_baseline_matches_fixtures` (the QA-table case): on `tests/fixtures/qa_baseline.csv`, for every case `diff_qa(fixture_qa(case), baseline)` is empty, and per (case, key, stage) `count` sums to `rows_in − rows_out`. This is the test that fails when a threshold moves.
+- [ ] `test_baseline_matches_fixtures` (the QA-table case): on `tests/fixtures/qa_baseline.csv`, the baseline's set of cases equals `FIXTURE_CASES`; for every case `diff_qa(fixture_qa(case), baseline rows of that case)` is empty; and per (case, key, stage) `count` sums to `rows_in − rows_out`. This is the test that fails when a threshold moves.
 - [ ] `test_diff_qa_reports_each_kind`: hand-built pair. One changed `count`, one row only in the baseline and one only in the observed table give three diff rows with `field` `count`, `missing_row`, `new_row`; equal tables in a different row order give none.
 - [ ] `test_script_exit_codes` (`tests/test_qa_script.py`): `scripts.qa.main(["mansueto_6410"])` returns 0 on the committed baseline and reports no row of another case as missing; `main(["mansueto_6410", "--baseline", p])` with `p` a `tmp_path` copy whose one `mansueto_6410` `count` is edited returns 1 and prints that case, stage and reason.
-- [ ] `test_record_reproduces_baseline` (`tests/test_qa_script.py`): `main(["--record", "--baseline", p])` with `p` in `tmp_path` writes a file byte for byte equal to `tests/fixtures/qa_baseline.csv`, and the committed file's modification time is unchanged; `main(["mansueto_6410", "--record", "--baseline", q])`, `q` a `tmp_path` copy, leaves `q` byte for byte equal too (the other cases' rows are kept).
+- [ ] `test_record_reproduces_baseline` (`tests/test_qa_script.py`): `main(["--record", "--baseline", p])` with `p` in `tmp_path` writes a file byte for byte equal to `tests/fixtures/qa_baseline.csv`, and the committed file's modification time is unchanged; `main(["mansueto_6410", "--record", "--baseline", q])`, `q` a `tmp_path` copy, leaves `q` byte for byte equal too (the other cases' rows are kept); and `--record` to a path that does not exist yet writes the same bytes.
 
 ## Out of scope
 
