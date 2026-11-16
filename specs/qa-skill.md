@@ -1,7 +1,7 @@
 # Spec: The `/qa` skill: fixture QA tables against a committed baseline
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-16  ·  TODO item: Foundation — "`/qa` skill (`.claude/skills/qa/`): run an adapter on its committed fixture, print the per-stage QA table (rows in, rows out, reason counts) and diff it against the table recorded in the latest `docs/*-qa.md`, so Rule 2 (no silent threshold or exclusion change) is a command rather than a convention. The spec proposes a committed CSV baseline in place of the markdown tables (its open question 1). After the shared QA-row helper (item above). Spec: specs/qa-skill.md (draft)."
+Owner: Satoru  ·  Date: 2026-11-16  ·  TODO item: Foundation — "`/qa` skill (`.claude/skills/qa/`): run an adapter on its committed fixture, print the per-stage QA table (rows in, rows out, reason counts) and diff it against the table recorded in the latest `docs/*-qa.md`, so Rule 2 (no silent threshold or exclusion change) is a command rather than a convention. The baseline is a committed CSV (`tests/fixtures/qa_baseline.csv`), not the markdown tables, which stay the human record, and a test on it fails CI on any QA change until `scripts/qa.py --record` (owner, 2026-11-16). After the shared QA-row helper (item above). Spec: specs/qa-skill.md (draft)."
 Tags: `kind:spec source:archive source:mansueto stage:qa topic:qa-table`
 
 ## Question
@@ -102,7 +102,7 @@ In `tests/test_qa_baseline.py` unless named; offline, with the network refused a
 - Changing any threshold, reason name, stage name or QA number.
 - Hard-coding the baseline's counts in a test (Method 5), or editing the counts existing tests assert.
 - Downstream QA stages (`corridor`, `hops` in `cta.michigan_ave_segment`; `endpoints` in
-  `cta.dlsd_run_quality`; `coverage` in `cta.calendar`): no fixture case here.
+  `cta.dlsd_run_quality`; `coverage` in `cta.calendar`): no fixture case here; a follow-up TODO item.
 - Real-data QA (`data/route_run_level/qa_*.csv`, `docs/2026-11-15-routes-8-65-66-run-level-qa.md`): not a
   fixture, so not a baseline. `/qa` compares fixtures only.
 - Parsing or rewriting the tables in existing `docs/*-qa.md` notes.
@@ -112,9 +112,11 @@ In `tests/test_qa_baseline.py` unless named; offline, with the network refused a
 
 ## Open questions
 
-1. Baseline as a committed CSV (`tests/fixtures/qa_baseline.csv`) rather than the markdown tables the TODO
-   item names: accepted? The alternative is a parser per note layout.
-2. Should the downstream stages (`corridor`, `hops`, `endpoints`, `coverage`) get fixture cases in a
-   follow-up, or stay covered by their own tests only?
-3. `test_baseline_matches_fixtures` makes CI and the commit hook fail on any QA change until `--record`
-   (Method 5). Accepted as the enforcement, or should `/qa` stay a command only, as the TODO item asks?
+All resolved by the owner on 2026-11-16.
+
+1. **Baseline as a committed CSV rather than the markdown tables the TODO item named?** **The CSV**
+   (Method 3). The `docs/*-qa.md` notes stay the human record; no parser per note layout.
+2. **Fixture cases for the downstream stages (`corridor`, `hops`, `endpoints`, `coverage`)?** **In a
+   follow-up** (TODO.md Foundation, "`/qa` fixture cases for the downstream QA stages"); not here.
+3. **Is `test_baseline_matches_fixtures` the enforcement?** **Yes.** CI and the commit hook fail on any QA
+   change until `--record`, which runs only under a spec that names the change (Method 5).

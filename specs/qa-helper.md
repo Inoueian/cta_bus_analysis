@@ -80,13 +80,17 @@ All in `tests/test_qa.py`; offline. Counts were measured on the committed fixtur
 ## Out of scope
 
 - Changing any threshold, reason name, stage name or QA number. If a number moves, the refactor is wrong.
-- Re-pointing the importers of `cta.mansueto.qa_rows` to `cta.qa`, or removing the aliases.
+- Re-pointing the importers of `cta.mansueto.qa_rows` to `cta.qa`, or removing the aliases: a follow-up TODO item.
 - Editing the notebook's `stage_table`, or any notebook.
 - Replacing the DuckDB `archive_qa` table with in-memory QA, or changing what `cta.archive.qa` returns.
 - Fixture cases, the baseline, `scripts/qa.py` and the skill: `specs/qa-skill.md`.
 
 ## Open questions
 
-1. Method 3: a failed additivity check in `_record_qa` leaving `archive_qa` untouched instead of replaced,
-   accepted? It never fires on a committed fixture, so Rule 7 holds either way.
-2. Aliases kept for good (as written), or importers re-pointed to `cta.qa` in a follow-up?
+Both resolved by the owner on 2026-11-16.
+
+1. **A failed additivity check in `_record_qa` leaves `archive_qa` untouched instead of replaced
+   (Method 3).** **Accepted.** It never fires on a committed fixture, so Rule 7 holds; keeping the old order
+   would keep the check duplicated.
+2. **Aliases or re-pointed importers?** **Aliases in this spec; the importers are re-pointed to `cta.qa` and
+   the aliases removed in a follow-up** (TODO.md Foundation, "Re-point the importers of the QA helper").
