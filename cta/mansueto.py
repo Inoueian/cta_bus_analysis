@@ -36,6 +36,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from cta.qa import QA_COLUMNS, qa_rows  # noqa: F401  (kept names; specs/qa-helper.md)
+
 BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
 RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
 
@@ -55,7 +57,6 @@ MAX_MEDIAN_RATIO_DEVIATION = 0.20  # ADR-006, for the deferred same-day archive 
 PARQUET_COLUMNS = ["unique_trip_vehicle_day", "rt", "pid", "vid", "stpid", "stop_sequence", "bus_stop_time"]
 TRIP_COLUMNS = ["run_id", "route", "pid", "vehicle_id", "stpid", "stop_sequence", "bus_stop_time"]
 CLEAN_COLUMNS = TRIP_COLUMNS + ["seq", "stop_rank", "rtdir", "service_date"]
-QA_COLUMNS = ["stage", "rows_in", "rows_out", "reason", "count"]  # same as cta.archive.QA_COLUMNS
 STAGES = ("read", "dedup", "pattern_join", "order")
 
 REASON_NULL_KEY_OR_TIME = "null_key_or_time"
@@ -327,15 +328,6 @@ def parquet_files_for_pid(parquet_dir: Path, pid: str) -> list[Path]:
 
 
 # --- clean ----------------------------------------------------------------------------------------
-
-
-def qa_rows(stage: str, rows_in: int, rows_out: int, reasons: dict[str, int]) -> list[dict]:
-    """QA rows for one stage, one per non-zero reason (one ``None`` row when nothing was dropped). Asserts additivity."""
-    items = [(r, int(c)) for r, c in reasons.items() if int(c) != 0] or [(None, 0)]
-    total = sum(c for _, c in items)
-    if total != rows_in - rows_out:
-        raise AssertionError(f"QA stage {stage}: reasons sum to {total}, expected {rows_in - rows_out}")
-    return [{"stage": stage, "rows_in": int(rows_in), "rows_out": int(rows_out), "reason": r, "count": c} for r, c in items]
 
 
 def _with_stop_rank(stops: pd.DataFrame) -> pd.DataFrame:

@@ -39,8 +39,8 @@ docs/           dated measurement notes plus docs/playbook.md (tag vocabulary, n
                 docs/vault-inbox/ stages the owner's vault notes until `/finding` migrates them (never cite it)
 ```
 
-`cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar and the
-migrated helpers; each module's docstring says what it holds. It imports from the repo root without
+`cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar, the
+shared QA helper (`cta/qa.py`) and the migrated helpers; each module's docstring says what it holds. It imports from the repo root without
 installing (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
 `pip install -e .`. The JSON snapshots the helpers read (`dlsd_boundaries_snapshot.json`,
 `michigan_ave_*.json`) stay under `notebooks/`. Do not add importable code under `notebooks/`.

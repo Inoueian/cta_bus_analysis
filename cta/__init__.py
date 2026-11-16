@@ -12,6 +12,8 @@ Modules, one per data source plus the shared layers:
   place; rows are flagged, never dropped (specs/calendar-module.md).
 - ``views``: the ADR-003 run-level view from any of the three sources (``run_level_from_archive``,
   ``run_level_from_mansueto``, ``run_level_from_mansueto_raw``).
+- ``qa``: the QA columns, the per-stage row builder ``qa_rows`` and ``stage_totals``; imports nothing
+  from ``cta`` (specs/qa-helper.md).
 - ``dlsd_run_quality``, ``michigan_ave_segment``: helpers migrated from ``notebooks/``
   (specs/package-migration.md); their JSON snapshots stay under ``notebooks/``.
 """

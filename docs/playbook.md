@@ -255,7 +255,7 @@ Tags: `kind:pattern stage:clean stage:view`
 
 ### Emit a QA table from a pipeline stage
 Tags: `kind:pattern stage:qa topic:qa-table`
-- Copy `cta.mansueto.qa_rows` (in-memory) or `cta.archive._record_qa` (DuckDB table): one row per non-zero reason, one `None` row when nothing dropped, additivity asserted. The test copies `tests/test_mansueto.py` (`count.sum() == rows_in - rows_out` per stage). Columns are `QA_COLUMNS` in both modules; a shared helper is a Foundation TODO item.
+- Call `cta.qa.qa_rows(stage, rows_in, rows_out, reasons)`: one row per non-zero reason, one `None` row when nothing dropped, additivity asserted; columns are `cta.qa.QA_COLUMNS`. A DuckDB stage records through `cta.archive._record_qa`, which calls the same helper and checks before it replaces the stage's rows in `archive_qa`. To sum a per-call table (per pid and year, or per day), call `cta.qa.stage_totals(qa, by, call_keys)`. The test copies `tests/test_qa.py` `test_stage_totals_on_route3_fixture` (reason columns sum to `rows_in - rows_out` per stage). `cta.qa` imports nothing from `cta` (`specs/qa-helper.md`); the names `cta.mansueto.qa_rows`, `cta.mansueto.QA_COLUMNS` and `cta.archive.QA_COLUMNS` are aliases until the importers are re-pointed (TODO.md Foundation).
 
 ### Name a threshold
 Tags: `kind:pattern topic:thresholds`

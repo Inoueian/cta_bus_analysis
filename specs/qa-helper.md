@@ -1,6 +1,6 @@
 # Spec: Shared QA-row helper (`cta/qa.py`)
 
-Status: draft
+Status: done (implemented 2026-11-16 on branch `claude/clever-keller-9knigq`)
 Owner: Satoru  ·  Date: 2026-11-16  ·  TODO item: Foundation — "Shared QA-row helper (`cta/qa.py`): move `cta.mansueto.qa_rows`, `QA_COLUMNS` and `stage_totals` from `scripts/route_run_level.py` into one module that imports nothing from `cta`; `cta.archive._record_qa` builds its rows with it and the old names stay as aliases, so the additivity check exists once instead of three times. A refactor: no QA table or view moves on the committed fixtures (Rule 7). Split out of the `/qa` item on 2026-11-16 because it adds a module to the `cta/` import surface; unblocks that item and gives the stop-level view's stages one helper to call. Spec: specs/qa-helper.md (draft)."
 Tags: `kind:spec stage:qa topic:qa-table topic:process`
 
