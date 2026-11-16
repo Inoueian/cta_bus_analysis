@@ -14,6 +14,8 @@ Modules, one per data source plus the shared layers:
   ``run_level_from_mansueto``, ``run_level_from_mansueto_raw``).
 - ``qa``: the QA columns, the per-stage row builder ``qa_rows`` and ``stage_totals``; imports nothing
   from ``cta`` (specs/qa-helper.md).
+- ``qa_baseline``: the fixture QA cases, ``diff_qa`` and the baseline file behind ``scripts/qa.py`` and
+  ``/qa``; a development tool tied to the checkout (specs/qa-skill.md).
 - ``dlsd_run_quality``, ``michigan_ave_segment``: helpers migrated from ``notebooks/``
   (specs/package-migration.md); their JSON snapshots stay under ``notebooks/``.
 """

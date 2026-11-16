@@ -48,6 +48,8 @@ ends with it, each row marked done, xfail or open.
 2. **Code.** In `cta/` if it exists, otherwise where CLAUDE.md's layout note says. Copy the shape of the prior-art module the spec names before designing a new one. Thresholds are named module constants with an evidence comment. Identifiers are strings; timestamps tz-aware UTC. DuckDB for anything over ~1M rows; return pandas at function boundaries.
 3. **QA table.** Every stage emits rows in, rows out and reason counts. A test asserts the reasons sum to the difference.
 4. **Run `python -m pytest -q`** for the whole suite, not just the new file. Fix what you broke.
+   Then run `/qa` (`python scripts/qa.py`): a diff against the baseline is a behaviour change, recorded only
+   when the spec's Thresholds table names it (`.claude/skills/qa/SKILL.md`), never for a refactor.
 5. **Script entry point** if the spec names one: thin argparse in `scripts/`, documents itself with `-h`.
 
 ## When a test disagrees with the data

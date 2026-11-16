@@ -122,7 +122,10 @@ are deviations too; list them with the HTTP status.
 3. Run it again; the SHA-256s must not change.
 4. Run `python -m pytest -q`. Existing fixture tests must still pass (a rebuilt fixture that changes
    pinned numbers is a spec change, Rule 2, not a fixture change).
-5. `git status --porcelain | grep -E '^.. data/'` must print nothing.
+5. After a rebuild of a fixture a `/qa` case reads, run `/qa` (`python scripts/qa.py`): record that case
+   only (`--record`), show the accepted diff in the report, and check no other case's rows moved
+   (`.claude/skills/qa/SKILL.md`).
+6. `git status --porcelain | grep -E '^.. data/'` must print nothing.
 
 ## After
 
