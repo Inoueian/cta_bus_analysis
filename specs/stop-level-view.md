@@ -127,15 +127,91 @@ not built here: an archive cut of the same pids for 2026-10-29, in the format th
 
 ## Open questions
 
-1. **Stored shape.** ADR-003 says the stop-level view is one row per key with a list. This spec stores the long
-   arrivals table and derives the list row on demand. If the stored artifact is the long table, is a short ADR
-   amending ADR-003 (as ADR-008 did) wanted?
-2. **Which stops are in the table.** The 45-day rule also catches the two stops swapped at the far west end of
-   route 66 on 2024-09-03 (Chicago & Menard, Chicago & Waller) if they are among the 11 and 13; they are not on the
-   detour and the buses may have served them throughout. Review the stop names in the JSON and say which to remove.
-3. **6665's window.** Its geometry changed twice (9.45 miles from 2025-09-28, 9.36 from 2025-11-24). The rule takes
-   the last change, as the measured 2,127,091 does. Is the first change enough for route 66 westbound?
-4. **Minor patterns.** A window measured on the dominant pattern is applied to every pattern of its direction. Agreed?
-5. **Overlap days.** Archive over raw CSV whenever both have a (route, day), even on an archive `known_gap_day`?
-6. **Fixture routes.** Route 8 is in no fixture (its two-direction stop at Halsted Orange Line and its 14 validity
-   stops are tested only through the hand-built cases and the QA note). Add a third day file for route 8?
+Each has the evidence found so far, the options, a recommendation and what the spec changes on the answer.
+Evidence marked "notebook" is a saved output of `notebooks/eda_routes_8_65_66.ipynb` (sections 6.1, 6.2, 7), read
+2026-11-17; nothing was re-run. Street positions read off the 6.2 ping map are approximate.
+
+### 1. Stored shape: long table or list row?
+
+- At stake: ADR-003 says the stop-level view is one row per (`stop_id`, `route`, `direction`) holding a list. The
+  spec makes the long arrivals table the working and stored form and derives the list row.
+- Evidence: 71.5M Mansueto rows over about 600 keys is about 120,000 arrivals per list. A wait filtered by day type
+  or holiday needs `service_date`, `calendar_flag`, `source` and `bracket_gap_s` per arrival, so the list row would
+  carry eight parallel lists, not the four in Outputs. A nightly refresh appends rows to a long table; it rewrites lists.
+- Options: (a) long table stored, list row derived on demand; (b) list row stored, as ADR-003 reads, with the four
+  extra lists added to `stop_level_view`; (c) both stored.
+- Recommendation: (a), with a short ADR amending ADR-003 (as ADR-008 did): sorted by key, the long table gives the
+  same lookup, and every later spec filters per arrival.
+- Spec change: (a) adds `/adr` to the implementation steps; (b) extends the `stop_level_view` schema and moves the
+  CLI output to it.
+
+### 2. Which stops get a window (merged with question 3: from which day)?
+
+- At stake: the 45-day rule marks 38 stops as "added". An added stop that the buses did serve loses real arrivals;
+  a detour stop left out keeps arrivals of buses that were on another street.
+- Evidence (notebook 6.1, stop names; 6.2, ping map on 2024-07-16, 2025-07-15, 2025-09-16, 2025-10-14, 2026-09-15):
+  - 6662 (66 east), 11 added: `18720` Chicago & Menard and `18721` Chicago & Waller replace `512` and `513` at the
+    same two sequence positions, far west of the works: a stop-id swap, not a detour. The other 9 (Milwaukee &
+    Carpenter to Orleans & Chicago) are the detour, and the 2025-10-14 pings run along them.
+  - 6665 (66 west), 13 added: `18794` Chicago & Milwaukee (Blue Line) and `18802` Chicago & Noble are on Chicago
+    Avenue, which the buses drove on every sampled day; neither replaces a dropped stop, so whether a stop stood
+    there before 2024-09-03 is not known. Of the other 11, the 2025-10-14 westbound pings come south about half a
+    mile west of where they do on 2026-09-15, so the Wells stops (`18803`, `6613`, `6614`, `5020`, and probably
+    `769` Grand & Franklin) were not served until the second change (2025-11-24), while the stops from 530 W Grand
+    west to Milwaukee & Carpenter probably were from the first (2025-09-28).
+  - 9368 and 9376 (route 8), 8 and 6 added: all on Division and Milwaukee. On 2025-09-16 and 2025-10-14 the buses
+    ran the first detour, east of Halsted, and passed none of them; the last change is the right day for all 14.
+- Options: (a) as drafted: all 38, each from its pid's last change; (b) owner-reviewed list: remove the two id
+  swaps, decide `18794` and `18802`, keep one day per pid; (c) measured per stop: `valid_from` is the first
+  geometry period in which the dominant pid's raw pings pass within a named distance of the stop (one raw day per
+  period, stop coordinates from getpatterns), which settles the swaps, the two Chicago Avenue stops and the split
+  of 6665's block by one rule.
+- Recommendation: (c). It replaces a judgment per stop with a measurement the QA note can show, and the JSON schema
+  already holds a day per stop. Cost: one new threshold (`MAX_STOP_PING_DISTANCE_FT`, unknown; measure on stops
+  present throughout, then name it), about five raw day files (37 MB each) and no extra getpatterns calls.
+- Spec change: (b) pins a smaller row count in `test_stop_validity_snapshot`; (c) rewrites Method 2, adds the
+  threshold row and an analytic test, and the row count becomes an estimate (~30 to 36). Under (a) or (b) the 6665
+  rows from 2025-09-28 to 2025-11-23 at the stops west of Grand & Franklin are dropped although probably real.
+
+### 3. Does a window measured on the dominant pattern apply to the minor patterns?
+
+- At stake: geometry changes were bisected only for the four dominant pids; the minor ones have too few pings a day
+  to bisect (a minor pattern can read 2.84 miles short of its length on a day).
+- Evidence (notebook 7): on route 8 four minor patterns start or end inside the block (10951 and 9343 start at
+  Division & Cherry; 10954 and 9250 end at Division & Hooker), so they have arrivals at these stops and their first
+  or last stop is a validity stop. On route 66, 4357 and 4355 cross the block; 6661 and 6658 add 8 and 7 stops, none
+  near it. Minor patterns are 13% to 18% of a direction's runs. The two directions of a route changed 0 to 2 days apart.
+- Options: (a) key the window by (`route`, `direction`, `stop_id`) and apply it to every pattern, as drafted;
+  (b) measure a day per minor pid; (c) apply it to the dominant pid only.
+- Recommendation: (a). The likely error is a day or two; (c) leaves imputed arrivals from one run in six at the
+  same stops, which shortens every headway there.
+- Spec change: none for (a); (b) needs a measurement the notebook does not have and delays the spec; (c) changes
+  the key of the table to `pid`.
+
+### 4. Overlap days: does the archive always win?
+
+- At stake: 25 days (2026-09-28 to 2026-10-27) are in both the archive (60 s fixes) and the raw CSVs (300 s).
+- Evidence (`tests/fixtures/archive_2026-10-29_michigan.index.json` `known_gaps`): the archive lost the afternoon
+  and evening of six consecutive days, 2026-10-12 to 2026-10-17 (from between 13:13 and 18:03 to midnight; "daily
+  request limit hit; data unrecoverable"), and 11 minutes on 2026-10-22. The raw CSVs have whole days for four of
+  the six (10-16 and 10-17 are missing there too). Sunday 2026-10-11 is short in both sources.
+- Options: (a) archive whenever it has the (route, day), as drafted; the day keeps its `known_gap_day` flag;
+  (b) raw CSV on a day whose archive gap is longer than a named duration; (c) raw CSV on any `known_gap_day`.
+- Recommendation: (a) for this spec. No archive day can be ingested until the Foundation v2 item lands, so the
+  stage drops nothing on real data yet; (b) is worth four afternoons and is better decided in the archive half,
+  with both sources on disk. The QA note lists the overlap days flagged `known_gap_day`.
+- Spec change: none for (a); (b) adds a threshold and a calendar lookup; (c) changes `SOURCE_PRIORITY` to a rule.
+
+### 5. Is route 8 in a fixture?
+
+- At stake: route 8 holds 14 of the 38 windows, the only two-direction stop that is not a terminal (Halsted Orange
+  Line), and the four patterns that start or end inside a block (question 3). As drafted it is tested only by the
+  hand-built cases and the QA note.
+- Cost: about 20,000 rows (~0.22 MB, estimate) per day and 9 more getpatterns files (9 calls); `tests/fixtures/`
+  is at 5.8 MB of 20.
+- Options: (a) no route 8 fixture; (b) widen the 2025-10-14 file to all three routes (~50,000 rows, ~0.55 MB,
+  estimate; still under 1 MB), leaving 2025-12-02 at routes 65 and 66; (c) a separate route 8 file.
+- Recommendation: (b). On 2025-10-14 both route 8 directions are before their window, so the day then holds a
+  direction that is valid (66 east), one that is not or is split (66 west) and two that are not (route 8).
+- Spec change: (b) renames the fixture to `mansueto_2025-10-14_routes8_65_66.parquet`, raises getpatterns to 24
+  files and adds route 8 assertions to `test_stop_arrivals_fixture_2025_10_14`.
