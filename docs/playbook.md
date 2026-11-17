@@ -255,7 +255,7 @@ Tags: `kind:pattern stage:clean stage:view`
 
 ### Emit a QA table from a pipeline stage
 Tags: `kind:pattern stage:qa topic:qa-table`
-- Copy `cta.mansueto.qa_rows` (in-memory) or `cta.archive._record_qa` (DuckDB table): one row per non-zero reason, one `None` row when nothing dropped, additivity asserted. The test copies `tests/test_mansueto.py` (`count.sum() == rows_in - rows_out` per stage). Columns are `QA_COLUMNS` in both modules; a shared helper is a Foundation TODO item.
+- Call `cta.qa.qa_rows(stage, rows_in, rows_out, reasons)`: one row per non-zero reason, one `None` row when nothing dropped, additivity asserted; columns are `cta.qa.QA_COLUMNS`. A DuckDB stage records through `cta.archive._record_qa`, which calls the same helper and checks before it replaces the stage's rows in `archive_qa`. To sum a per-call table (per pid and year, or per day), call `cta.qa.stage_totals(qa, by, call_keys)`. The test copies `tests/test_qa.py` `test_stage_totals_on_route3_fixture` (reason columns sum to `rows_in - rows_out` per stage). `cta.qa` imports nothing from `cta` (`specs/qa-helper.md`); the names `cta.mansueto.qa_rows`, `cta.mansueto.QA_COLUMNS` and `cta.archive.QA_COLUMNS` are aliases until the importers are re-pointed (TODO.md Foundation).
 
 ### Name a threshold
 Tags: `kind:pattern topic:thresholds`
@@ -295,6 +295,10 @@ Tags: `kind:pattern topic:calendar stage:clean`
 Tags: `kind:pattern stage:qa topic:process topic:fixtures`
 - In the suite: copy `tests/test_bustracker.py` `test_parser_equivalence` (`pd.testing.assert_frame_equal` of the new path against the old one on a fixture) while both paths exist; `specs/split-cta-api.md` is the shape of a spec whose whole job is a refactor. Existing tests pass with import changes only (CLAUDE.md rule 7).
 - Beyond the suite, for cleaning or imputation code: each fixture is one archive day cut to a few PIDs, so it cannot see every branch. Before the refactor, run `scripts/archive_run_level.py --days <a cached day> --out <path outside the repo>/before.parquet`; after it, the same with `after.parquet`; then `assert_frame_equal` the two parquets and the two `.qa.csv` files. Use a day already under `data/archive/raw/` (no download) and write both outputs outside the repo.
+
+### Check a QA table against the baseline
+Tags: `kind:pattern stage:qa topic:qa-table topic:fixtures`
+- Run `/qa` (`python scripts/qa.py`, `.claude/skills/qa/SKILL.md`): it runs each case of `cta.qa_baseline.FIXTURE_CASES` on its committed fixture and diffs the QA table against `tests/fixtures/qa_baseline.csv` with `diff_qa`; `tests/test_qa_baseline.py` `test_baseline_matches_fixtures` fails on any difference. The counts are pinned in the CSV alone, so a new test asserts identities, not counts. `--record` moves the baseline in three cases only: a spec that names a threshold or exclusion change (Rule 2), a fixture rebuilt by `/fixture`, a new case; never a refactor (Rule 7). A new adapter adds a case by copying `_mansueto_raw_case` (own connection, patterns from `tests/fixtures/getpatterns/` by explicit directory, key = pid or day). The `docs/*-qa.md` note stays the human record (`specs/qa-skill.md`).
 
 ### Filter runs by structure, not by a minute cap
 Tags: `kind:pattern stage:clean topic:thresholds`

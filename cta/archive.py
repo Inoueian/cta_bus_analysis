@@ -29,6 +29,7 @@ import duckdb
 import pandas as pd
 
 from cta import bustracker
+from cta.qa import QA_COLUMNS, qa_rows
 
 ARCHIVE_ORIGIN = "https://data.chicagotransitalerts.app/"
 INDEX_URL = ARCHIVE_ORIGIN + "positions/index.json"
@@ -78,7 +79,6 @@ ARRIVAL_COLUMNS = [
     "route", "pid", "vehicle_id", "run_id", "service_date", "stpid", "seq", "stop_rank", "rtdir", "stop_pdist_ft",
     "arrival_time", "bracket_gap_s",
 ]
-QA_COLUMNS = ["stage", "rows_in", "rows_out", "reason", "count"]
 
 RUN_ID_SQL = "vehicle_id || '-' || pid || '-' || sched_start_date || '-' || CAST(sched_start_sec AS VARCHAR)"
 
@@ -229,16 +229,17 @@ def _calendar_bounds_ms(day: str) -> tuple[int, int]:
 
 
 def _record_qa(con, day: str, stage: str, rows_in: int, rows_out: int, reasons: dict[str, int]) -> None:
+    """Replace the ``archive_qa`` rows of one stage and day. A failed additivity check raises before anything is deleted."""
+    try:
+        rows = qa_rows(stage, rows_in, rows_out, reasons)
+    except AssertionError as err:
+        raise AssertionError(str(err).replace(f"QA stage {stage}:", f"QA stage {stage} on {day}:", 1)) from None
     con.execute("DELETE FROM archive_qa WHERE archive_date = ? AND stage = ?", [day, stage])
-    items = [(r, int(c)) for r, c in reasons.items() if int(c) != 0] or [(None, 0)]
-    for i, (reason, count) in enumerate(items):
+    for i, row in enumerate(rows):
         con.execute(
             "INSERT INTO archive_qa(archive_date, stage, rows_in, rows_out, reason, count, seq) VALUES (?,?,?,?,?,?,?)",
-            [day, stage, int(rows_in), int(rows_out), reason, count, i],
+            [day, row["stage"], row["rows_in"], row["rows_out"], row["reason"], row["count"], i],
         )
-    total = sum(c for _, c in items)
-    if total != rows_in - rows_out:
-        raise AssertionError(f"QA stage {stage} on {day}: reasons sum to {total}, expected {rows_in - rows_out}")
 
 
 def qa(con: duckdb.DuckDBPyConnection, day: str) -> pd.DataFrame:

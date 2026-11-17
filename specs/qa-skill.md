@@ -1,6 +1,6 @@
 # Spec: The `/qa` skill: fixture QA tables against a committed baseline
 
-Status: draft
+Status: done (implemented 2026-11-16 on branch `claude/clever-keller-9knigq`)
 Owner: Satoru  ·  Date: 2026-11-16  ·  TODO item: Foundation — "`/qa` skill (`.claude/skills/qa/`): run an adapter on its committed fixture, print the per-stage QA table (rows in, rows out, reason counts) and diff it against the table recorded in the latest `docs/*-qa.md`, so Rule 2 (no silent threshold or exclusion change) is a command rather than a convention. The baseline is a committed CSV (`tests/fixtures/qa_baseline.csv`), not the markdown tables, which stay the human record, and a test on it fails CI on any QA change until `scripts/qa.py --record` (owner, 2026-11-16). After the shared QA-row helper (item above). Spec: specs/qa-skill.md (draft)."
 Tags: `kind:spec source:archive source:mansueto stage:qa topic:qa-table`
 
@@ -85,7 +85,7 @@ Existing, read only: `tests/fixtures/archive_2026-10-29_michigan.ndjson.gz` and 
 `mansueto_raw_2026-10-22_michigan.csv.gz`, `getpatterns/`.
 
 New: `tests/fixtures/qa_baseline.csv`, not cut from a public file but written by `scripts/qa.py --record`;
-25 rows, about 1.5 kB (estimate; measure, then pin). Its first content, measured 2026-11-15 and again
+25 rows, 1,339 bytes (measured 2026-11-16; recorded by `scripts/qa.py --record`). Its first content, measured 2026-11-15 and again
 2026-11-16 (requirements, Method 6):
 
 | Case (rows) | Stages: rows in → rows out (reason count) |

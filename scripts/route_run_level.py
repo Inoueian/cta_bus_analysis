@@ -44,6 +44,7 @@ import duckdb  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from cta import bustracker, calendar, mansueto, mansueto_raw, views  # noqa: E402
+from cta.qa import stage_totals  # noqa: E402,F401  (kept name; specs/qa-helper.md)
 
 DEFAULT_PIDS_FILE = REPO_ROOT / "notebooks" / "routes_8_65_66_pids.json"
 DEFAULT_OUT_DIR = REPO_ROOT / "data" / "route_run_level"
@@ -90,22 +91,6 @@ def today_geometry_first_day(pid_file: dict) -> dict[str, str]:
 def day_range(start: str, end: str) -> list[str]:
     a, b = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
     return [(a + dt.timedelta(days=i)).isoformat() for i in range((b - a).days + 1)]
-
-
-# --- QA helpers -----------------------------------------------------------------------------------
-
-
-def stage_totals(qa: pd.DataFrame, by: list[str], call_keys: list[str]) -> pd.DataFrame:
-    """Sum a per-call QA table over calls: rows in/out per stage and one column per reason; asserts additivity.
-
-    ``call_keys`` identify one adapter call (pid and year, or day); ``by`` is the grouping to report.
-    """
-    stage = qa.drop_duplicates(call_keys + ["stage"]).groupby(by + ["stage"], sort=False)[["rows_in", "rows_out"]].sum()
-    reasons = qa.dropna(subset=["reason"]).pivot_table(index=by + ["stage"], columns="reason", values="count", aggfunc="sum", fill_value=0)
-    out = stage.join(reasons).fillna(0).astype("int64")
-    reason_cols = [c for c in out.columns if c not in ("rows_in", "rows_out")]
-    assert ((out["rows_in"] - out["rows_out"]) == out[reason_cols].sum(axis=1)).all(), "QA reasons do not sum to rows dropped"
-    return out
 
 
 # --- Mansueto parquet -----------------------------------------------------------------------------
