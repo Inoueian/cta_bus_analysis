@@ -10,6 +10,47 @@ Statuses:
 
 ---
 
+## ADR-011: One stored analysis view; the stop-level view is a grouping of it, not a second table
+Date: 2026-11-18
+Status: Proposed (would amend ADR-003; does not supersede it)
+
+### Context
+
+ADR-003 planned two materialized views, the stop-level one holding a list of arrival times per (`stop_id`,
+`route`, `direction`), so that a wait would be a single-row lookup. Writing the Phase 1 stop-level spec for routes
+8, 65 and 66 (2026-11-17, `specs/analysis-view.md`, commits `e4008c6` to `61a2b4c`) showed three things.
+A wait filtered by day type or holiday needs `service_date`, `calendar_flag`, `source` and `bracket_gap_s` per
+arrival, so the owner chose a long table over lists; that long table held the run-level columns less one, re-sorted.
+The two drops it needed are not about stops: Mansueto arrivals at detour stops before the bus served them
+(2,127,091 on four patterns, `docs/2026-11-15-routes-8-65-66-run-level-qa.md`) corrupt a travel time as much as a
+wait, and so do the duplicate runs on the 25 days both the archive and the raw CSVs cover (ADR-009). And the
+scale does not call for a second layout yet: 71.5M Mansueto rows for the three routes is one DuckDB query to group
+by stop and order by time, and the Phase 2 app is expected to serve precomputed distributions, not raw arrivals.
+
+### Decision
+
+1. The stored table for analysis is the **analysis view**: the per-source run-level views combined and passed
+   through two stages, `source_overlap` (one source per route and service date, `SOURCE_PRIORITY`) and
+   `stop_validity` (Mansueto arrivals at a stop dated before its measured `valid_from`), with `RUN_LEVEL_COLUMNS`
+   unchanged (`cta.views.analysis_view`, `specs/analysis-view.md`). Wait, travel-time and time-series code reads it.
+2. The **stop-level view** of ADR-003 is defined, not stored: the analysis view grouped by `cta.views.STOP_KEY`
+   (`route`, `direction`, `stop_id`), every pattern of the direction pooled, arrivals ordered by `arrival_time`,
+   each keeping its `pattern_id`. ADR-003's per-timestamp pattern label is that column.
+3. The per-source run-level views stay as the adapters' output, unfiltered, with their own QA (ADR-004, ADR-009).
+4. A stop-sorted or list-per-stop copy may be added later as a cache, when a consumer measures that the grouping
+   is too slow; it is derived from the analysis view and holds no rule of its own.
+
+### Consequences
+
+One table to refresh and one place for the cross-source and detour rules, so wait and travel time cannot disagree
+about which arrivals are real. ADR-003's "single-row lookup" becomes a filtered query on a large table; acceptable for
+Phase 1 scripts and notebooks, and Phase 2 is expected to precompute. The stop validity file
+(`notebooks/routes_8_65_66_stop_validity.json`) must be re-measured when a pattern's geometry changes again
+(playbook gotcha "A detour keeps the pid and changes its geometry"). README's Data Model, which describes the list
+form, is updated when this is accepted. Fallback: if a consumer is too slow, the cache of point 4.
+
+---
+
 ## ADR-010: Michigan Ave corridor speed is defined on segments between consecutive corridor stops
 Date: 2026-11-07
 Status: Accepted
