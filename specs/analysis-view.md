@@ -1,19 +1,30 @@
-# Spec: Analysis-ready run-level view for routes 8, 65 and 66
+# Spec: Analysis view for routes 8, 65 and 66
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: owner answers; measured stop windows; route 8 in the fixture; rescoped from "stop-level view" under ADR-011)  ·  TODO item: Phase 1, Now — "Analysis-ready run-level view for routes 8, 65, & 66 (ADR-011): one table, `RUN_LEVEL_COLUMNS` unchanged, from the per-source run-level views after two stages every Phase 1 consumer needs …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18)
+Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: owner answers; measured stop windows; route 8 in the fixture; rescoped from "stop-level view" under ADR-011; 2026-11-19: the difference from the run-level view stated as one test)  ·  TODO item: Phase 1, Now — "Analysis view for routes 8, 65, & 66 (ADR-011, Proposed). A run-level view says what one source reports; the analysis view says what we take to have happened …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18)
 Tags: `kind:spec source:mansueto source:archive stage:view topic:pattern-catalog topic:qa-table`
 
 ## Question
 
-Which arrivals of routes 8, 65 and 66 can a wait, a travel time or a time series trust? The per-source run-level
-views hold two kinds of row that none of them can: Mansueto arrivals at detour stops dated before the bus served them
-(2,127,091 on the four dominant route 8 and 66 patterns), and the same bus twice on the 25 days both the archive and
-the raw CSVs cover. This spec removes both, once, and states the stop key the wait-time spec groups by. It began as
-the stop-level view; with the stop-level form a long table, that view was the run-level view filtered and re-sorted,
-and both filters serve travel time too, so ADR-011 (Proposed) makes the filtered run-level view the one stored table
-and defines the stop-level view as a grouping of it. Fixtures are Mansueto cuts, so this does not wait on the archive
-v2 adapter (owner, 2026-11-17).
+Which arrivals of routes 8, 65 and 66 can a wait, a travel time or a time series trust? A **run-level view** says
+what one source reports; the **analysis view** says what we take to have happened. They have the same columns and the
+same grain (one row per run and stop). They differ in what may remove a row:
+
+| | Run-level view (exists, one per source) | Analysis view (this spec, one table) |
+|---|---|---|
+| Removes a row when | the source's own files and the cached patterns show it cannot be a sound (run, stop, time): no key, a duplicate, a stop not in the pattern, time running backwards, a gap too long to impute across | it is sound by that test, but evidence from outside the source contradicts it: another source has the same route and day, or raw pings show the bus was not on that stop's street on that date |
+| Keeps on purpose | rows that look wrong only against outside evidence, so the cross-source and method checks can see them | nothing it knows to be wrong |
+| Read by | QA, `/qa`, the cross-source and method checks (ADR-009), which need both sources on the same day and Mansueto's own output | wait, travel time, time series, the app |
+
+The test also places future rules: one that needs only one source's files goes in that source's adapter; one that
+needs another source, or a measurement of where the buses ran, goes here. Flags (`calendar_flag`) remove nothing in either.
+
+Two kinds of row in the run-level views fail the outside-evidence test today: the same bus from two sources on the
+25 days the archive and the raw CSVs both cover, and Mansueto arrivals at detour stops dated before the bus served
+them (2,127,091 on the four dominant route 8 and 66 patterns). This spec began as the stop-level view; once that was a
+long table it was this view re-sorted, and both removals matter to travel time as much as to waits, so ADR-011
+(Proposed) makes the analysis view the one table analysis reads and defines the stop-level view as a grouping of it
+(Method 5). Fixtures are Mansueto cuts, so this does not wait on the archive v2 adapter (owner, 2026-11-17).
 
 ## Inputs
 
@@ -34,7 +45,7 @@ v2 adapter (owner, 2026-11-17).
 | Validity | `cta/stop_validity.py`: `geometry_periods(pid_file, pid)`, `stop_validity_from_pings(candidates, stops, pings, periods, max_ft)`, `load_stop_validity(path=None)` | periods: `pid`, `start` / `end_exclusive` (ISO or null), `sample_day`; the JSON's rows; the loader keeps rows with a `valid_from` | one row per period; per candidate stop |
 | CLI | `scripts/route_analysis_view.py` (`--write-validity`, `--sources`, `--out-dir data/route_analysis_view`) | `route=<r>/year=<YYYY>.parquet` (year of `service_date`), QA as CSV | thin; reads `data/route_run_level/` |
 | `/qa` case | `cta.qa_baseline.FIXTURE_CASES["analysis_view_2025_10_14"]`, recorded in `tests/fixtures/qa_baseline.csv` | baseline rows | a new case; `tests/test_qa_baseline.py` passes |
-| Docs | README "Data Model" and `cta/__init__.py` module list name the analysis view and `cta.stop_validity`; the `scripts/route_run_level.py` docstring points here instead of "the stop-level spec" | — | only once ADR-011 is Accepted |
+| Docs | README "Data Model", CLAUDE.md's data-source paragraph and the `cta/__init__.py` module list name the analysis view (and the run-level / analysis distinction) and `cta.stop_validity`; the `scripts/route_run_level.py` docstring points here instead of "the stop-level spec" | — | only once ADR-011 is Accepted |
 | QA note | `docs/<date>-routes-8-65-66-analysis-view-qa.md` (`/finding`) | stage totals per route and source; Method 3's distance table; first arrival per windowed key; overlap days flagged `known_gap_day` | — |
 
 ## Method

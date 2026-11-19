@@ -29,15 +29,22 @@ by stop and order by time, and the Phase 2 app is expected to serve precomputed 
 
 ### Decision
 
-1. The stored table for analysis is the **analysis view**: the per-source run-level views combined and passed
-   through two stages, `source_overlap` (one source per route and service date, `SOURCE_PRIORITY`) and
-   `stop_validity` (Mansueto arrivals at a stop dated before its measured `valid_from`), with `RUN_LEVEL_COLUMNS`
-   unchanged (`cta.views.analysis_view`, `specs/analysis-view.md`). Wait, travel-time and time-series code reads it.
-2. The **stop-level view** of ADR-003 is defined, not stored: the analysis view grouped by `cta.views.STOP_KEY`
+1. A **run-level view** says what one source reports; the **analysis view** says what we take to have happened.
+   Both have `RUN_LEVEL_COLUMNS` and one row per (run, stop) (ADR-003, ADR-008). A run-level view is one per source,
+   built by its adapter, and removes a row only when that source's own files and the cached patterns show it cannot
+   be a sound (run, stop, time). The analysis view is one table over all sources, and also removes rows that are
+   sound by that test but contradicted by evidence from outside the source. Today that is two stages:
+   `source_overlap` (another source has the same route and service date; `SOURCE_PRIORITY` picks one) and
+   `stop_validity` (raw pings show the bus was not at the stop on that date; a measured `valid_from` per stop)
+   (`cta.views.analysis_view`, `specs/analysis-view.md`). Wait, travel-time and time-series code reads the analysis view.
+2. Where a new rule goes: decidable from one source's own files, in that source's adapter; needing another source
+   or a measurement of where the buses ran, in the analysis view. Flags (`calendar_flag`) remove nothing in either.
+3. The **stop-level view** of ADR-003 is defined, not stored: the analysis view grouped by `cta.views.STOP_KEY`
    (`route`, `direction`, `stop_id`), every pattern of the direction pooled, arrivals ordered by `arrival_time`,
    each keeping its `pattern_id`. ADR-003's per-timestamp pattern label is that column.
-3. The per-source run-level views stay as the adapters' output, unfiltered, with their own QA (ADR-004, ADR-009).
-4. A stop-sorted or list-per-stop copy may be added later as a cache, when a consumer measures that the grouping
+4. The run-level views stay unfiltered by outside evidence, with their own QA (ADR-004, ADR-009): they are what the
+   cross-source and method checks compare, which needs both sources on the same day and Mansueto's own imputation.
+5. A stop-sorted or list-per-stop copy may be added later as a cache, when a consumer measures that the grouping
    is too slow; it is derived from the analysis view and holds no rule of its own.
 
 ### Consequences
@@ -47,7 +54,8 @@ about which arrivals are real. ADR-003's "single-row lookup" becomes a filtered 
 Phase 1 scripts and notebooks, and Phase 2 is expected to precompute. The stop validity file
 (`notebooks/routes_8_65_66_stop_validity.json`) must be re-measured when a pattern's geometry changes again
 (playbook gotcha "A detour keeps the pid and changes its geometry"). README's Data Model, which describes the list
-form, is updated when this is accepted. Fallback: if a consumer is too slow, the cache of point 4.
+form, and CLAUDE.md's data-source paragraph are updated when this is accepted. Fallback: if a consumer is too
+slow, the cache of point 5.
 
 ---
 
