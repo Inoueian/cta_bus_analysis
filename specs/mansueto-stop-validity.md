@@ -1,7 +1,7 @@
 # Spec: Dated stop validity in the Mansueto adapter (routes 8 and 66)
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: measured windows, route 8 in the fixture; 2026-11-19: no separate analysis view, the window is applied in the Mansueto adapter's pattern join, ADR-011)  ·  TODO item: Phase 1, Now — "Dated stop validity in the Mansueto adapter for routes 8 and 66 ([ADR-011](DECISIONS.md), Proposed): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18 and 2026-11-19)
+Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: measured windows, route 8 in the fixture; 2026-11-19: no separate analysis view, the window is applied in the Mansueto adapter's pattern join, ADR-011)  ·  TODO item: Phase 1, Now — "Dated stop validity in the Mansueto adapter for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18 and 2026-11-19)
 Tags: `kind:spec source:mansueto stage:clean topic:pattern-catalog topic:qa-table`
 
 ## Question
@@ -146,4 +146,4 @@ Route 65 shares detour stops with route 66 and has no window of its own.
 
 ## Open questions
 
-1. ADR-011 is Proposed. Accept it (or say what to change) before this spec goes to `ready`.
+None. ADR-011 was accepted on 2026-11-19.

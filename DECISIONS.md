@@ -12,7 +12,7 @@ Statuses:
 
 ## ADR-011: The stop-level view is a grouping of the run-level views; one source per date; stop membership is dated
 Date: 2026-11-19 (first drafted 2026-11-18)
-Status: Proposed (would amend ADR-003; does not supersede it)
+Status: Accepted (amends ADR-003; does not supersede it)
 
 ### Context
 
@@ -58,7 +58,7 @@ make visible. ADR-003's "single-row lookup" becomes a filtered query on a large 
 Phase 2 expected to precompute. The validity file must be re-measured when a pattern's geometry changes again (playbook
 gotcha "A detour keeps the pid and changes its geometry"); dated stop tables for every pattern, from historical GTFS,
 would generalize point 3 and amend ADR-008 (TODO item "Historical pattern geometry from GTFS"). README's Data Model,
-which describes the list form, and CLAUDE.md's data-source paragraph are updated when this is accepted. Fallback: if a
+which described the list form, and CLAUDE.md's data-source paragraph were updated on acceptance (2026-11-19). Fallback: if a
 consumer is too slow, the cache of point 4.
 
 ---

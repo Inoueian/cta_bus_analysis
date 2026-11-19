@@ -1,7 +1,7 @@
 # Spec: Run-level reader: one source per route and service date
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-19  ·  TODO item: Phase 1, Now — "Run-level reader: one source per route and service date ([ADR-011](DECISIONS.md), Proposed): `cta.calendar.primary_source` picks the first of archive, raw CSVs, Mansueto parquet whose declared coverage holds the date …" (full text in TODO.md)
+Owner: Satoru  ·  Date: 2026-11-19  ·  TODO item: Phase 1, Now — "Run-level reader: one source per route and service date ([ADR-011](DECISIONS.md)): `cta.calendar.primary_source` picks the first of archive, raw CSVs, Mansueto parquet whose declared coverage holds the date …" (full text in TODO.md)
 Tags: `kind:spec source:archive source:mansueto stage:view topic:calendar`
 
 ## Question
@@ -29,7 +29,7 @@ gives analyses one reader that applies it, and names the stop key the wait-time 
 | Rule on a frame | `cta.views.one_source_per_day(view, *, index=None) -> (DataFrame, DataFrame)` | `RUN_LEVEL_COLUMNS` and dtypes unchanged, order kept. QA: `["route"] + cta.qa.QA_COLUMNS`, one stage `primary_source` | one row per kept (run, stop) |
 | Reader | `cta.views.read_run_level(root, *, routes=None, start=None, end=None, index=None) -> (DataFrame, DataFrame)` | as `one_source_per_day`, sorted as the run-level view | as above |
 | Stop key | `cta.views.STOP_KEY = ["route", "direction", "stop_id"]` | — | ADR-011's definition of the stop-level view |
-| Docs | `cta/__init__.py` `views` and `calendar` lines; once ADR-011 is Accepted, README "Data Model" and CLAUDE.md's data-source paragraph | — | — |
+| Docs | `cta/__init__.py` `views` and `calendar` lines (README "Data Model" and CLAUDE.md already state ADR-011) | — | — |
 
 ## Method
 
@@ -97,4 +97,4 @@ None new: hand-built frames and parquet files written under `tmp_path`; a hand-b
 
 ## Open questions
 
-1. ADR-011 is Proposed. Accept it (or say what to change) before this spec goes to `ready`.
+None. ADR-011 was accepted on 2026-11-19.
