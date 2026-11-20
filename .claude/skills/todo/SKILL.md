@@ -15,13 +15,15 @@ Arguments: what changed, in a sentence, or nothing (then ask which item and what
 - Section order is priority order, first section first. Foundation stays first only while it unblocks
   something. Done is always last.
 - `### Now` / `### Next` only where they earn it: a section with more than about five items, or a gate
-  between them (such as "each Next item gets a spec first"). Otherwise the section is flat.
+  between them (such as "each Next item gets a spec first"). Otherwise the section is flat. A
+  `### Later` after them holds loose ends the owner deferred; its first line says why and which
+  Now or Next items they still gate.
 - A section with no active items retires: its intro shrinks to one line under `## Completed workstreams`,
   just above Done, pointing at its notebooks and `docs/` notes.
 - Adding, renaming, merging, reordering or retiring a section is the owner's call. When an item fits no
   section, propose one in the report rather than inventing it. When asked to restructure, date and explain
   the change in the section intro. Done is the one section never restructured.
-- Items under a `### Now` or `### Next` heading, or directly under a flat section, are active. Done is
+- Items under a `### Now`, `### Next` or `### Later` heading, or directly under a flat section, are active. Done is
   history: newest first, one line per finished item ending with `(YYYY-MM-DD)`.
 - `Last updated:` at the top is today's date whenever the file changes.
 - An active item says what the deliverable is (file, function, script, notebook, docs note) and cites
