@@ -62,10 +62,11 @@ against the reference blue), which is the old cycle's series 1/2 failure in anot
 ### Consequences
 
 Every figure re-colors when its notebook is re-run; committed outputs keep the old colors until then. The four
-notebooks with hard-coded old hexes now use slots 1 and 2:
+notebooks with hard-coded old hexes, and the first-results notebook's blue/orange pair, now use slots 1 and 2:
 - `dlsd_travel_time_146_147` and `mansueto_imputation_investigation`: route 146 purple, 147 orange.
 - `dlsd_express_comparison_plots`: 14x purple, 13x orange.
 - `michigan_ave_speed_plots`: the speed color is purple.
+- `routes_8_65_66_first_results`: before purple, during orange (before was the reference blue).
 
 Orange, aqua, yellow and magenta are under 3:1 on the light panel (1.99–2.94:1), so a figure that uses slot 2 or later
 carries direct labels or a table, not color alone. Scatter plots, maps and small multiples take at most three series
