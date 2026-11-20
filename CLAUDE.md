@@ -20,7 +20,10 @@ served to riders as a static web app (Phase 2) with scheduled refresh (Phase 3).
 | GTFS | Schedules | Phase 3 excess-wait / on-time metrics |
 
 Every position source must produce the same **run-level view** (ADR-003), with `source` and `bracket_gap_s` telling 60 s arrivals from 300 s ones (ADR-009). Downstream code never reads a
-source-specific schema.
+source-specific schema. The **stop-level view** is not a stored table: it is run-level rows grouped by (`route`, `direction`,
+`stop_id`), every pattern of the direction pooled. Analyses take one source per route and service date (archive, then raw
+CSVs, then Mansueto parquet, by declared coverage), and a stop belongs to a pattern from a measured date (ADR-011;
+`specs/run-level-reader.md`, `specs/mansueto-stop-validity.md`).
 
 Source gotchas (the Cloudflare 403 on the archive, Mansueto wall-clock times, the stale `rt_to_pid.csv`,
 the getpatterns budget) and patterns to copy live in `docs/playbook.md`, found by tag:

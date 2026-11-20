@@ -10,6 +10,59 @@ Statuses:
 
 ---
 
+## ADR-011: The stop-level view is a grouping of the run-level views; one source per date; stop membership is dated
+Date: 2026-11-19 (first drafted 2026-11-18)
+Status: Accepted (amends ADR-003; does not supersede it)
+
+### Context
+
+ADR-003 planned two materialized views, the stop-level one holding a list of arrival times per (`stop_id`, `route`,
+`direction`), so that a wait would be a single-row lookup. Specifying it for routes 8, 65 and 66 (2026-11-17 to
+2026-11-19, commits `e4008c6` to `488b2bc`) showed that it needs no table of its own. A wait filtered by day type or
+holiday needs `service_date`, `calendar_flag`, `source` and `bracket_gap_s` per arrival, so the stop-level form is a
+long table, and that table held the run-level columns re-sorted. What it added were two removals, and neither is
+about stops. The same bus appears twice on the 25 days both the archive and the raw CSVs cover (ADR-009). And the
+Mansueto parquet has arrivals at detour stops dated before the buses served them (2,127,091 on four patterns,
+`docs/2026-11-15-routes-8-65-66-run-level-qa.md`), which corrupt a travel time as much as a wait. A stored "analysis
+view" applying both (the 2026-11-18 draft of this ADR) was dropped on 2026-11-19: with the archive always preferred,
+the first removal is a fixed rule by date, and the second is a fact about the pattern, so each has a natural home in
+code that exists. Scale does not call for a second layout yet: 71.5M Mansueto rows for the three routes is one DuckDB
+query to group by stop, and the Phase 2 app is expected to serve precomputed distributions.
+
+### Decision
+
+1. The **stop-level view** of ADR-003 is defined, not stored: run-level rows grouped by `cta.views.STOP_KEY`
+   (`route`, `direction`, `stop_id`), every pattern of the direction pooled, arrivals ordered by `arrival_time`, each
+   keeping its `pattern_id`. ADR-003's per-timestamp pattern label is that column.
+2. **One source per route and service date.** Analyses read the run-level views through one reader
+   (`cta.views.read_run_level`) that keeps, on each date, only the first source in `cta.calendar.SOURCE_PRIORITY`
+   (archive, raw CSVs, Mansueto parquet) whose declared coverage holds that date (`cta.calendar.primary_source`).
+   Rows of other sources are counted, not used; a route and date whose primary source has no rows is counted
+   separately, not filled from another source (`specs/run-level-reader.md`). The per-source views on disk keep the
+   overlap days, because the cross-source and method checks compare them.
+3. **A stop belongs to a pattern from a date.** For a stop added to a pattern that kept its pid through a detour, the
+   date is measured per stop against raw pings and committed as pattern metadata
+   (`notebooks/routes_8_65_66_stop_validity.json`). The Mansueto adapter's `pattern_join` drops earlier arrivals as
+   `stop_before_valid_from`, beside `stop_not_in_pattern` (`specs/mansueto-stop-validity.md`). Our own imputation
+   (archive, raw CSVs) uses today's geometry and needs no window while that geometry fits its days, which the per-day
+   longest-`pdist` check verifies.
+4. A stop-sorted or list-per-stop copy may be added later as a cache, when a consumer measures that the grouping is
+   too slow; it is derived from the reader's output and holds no rule of its own.
+
+### Consequences
+
+No second table to refresh, and both rules live where the data they depend on lives: the calendar for coverage, the
+pattern metadata for stops. Wait, travel time and time series read the same arrivals because they call the same
+reader; code that globs the source folders itself gets duplicates on overlap days, which the reader's test and its QA
+make visible. ADR-003's "single-row lookup" becomes a filtered query on a large table, acceptable for Phase 1, with
+Phase 2 expected to precompute. The validity file must be re-measured when a pattern's geometry changes again (playbook
+gotcha "A detour keeps the pid and changes its geometry"); dated stop tables for every pattern, from historical GTFS,
+would generalize point 3 and amend ADR-008 (TODO item "Historical pattern geometry from GTFS"). README's Data Model,
+which described the list form, and CLAUDE.md's data-source paragraph were updated on acceptance (2026-11-19). Fallback: if a
+consumer is too slow, the cache of point 4.
+
+---
+
 ## ADR-010: Michigan Ave corridor speed is defined on segments between consecutive corridor stops
 Date: 2026-11-07
 Status: Accepted

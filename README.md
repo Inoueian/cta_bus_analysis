@@ -89,10 +89,12 @@ Historical bus arrival data comes from the Mansueto Institute's StopWatch projec
 
 ### Data Model
 
-The app queries two derived views built from both sources (ADR-004):
+The app queries two views of the three position sources (ADR-004, ADR-009):
 
-- **Run-level** — one row per stop-visit within a bus run (route, direction, pattern, stop, arrival time). Used for travel-time and time-series queries.
-- **Stop-level** — one row per (stop, route, direction) with the ordered list of arrival timestamps. Used for wait-time queries.
+- **Run-level** — one row per stop-visit within a bus run (route, direction, pattern, stop, arrival time), one table per source. Used for travel-time and time-series queries.
+- **Stop-level** — the run-level rows grouped by (stop, route, direction), every pattern of that direction pooled and arrivals in time order. It is a grouping, not a stored table. Used for wait-time queries.
+
+Analyses take one source per route and service date: the archive where it covers the date, else the raw CSVs, else the Mansueto parquet. A stop on a pattern that changed under the same pid counts only from the date the buses first served it. See [ADR-011](DECISIONS.md).
 
 Upstream identifiers from Mansueto (`trip_id`, `pattern_id`, `stop_id`) are preserved as passthrough columns. See [ADR-003](DECISIONS.md).
 
