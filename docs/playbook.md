@@ -24,7 +24,7 @@ ADR numbers, column names) are already grep-able and are never tags.
 | `kind:` | `measurement`, `gotcha`, `pattern`, `qa`, `spec`, `owner-note` | what the entry is: a dated measurement; a symptom-cause-fix; a to-do-X-copy-Y; an implementation QA record; a spec; a note for the owner rather than an agent |
 | `source:` | `archive`, `mansueto`, `bustracker`, `gtfs` | the data source it concerns (CLAUDE.md source table) |
 | `stage:` | `fetch`, `clean`, `impute`, `view`, `qa`, `figure` | the pipeline stage it concerns |
-| `topic:` | `timezone`, `identifiers`, `dedup`, `fixtures`, `network`, `budget`, `thresholds`, `calendar`, `pattern-catalog`, `qa-table`, `process` | a cross-cutting concept that no module or column name captures |
+| `topic:` | `timezone`, `identifiers`, `dedup`, `fixtures`, `network`, `budget`, `thresholds`, `calendar`, `pattern-catalog`, `qa-table`, `process`, `metrics` | a cross-cutting concept that no module or column name captures (`metrics`: the wait and travel-time results themselves and how they are summarised, such as percentiles and random-arrival waits) |
 
 Pruning rule: a `topic:` used by one entry after a year folds into its nearest neighbour.
 
@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-20-routes-8-65-66-first-results.md` | `kind:measurement source:mansueto stage:figure topic:metrics topic:pattern-catalog` | First results, Mon to Thu daytime, before → during the closures: route 8 south 12.8 → 20.7 min (p95 18.4 → 39.3), 66 east 15.1 → 21.1, 66 west 14.3 → 19.2, 65 up 1.0 to 1.5; peak hours carry it (8 south at 16:00 14.2 → 30.8). Random-arrival waits at the reference stops unchanged a year apart; bunching adds 38% to 78%; route 65 has recurring hour-long weekday gaps in July 2026. Bus Tracker API down that day |
 | `2026-11-20-archive-retention.md` | `kind:measurement source:archive stage:fetch topic:calendar topic:fixtures` | The archive keeps every published day (52 of 52 bus days, 2026-09-28 to 2026-11-18, 766.1 MB). Days and manifests are immutable ("published days never change"; corrections get new paths, old ones stay). The v1 `.ndjson.gz` files "will be removed later", so the committed v1 fixture cannot be rebuilt from its source. The risk is the unofficial project stopping, not pruning |
 | `2026-11-15-routes-8-65-66-run-level-qa.md` | `kind:qa source:mansueto stage:view topic:qa-table topic:pattern-catalog` | Routes 8, 65, 66 run-level view: 71,524,187 Mansueto rows (997,561 runs) and 3,631,433 raw-CSV rows (55,154 runs, 71 days), QA equal to the EDA; retired pids are 5% to 7.5% of route 65's rows every month to 2026-05; on 2026-10-11 a third to a half of each route ran under temporary pids; route 65 also runs under 6653, 29292 and 28316 |
 | `2026-11-13-routes-8-65-66-eda.md` | `kind:measurement source:mansueto source:archive source:bustracker topic:pattern-catalog` | Routes 8, 65, 66: 24 of 49 listed pids usable (25 retired, 8 return 404), 95.6% of rows survive cleaning; the 2025 Chicago/Halsted detours kept their pids (geometry changed 2025-08-17, 2025-09-27 and late November 2025), Mansueto's stop lists switch on 2024-09-03; the archive is now a v2 manifest with parquet day files |
@@ -161,9 +162,9 @@ Tags: `kind:gotcha source:bustracker stage:fetch topic:budget`
 
 ### `getpatterns` fails the whole batch when one pid is unknown
 Tags: `kind:gotcha source:bustracker stage:fetch topic:pattern-catalog`
-- Symptom: a comma-delimited `getpatterns` call (up to 10 pids) returns `No data found for parameter` and no patterns at all.
-- Cause: the live API rejects the whole call if any one pid is unknown to it, and Mansueto has parquets for historical pids the live API no longer serves (`docs/2026-09-23-bustracker-api-endpoints.md`).
-- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view. A skipped pid is not cached, so every later call asks the API for it again (failed requests are not counted in `request_log.json` either); keep the skipped list yourself, as `notebooks/eda_routes_8_65_66.ipynb` does under `data/`.
+- Symptom: a comma-delimited `getpatterns` call (up to 10 pids) returns `No data found for parameter` and no patterns at all. Or `batch_pattern_stops` prints "Skipped N PIDs not in live API" for every pid, and `pattern_stops_table` then raises `FileNotFoundError`.
+- Cause: the live API rejects the whole call if any one pid is unknown to it, and Mansueto has parquets for historical pids the live API no longer serves (`docs/2026-09-23-bustracker-api-endpoints.md`). The same catch also hides an API that is failing for everyone: on 2026-11-20 every request, to any endpoint, with any key (a made-up one too), returned `Invalid locale parameter` (HTTP 500 with an explicit `locale`), and all 24 pids of routes 8, 65 and 66 were reported as not in the live API (`docs/2026-11-20-routes-8-65-66-first-results.md`).
+- Fix: `cta.bustracker.batch_pattern_stops` calls one pid at a time, catches the `RuntimeError`, skips the pid and prints the skipped list. A skipped pid has no `pdist`, `rtdir` or `stop_rank`, so its rows cannot enter the run-level view. A skipped pid is not cached, so every later call asks the API for it again (failed requests are not counted in `request_log.json` either); keep the skipped list yourself, as `notebooks/eda_routes_8_65_66.ipynb` does under `data/`. Before trusting a skip list, call `cta.bustracker.cta_api_get("gettime")` once: if that errors too, the API is down and the pids are not retired. Nothing in `cta/` tells the two apart yet.
 
 ### The Mansueto parquet has no direction column
 Tags: `kind:gotcha source:mansueto source:bustracker stage:clean`
