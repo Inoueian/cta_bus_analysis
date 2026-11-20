@@ -1,6 +1,6 @@
 # TODO
 
-Last updated: 2026-11-19
+Last updated: 2026-11-20
 
 Active work and backlog for the CTA Bus Wait & Travel Time Explorer. Non-trivial items get a spec in `specs/` (template: `specs/TEMPLATE.md`) before implementation; every active item ends with `Spec: …` or `No spec: <reason>` (convention in [CLAUDE.md](CLAUDE.md), maintained by `/todo`). Sections are workstreams in priority order, first section first.
 
@@ -57,6 +57,7 @@ Each item gets a spec with acceptance tests on the fixture day before implementa
 Pick a web-app stack, extend ingestion to all (or most) CTA bus routes, and deploy as a static dataset served on a webpage.
 
 - [ ] Pick the web-app stack (Streamlit vs. Dash vs. FastAPI + React vs. Flask + templates); log the choice as an ADR in DECISIONS.md. No spec: ADR.
+- [ ] Decide how the app serves waits, and with it whether the stop-level view becomes a stored table. Either precompute every distribution the app shows (stop × hour × day type), or ship arrivals the app computes from on demand (any date range). For the second, the natural format is one row per (`route`, `direction`, `stop_id`, `service_date`) holding that day's arrival times, with `pattern_id` and `run_id` as parallel lists: one source per route and day (ADR-011) makes `service_date`, `calendar_flag` and `source` plain columns, a new day appends rows, and about 600 stops × 1,500 days is under a million rows for routes 8, 65 and 66. ADR-011 point 4 already allows it as a cache built from the run-level reader's output, holding no rule of its own. Its costs: a second read path for waits (travel time still reads run-level rows), list columns that pandas handles poorly, and the headway across each service-day boundary lost on routes that run overnight (discussed 2026-11-20). Decide after the stack ADR above, which settles where computation can run (a static site has no server: it ships precomputed results or data the browser computes from). Building the table, if chosen, gets its own spec. No spec: ADR.
 - [ ] Extend ingestion to all (or most) routes. The constraint is the getpatterns budget: one live call per pid against the 10k/day cap, cached forever (`cta.bustracker`), so the first pass is a day of budget, not a redesign; Mansueto history per pid comes from `cta.mansueto.fetch_parquet`. Detours that keep the pid are not special to routes 8 and 66, and the stop validity windows exist only there, from change dates bisected by hand (`notebooks/eda_routes_8_65_66.ipynb` 6.2b; `specs/mansueto-stop-validity.md`), so the spec says how geometry changes are detected and windows measured on every route (playbook gotcha "A detour keeps the pid and changes its geometry"). Spec: to write.
 - [ ] Frontend flow: route dropdown → start-stop dropdown → destination-stop-or-direction → optional time/day picker (default = "now"). Spec: to write (after the stack ADR).
 - [ ] Frontend: histogram for wait time, histogram for travel time, line chart for average travel time over time. Spec: to write (after the stack ADR; figures follow `/figure`).
