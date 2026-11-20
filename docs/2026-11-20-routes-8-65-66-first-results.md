@@ -106,6 +106,6 @@ Run `notebooks/routes_8_65_66_first_results.ipynb` end to end. It needs the 24 p
 (`cta.mansueto.fetch_parquet`; the notebook lists any that are missing), but no `getpatterns`. Its first check
 asserts the EDA's 18 medians to 0.1 minute.
 
-Once the Bus Tracker API answers again, build the view with `python scripts/route_run_level.py --source mansueto
---fetch` and recompute the before and during medians from `data/route_run_level/source=mansueto/`. They should
-equal the first table here. If they do not, the shortcut in the notebook missed something the view does.
+The API answered again later the same day. The view was built with `python scripts/route_run_level.py --source
+mansueto --fetch` and reproduces the first table here run for run: 845,785 runs, every cell equal. That check, and
+how to repeat it, is in `docs/2026-11-20-routes-8-65-66-view-rebuild.md`.
