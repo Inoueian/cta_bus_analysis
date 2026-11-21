@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 from cta import archive, bustracker, mansueto, mansueto_raw, views
+from cta.qa import QA_COLUMNS
 from tests.test_mansueto_raw import csv_row, stops_table, write_csv
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
@@ -63,7 +64,7 @@ def test_run_level_view(view_and_qa):
 
 def test_qa_table(view_and_qa):
     _, qa = view_and_qa
-    assert list(qa.columns) == ["day"] + archive.QA_COLUMNS
+    assert list(qa.columns) == ["day"] + QA_COLUMNS
     assert (qa["day"] == DAY).all()
     assert list(dict.fromkeys(qa["stage"])) == list(mansueto_raw.STAGES)
     for stage, g in qa.groupby("stage"):

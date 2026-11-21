@@ -51,10 +51,10 @@ def test_stage_totals_known_case():
         qa.stage_totals(bad, ["pid"], ["pid", "year"])
 
 
-def test_old_names_are_the_shared_helper():
-    assert mansueto.qa_rows is qa.qa_rows
-    assert mansueto.QA_COLUMNS is qa.QA_COLUMNS
-    assert archive.QA_COLUMNS is qa.QA_COLUMNS
+def test_helper_has_one_name():
+    # the aliases specs/qa-helper.md kept were removed by the TODO.md Foundation item "Re-point the importers of the QA helper"
+    for module, name in ((mansueto, "qa_rows"), (mansueto, "QA_COLUMNS"), (archive, "QA_COLUMNS")):
+        assert not hasattr(module, name), f"cta.{module.__name__.split('.')[-1]}.{name} is an alias of cta.qa again"
     assert rrl.stage_totals is qa.stage_totals
 
 

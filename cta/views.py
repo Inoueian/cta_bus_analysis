@@ -11,12 +11,13 @@ import numpy as np
 import pandas as pd
 
 from cta import archive, bustracker, calendar, mansueto, mansueto_raw
+from cta.qa import QA_COLUMNS
 
 SOURCE_ARCHIVE = "archive"
 SOURCE_MANSUETO = mansueto.SOURCE_MANSUETO
 SOURCE_MANSUETO_RAW = mansueto_raw.SOURCE_MANSUETO_RAW
-MANSUETO_RAW_QA_COLUMNS = ["day"] + archive.QA_COLUMNS
-MANSUETO_QA_COLUMNS = ["pid"] + mansueto.QA_COLUMNS
+MANSUETO_RAW_QA_COLUMNS = ["day"] + QA_COLUMNS
+MANSUETO_QA_COLUMNS = ["pid"] + QA_COLUMNS
 
 RUN_LEVEL_COLUMNS = [
     "run_id",

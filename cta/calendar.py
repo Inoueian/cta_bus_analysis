@@ -32,6 +32,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from cta import mansueto, mansueto_raw
+from cta.qa import QA_COLUMNS, qa_rows
 
 CHICAGO = ZoneInfo("America/Chicago")
 
@@ -59,7 +60,7 @@ COVERAGE_REASONS = (REASON_BEFORE_FIRST_DAY, REASON_AFTER_EDGE, REASON_MISSING_D
 COVERAGE_STAGE = "coverage"
 COVERAGE_COLUMNS = ["source", "first_day", "last_day", "missing_days", "evidence"]
 COVERAGE_DAY_COLUMNS = ["service_date", "source", "covered", "reason", "calendar_flag"]
-COVERAGE_QA_COLUMNS = ["source"] + mansueto.QA_COLUMNS  # shape of cta.views.MANSUETO_QA_COLUMNS
+COVERAGE_QA_COLUMNS = ["source"] + QA_COLUMNS  # shape of cta.views.MANSUETO_QA_COLUMNS
 
 STATUS_NOT_MOVED = "not_moved"
 STATUS_MOVED = "moved"
@@ -238,7 +239,7 @@ def coverage_days(start, end, *, sources=None, index: dict | None = None) -> tup
         frames.append(frame)
         counts = Counter(r for r in reasons if r)
         covered = len(days) - sum(counts.values())
-        for row in mansueto.qa_rows(COVERAGE_STAGE, len(days), covered, {r: counts.get(r, 0) for r in COVERAGE_REASONS}):
+        for row in qa_rows(COVERAGE_STAGE, len(days), covered, {r: counts.get(r, 0) for r in COVERAGE_REASONS}):
             qa.append({"source": source, **row})
     if frames:
         out = pd.concat(frames, ignore_index=True)

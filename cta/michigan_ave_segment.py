@@ -11,7 +11,8 @@ import pandas as pd
 
 from cta.bustracker import batch_pattern_stops
 from cta.geo import EARTH_RADIUS_FEET, straight_line_feet  # noqa: F401  (moved; specs/stop-validity-measurement.md)
-from cta.mansueto import MANSUETO_TZ, RT_TO_PID_URL, qa_rows
+from cta.mansueto import MANSUETO_TZ, RT_TO_PID_URL
+from cta.qa import qa_rows
 from cta.views import MANSUETO_QA_COLUMNS, legacy_trip_columns
 from cta.dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
 

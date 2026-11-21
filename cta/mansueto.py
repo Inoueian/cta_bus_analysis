@@ -36,7 +36,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from cta.qa import QA_COLUMNS, qa_rows  # noqa: F401  (kept names; specs/qa-helper.md)
+from cta import qa as _qa  # the shared QA helper (specs/qa-helper.md); a module name, so its names are not re-exported here
 
 BASE = "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch"
 RT_TO_PID_URL = f"{BASE}/rt_to_pid.csv"
@@ -362,7 +362,7 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
     order         within a run sorted by seq, a time earlier than the running maximum of the preceding
                   rows is dropped (``nonmonotone_time``; owner decision 2026-11-04, drop not flag).
     service_date  trailing YYYY-MM-DD of run_id; else the America/Chicago date of the run's earliest time.
-    Returns (clean rows with ``CLEAN_COLUMNS``, QA table with ``QA_COLUMNS``).
+    Returns (clean rows with ``CLEAN_COLUMNS``, QA table with ``cta.qa.QA_COLUMNS``).
     """
     missing = [c for c in TRIP_COLUMNS if c not in trips.columns]
     if missing:
@@ -386,12 +386,12 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
     dst_rows = utc.isna() & ~null_rows
     df["bus_stop_time"] = utc
     df = df[~(null_rows | dst_rows)]
-    qa += qa_rows("read", n_in, len(df), {REASON_NULL_KEY_OR_TIME: null_rows.sum(), REASON_DST_AMBIGUOUS: dst_rows.sum()})
+    qa += _qa.qa_rows("read", n_in, len(df), {REASON_NULL_KEY_OR_TIME: null_rows.sum(), REASON_DST_AMBIGUOUS: dst_rows.sum()})
 
     # dedup
     n_in = len(df)
     df = df.sort_values(["run_id", "stpid", "bus_stop_time"], kind="stable").drop_duplicates(["run_id", "stpid"], keep="first")
-    qa += qa_rows("dedup", n_in, len(df), {REASON_DUPLICATE_STOP_VISIT: n_in - len(df)})
+    qa += _qa.qa_rows("dedup", n_in, len(df), {REASON_DUPLICATE_STOP_VISIT: n_in - len(df)})
 
     # pattern_join
     n_in = len(df)
@@ -400,7 +400,7 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
     stops["stpid"] = stops["stpid"].map(_id_str)
     stops = stops.sort_values(["pid", "seq"], kind="stable").drop_duplicates(["pid", "stpid"], keep="first")
     df = df.merge(stops, on=["pid", "stpid"], how="inner")
-    qa += qa_rows("pattern_join", n_in, len(df), {REASON_STOP_NOT_IN_PATTERN: n_in - len(df)})
+    qa += _qa.qa_rows("pattern_join", n_in, len(df), {REASON_STOP_NOT_IN_PATTERN: n_in - len(df)})
 
     # order
     n_in = len(df)
@@ -412,9 +412,9 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
         df = df[~bad]
     else:
         bad = pd.Series(dtype=bool)
-    qa += qa_rows("order", n_in, len(df), {REASON_NONMONOTONE_TIME: int(bad.sum())})
+    qa += _qa.qa_rows("order", n_in, len(df), {REASON_NONMONOTONE_TIME: int(bad.sum())})
 
-    qa_df = pd.DataFrame(qa, columns=QA_COLUMNS)
+    qa_df = pd.DataFrame(qa, columns=_qa.QA_COLUMNS)
     if df.empty:
         return _empty_clean(), qa_df
 

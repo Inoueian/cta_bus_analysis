@@ -15,7 +15,8 @@ import numpy as np
 import pandas as pd
 
 from cta import views
-from cta.mansueto import BASE, parquet_url, qa_rows
+from cta.mansueto import BASE, parquet_url
+from cta.qa import qa_rows
 
 STAGE_ENDPOINTS = "endpoints"
 LEGACY_DROP_MIN_MINUTES = 1.0  # add_quality_flags before naming: inline `dlsd_minutes < 1`; informational flag only
