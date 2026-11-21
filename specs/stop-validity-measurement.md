@@ -1,6 +1,6 @@
 # Spec: Measured stop validity windows for routes 8 and 66
 
-Status: draft
+Status: ready
 Owner: Satoru  ·  Date: 2026-11-21 (split out of `specs/mansueto-stop-validity.md`, which keeps the adapter half; the one-spec history is commits `61a2b4c`, `488b2bc`, `3887b46`; reviewed the same day: CLI shape, days without pings, gotcha cited)  ·  TODO item: Phase 1, Next — "Measure dated stop validity for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md)
 Tags: `kind:spec source:mansueto stage:clean topic:pattern-catalog topic:thresholds`
 
