@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-21-gtfs-history-access.md` | `kind:measurement source:gtfs source:bustracker topic:identifiers topic:network` | CTA GTFS joins Bus Tracker one to one on routes 8, 65, 66: `stop_id` is `stpid`, `shape_id` minus 68,200,000 is `pid` (24 listed pids plus 29292); the current feed carries the 2025 detours. Transit.land lists 184 past versions but an Explorer key cannot download them (Hobbyist/Academic requested); the Wayback Machine resets connections from the cloud environment |
 | `2026-11-21-stop-validity-windows.md` | `kind:qa source:mansueto stage:clean topic:pattern-catalog topic:thresholds` | Stop validity windows for routes 8 and 66: 29 of 38 detour stops get a window (6662 8 from 2025-09-27; 6665 6 from 2025-09-28 and 4 from 2025-11-24; 9368 6 from 2025-11-25; 9376 5 from 2025-11-23). Served and unserved distances split between 214 and 486 ft; threshold 100 m. Wells & Chicago, at a corner of the old route, reads as served |
 | `2026-11-20-routes-8-65-66-view-rebuild.md` | `kind:qa source:mansueto stage:view topic:qa-table topic:metrics` | Run-level view for routes 8, 65 and 66 rebuilt from public inputs: QA equal to 2026-11-15 in every figure (71,524,187 and 3,631,433 rows); the first-results table equal run for run from the view (845,785 runs). Bus Tracker API back the same day |
 | `2026-11-20-routes-8-65-66-first-results.md` | `kind:measurement source:mansueto stage:figure topic:metrics topic:pattern-catalog` | First results, Mon to Thu daytime, before → during the closures: route 8 south 12.8 → 20.7 min (p95 18.4 → 39.3), 66 east 15.1 → 21.1, 66 west 14.3 → 19.2, 65 up 1.0 to 1.5; peak hours carry it (8 south at 16:00 14.2 → 30.8). Random-arrival waits at the reference stops unchanged a year apart; bunching adds 38% to 78%; route 65 has recurring hour-long weekday gaps in July 2026. Bus Tracker API down that day |
@@ -259,6 +260,18 @@ Tags: `kind:gotcha stage:view topic:timezone`
 - Symptom: `arrival_time` read from `data/route_run_level/` with DuckDB `.df()` has dtype `datetime64[ns]`, and `.dt.tz_convert(...)` raises "Cannot convert tz-naive timestamps".
 - Cause: the view stores `timestamp[ns, tz=UTC]`, but DuckDB 2.0.0's `.df()` returns the UTC clock time without its zone, whatever the session `TimeZone` (`docs/2026-11-20-routes-8-65-66-view-rebuild.md`). The times are not shifted; `.dt.hour` on them is a UTC hour, not a Chicago one.
 - Fix: `pd.to_datetime(col, utc=True)` right after `.df()` (the values are already UTC), or read with `pyarrow.dataset.dataset(files).to_table(filter=...)`, which keeps the zone. Nothing in `cta/` reads `data/route_run_level/` yet; the Phase 1 item "Run-level reader" (`specs/run-level-reader.md`, `cta.views.read_run_level`) is where it belongs.
+
+### Transit.land answers Unauthorized to feed downloads while its metadata works
+Tags: `kind:gotcha source:gtfs stage:fetch topic:network`
+- Symptom: `https://transit.land/api/v2/rest/feeds/f-dp3-cta` and `.../feed_versions` answer, but `feed_versions/<sha1>/download` and `feeds/f-dp3-cta/download_latest_feed_version` return 401 `{"error":"Unauthorized"}`; `routes?feed_version_sha1=<older sha1>` returns no routes.
+- Cause: the key in use (Explorer) covers the APIs, not the feed archive, and Transit.land imports only the latest version into its queryable API. Historical downloads need Hobbyist/Academic access (500 a month, Transit.land acknowledged in published work; per the owner, requested 2026-11-21) (`docs/2026-11-21-gtfs-history-access.md`).
+- Fix: none in code. The key is a network secret on the cloud environment, injected by the proxy for `transit.land`; never put it in `.env` or print it. Until archive access is granted, the current CTA feed comes from `www.transitchicago.com` and past versions are blocked (TODO item "Historical pattern geometry from GTFS"). The website pages (`www.transit.land/terms`, `/plans-pricing/`) answer curl with a Cloudflare challenge ("Just a moment..."): do not try to get past it; the attribution terms are quoted in ADR-013.
+
+### The Wayback Machine resets connections from the cloud environment
+Tags: `kind:gotcha source:gtfs stage:fetch topic:network`
+- Symptom: any request to `web.archive.org`, the CDX index or the front page, fails with curl error 35 ("Recv failure: Connection reset by peer") during the TLS handshake, with the host on the environment's allowed list.
+- Cause: not established; the proxy reports no refusal, so the far end resets the connection, most likely refusing traffic from this cloud egress (seen twice on 2026-11-21, `docs/2026-11-21-gtfs-history-access.md`).
+- Fix: do not retry in a loop. Fetch Wayback snapshots from the owner's own computer and upload them, or use another archive.
 
 ### A detour stop at a corner of the old route reads as served
 Tags: `kind:gotcha source:mansueto stage:clean topic:thresholds`
