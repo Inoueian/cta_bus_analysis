@@ -1,6 +1,13 @@
-# CTA bus analysis — shared matplotlib style (colorblind-friendly, light purple primary)
+# CTA bus analysis — shared matplotlib style (ADR-012)
+# Series 1 is #8f6edb, derived from the owner's blog color #b29af4 (same OKLCH hue 295°, L 0.62, C 0.16).
+# The other seven are the dataviz skill's reference steps; blue sits at slot 7 because purple and blue
+# collapse under protan/deutan simulation (CVD ΔE 0.9) and must never be adjacent.
+# Validated 2026-11-20 (dataviz validate_palette.js, --surface "#F5F5F5" --mode light): adjacent CVD ΔE 9.1,
+# normal-vision ΔE 19.6, all eight in band and above the chroma floor. Orange, aqua, yellow and magenta are
+# under 3:1 on the panel: figures using them carry direct labels or a table. Scatter, maps and small
+# multiples use the first three slots only (they pass --pairs all).
 
-axes.prop_cycle: cycler('color', ['9D8AB8', '4E79A7', 'E15759', '76B7B2', 'F28E2B', '59A14F', 'EDC948'])
+axes.prop_cycle: cycler('color', ['8f6edb', 'eb6834', '1baf7a', 'eda100', 'e87ba4', '008300', '2a78d6', 'e34948'])
 
 figure.facecolor: white
 axes.facecolor: F5F5F5

@@ -10,6 +10,74 @@ Statuses:
 
 ---
 
+## ADR-012: One validated categorical palette for every figure, series 1 derived from the owner's blog purple
+Date: 2026-11-20
+Status: Accepted
+
+### Context
+
+The shared style `notebooks/cta_analysis.mplstyle` set the cycle `9D8AB8, 4E79A7, E15759, 76B7B2, F28E2B, 59A14F,
+EDC948` on an `F5F5F5` panel. The dataviz skill's validator (`validate_palette.js --mode light --surface "#F5F5F5"`,
+run 2026-11-20) fails it on four checks:
+- Normal-vision floor: series 1 and 2 are 12.4 apart (floor 15).
+- CVD separation: green next to orange is 3.8 under protan (target 8).
+- Chroma: three colors read as gray.
+- Lightness band: `EDC948` is too light.
+
+Five colors are also under 3:1 against the panel. Notebooks worked around it one figure at a time: hard-coded old hexes
+in four notebooks, and a blue/orange pair in another. The owner's blog purple `#b29af4` (OKLCH L 0.742, C 0.129, H
+295°) is inside the band and above the chroma floor, but it is 2.18:1 on the panel, too faint for the color used most.
+Purple and blue are nearly the same color under protan or deutan simulation (CVD ΔE 0.9 for the purple chosen below
+against the reference blue), which is the old cycle's series 1/2 failure in another form.
+
+### Decision
+
+1. **Series 1 is `#8f6edb`**: the blog purple's hue (295°) at OKLCH L 0.62 and C 0.16. It is 3.55:1 on `F5F5F5`,
+   4.50:1 on the dark surface `#1a1a19`, and ΔE 12.6 from `#b29af4`. The same hex serves both modes.
+2. **Slots 2–8 are the dataviz reference steps** (`references/palette.md`), in the reference order, with the reference
+   violet dropped (series 1 replaces it) and blue moved to slot 7 so that it is never next to purple:
+
+   | Slot | Hue | Light (`F5F5F5` panel) | Dark (`#1a1a19`, app only) |
+   |---|---|---|---|
+   | 1 | purple | `#8f6edb` | `#8f6edb` |
+   | 2 | orange | `#eb6834` | `#d95926` |
+   | 3 | aqua | `#1baf7a` | `#199e70` |
+   | 4 | yellow | `#eda100` | `#c98500` |
+   | 5 | magenta | `#e87ba4` | `#d55181` |
+   | 6 | green | `#008300` | `#0ca30c` |
+   | 7 | blue | `#2a78d6` | `#3987e5` |
+   | 8 | red | `#e34948` | `#e66767` |
+
+3. The light column is `axes.prop_cycle` in `notebooks/cta_analysis.mplstyle`. Notebooks take series colors from the
+   cycle (`C0`, `C1`, …) or from these hexes, never from ad hoc values; a two-series comparison uses slots 1 and 2.
+   The dark column is for the Phase 2 app; no dark matplotlib style is made until something renders on a dark surface.
+4. Validator results (2026-11-20), all exit 0:
+   - Light, adjacent: worst CVD ΔE 9.1, normal-vision 19.6.
+   - Light, first three with `--pairs all`: CVD 9.2, normal-vision 27.2.
+   - Dark, adjacent: CVD 8.4, normal-vision 19.3, all eight at 3:1 or more.
+   - Dark, first three with `--pairs all`: CVD 9.4, normal-vision 26.4.
+
+   A change to any hex, the order or a surface re-runs the validator, both modes, before it lands.
+
+### Consequences
+
+Every figure re-colors when its notebook is re-run; committed outputs keep the old colors until then. The four
+notebooks with hard-coded old hexes, and the first-results notebook's blue/orange pair, now use slots 1 and 2:
+- `dlsd_travel_time_146_147` and `mansueto_imputation_investigation`: route 146 purple, 147 orange.
+- `dlsd_express_comparison_plots`: 14x purple, 13x orange.
+- `michigan_ave_speed_plots`: the speed color is purple.
+- `routes_8_65_66_first_results`: before purple, during orange (before was the reference blue).
+
+Orange, aqua, yellow and magenta are under 3:1 on the light panel (1.99–2.94:1), so a figure that uses slot 2 or later
+carries direct labels or a table, not color alone. Scatter plots, maps and small multiples take at most three series
+(only the first three pass `--pairs all`); more fold into "Other" or facets. Series 1 is not a step of the skill's
+documented palette, so this ADR is the record for it. The dark column was validated on the skill's reference dark
+surface: the app re-validates it when its stack ADR fixes the real dark surface, and re-steps only the slots that fail.
+If the blog color changes, series 1 is re-derived at the new hue with L lowered to 3:1 or more on both surfaces, then
+validated. Blue must still not sit next to it unless the validator passes that pair.
+
+---
+
 ## ADR-011: The stop-level view is a grouping of the run-level views; one source per date; stop membership is dated
 Date: 2026-11-19 (first drafted 2026-11-18)
 Status: Accepted (amends ADR-003; does not supersede it)

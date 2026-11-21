@@ -58,7 +58,7 @@ installing (`tests/conftest.py`, scripts and notebook import cells put the root 
 - Every threshold is a named module constant with a one-line comment giving the evidence
   (e.g. `MAX_BRACKET_GAP_S = 180  # scorecard profiling: longer gaps hide stand-stills`).
 - Every new pipeline stage emits a QA table (rows in, rows out, reason counts). Tests assert on it.
-- Figures: `notebooks/cta_analysis.mplstyle`; minutes-per-mile on the y axis for corridor speed.
+- Figures: `notebooks/cta_analysis.mplstyle` (palette: ADR-012; series colors from the cycle, never ad hoc hexes); minutes-per-mile on the y axis for corridor speed.
 - Holiday / outage exclusions live in one calendar file (`cta/calendar.py`), never inline.
 
 ## Commands
