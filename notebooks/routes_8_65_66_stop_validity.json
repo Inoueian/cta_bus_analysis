@@ -1,0 +1,571 @@
+{
+ "title": "Measured stop validity windows for routes 8 and 66 (specs/stop-validity-measurement.md)",
+ "max_stop_ping_distance_ft": 328.0,
+ "sample_days": [
+  "2025-07-15",
+  "2025-09-16",
+  "2025-10-14",
+  "2026-09-15"
+ ],
+ "rows": [
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "18720",
+   "stop_name": "Chicago & Menard",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 0.6,
+    "2026-09-15": 0.6
+   },
+   "valid_from": null
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "18721",
+   "stop_name": "Chicago & Waller",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 53.5,
+    "2026-09-15": 0.5
+   },
+   "valid_from": null
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "17834",
+   "stop_name": "Milwaukee & Carpenter",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 548.8,
+    "2026-09-15": 1.4
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "5500",
+   "stop_name": "Milwaukee & Erie",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1017.5,
+    "2026-09-15": 0.5
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "739",
+   "stop_name": "Grand & Union",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1930.2,
+    "2026-09-15": 0.7
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "741",
+   "stop_name": "530 W Grand",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1925.2,
+    "2026-09-15": 6.8
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "742",
+   "stop_name": "Grand & Kingsbury",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1843.9,
+    "2026-09-15": 8.9
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "14762",
+   "stop_name": "Orleans & Grand",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1681.1,
+    "2026-09-15": 16.9
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6712",
+   "stop_name": "Orleans & Erie",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 982.3,
+    "2026-09-15": 3.6
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6713",
+   "stop_name": "Orleans & Huron",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 700.6,
+    "2026-09-15": 26.2
+   },
+   "valid_from": "2025-09-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6714",
+   "stop_name": "Orleans & Chicago",
+   "from_pid": "6662",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 88.5,
+    "2026-09-15": 2.2
+   },
+   "valid_from": null
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "18803",
+   "stop_name": "Wells & Chicago",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 154.8,
+    "2025-10-14": 172.0,
+    "2026-09-15": 1.1
+   },
+   "valid_from": null
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "6613",
+   "stop_name": "Wells & Huron",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 624.1,
+    "2025-10-14": 628.9,
+    "2026-09-15": 21.5
+   },
+   "valid_from": "2025-11-24"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "6614",
+   "stop_name": "Wells & Ontario",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1192.8,
+    "2025-10-14": 1195.5,
+    "2026-09-15": 0.5
+   },
+   "valid_from": "2025-11-24"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "5020",
+   "stop_name": "Wells & Grand",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1766.1,
+    "2025-10-14": 1553.1,
+    "2026-09-15": 9.4
+   },
+   "valid_from": "2025-11-24"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "769",
+   "stop_name": "Grand & Franklin",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1810.0,
+    "2025-10-14": 1224.0,
+    "2026-09-15": 1.1
+   },
+   "valid_from": "2025-11-24"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "771",
+   "stop_name": "Grand & Kingsbury",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1800.9,
+    "2025-10-14": 45.7,
+    "2026-09-15": 0.9
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "772",
+   "stop_name": "530 W Grand",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1880.1,
+    "2025-10-14": 11.2,
+    "2026-09-15": 43.0
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "15672",
+   "stop_name": "Grand & Desplaines",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1880.7,
+    "2025-10-14": 0.2,
+    "2026-09-15": 3.9
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "15341",
+   "stop_name": "Milwaukee & Grand/Halsted (Blue Line)",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1772.9,
+    "2025-10-14": 16.7,
+    "2026-09-15": 29.5
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "5525",
+   "stop_name": "Milwaukee & Erie",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 1001.8,
+    "2025-10-14": 26.9,
+    "2026-09-15": 28.8
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "5527",
+   "stop_name": "Milwaukee & Carpenter",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 486.2,
+    "2025-10-14": 14.0,
+    "2026-09-15": 0.5
+   },
+   "valid_from": "2025-09-28"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "18794",
+   "stop_name": "Chicago & Milwaukee (Blue Line)",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 95.5,
+    "2025-10-14": 0.5,
+    "2026-09-15": 12.9
+   },
+   "valid_from": null
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "18802",
+   "stop_name": "Chicago & Noble",
+   "from_pid": "6665",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-09-16": 15.1,
+    "2025-10-14": 75.8,
+    "2026-09-15": 19.7
+   },
+   "valid_from": null
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "5782",
+   "stop_name": "Halsted & Division",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 56.3,
+    "2025-10-14": 27.8,
+    "2026-09-15": 0.3
+   },
+   "valid_from": null
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "15368",
+   "stop_name": "Division & Hooker",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 881.1,
+    "2025-10-14": 890.3,
+    "2026-09-15": 59.2
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "2051",
+   "stop_name": "Division & Cherry",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 1586.9,
+    "2025-10-14": 1600.4,
+    "2026-09-15": 0.9
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "15369",
+   "stop_name": "Division & North Branch",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 2118.1,
+    "2025-10-14": 2133.0,
+    "2026-09-15": 10.5
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "5496",
+   "stop_name": "Milwaukee & Chicago",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 2164.1,
+    "2025-10-14": 2944.5,
+    "2026-09-15": 0.7
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "17834",
+   "stop_name": "Milwaukee & Carpenter",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 1482.9,
+    "2025-10-14": 2027.3,
+    "2026-09-15": 8.7
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "5500",
+   "stop_name": "Milwaukee & Erie",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 990.2,
+    "2025-10-14": 1330.7,
+    "2026-09-15": 37.0
+   },
+   "valid_from": "2025-11-25"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "18786",
+   "stop_name": "Halsted & Grand/Milwaukee (Blue Line)",
+   "from_pid": "9368",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 198.3,
+    "2025-10-14": 0.9,
+    "2026-09-15": 4.9
+   },
+   "valid_from": null
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "15341",
+   "stop_name": "Milwaukee & Grand/Halsted (Blue Line)",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 110.3,
+    "2025-10-14": 214.4,
+    "2026-09-15": 19.7
+   },
+   "valid_from": null
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "5525",
+   "stop_name": "Milwaukee & Erie",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 944.3,
+    "2025-10-14": 1334.5,
+    "2026-09-15": 37.1
+   },
+   "valid_from": "2025-11-23"
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "5527",
+   "stop_name": "Milwaukee & Carpenter",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 1557.2,
+    "2025-10-14": 2140.6,
+    "2026-09-15": 7.6
+   },
+   "valid_from": "2025-11-23"
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "5529",
+   "stop_name": "Milwaukee & Chicago",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 2162.7,
+    "2025-10-14": 2952.2,
+    "2026-09-15": 10.7
+   },
+   "valid_from": "2025-11-23"
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "2022",
+   "stop_name": "Division & Cherry",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 1690.8,
+    "2025-10-14": 1698.0,
+    "2026-09-15": 0.5
+   },
+   "valid_from": "2025-11-23"
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "15374",
+   "stop_name": "Division & Hooker",
+   "from_pid": "9376",
+   "source": "mansueto",
+   "first_arrival_day": "2024-09-03",
+   "nearest_ping_ft": {
+    "2025-07-15": 824.4,
+    "2025-10-14": 835.9,
+    "2026-09-15": 41.3
+   },
+   "valid_from": "2025-11-23"
+  }
+ ]
+}
