@@ -10,6 +10,58 @@ Statuses:
 
 ---
 
+## ADR-013: Every published output credits its data sources; Transitland's attribution terms bind wherever its data contributed
+Date: 2026-11-21
+Status: Proposed
+
+### Context
+
+The GTFS history check (`docs/2026-11-21-gtfs-history-access.md`) uses Transitland's APIs, and will use its Feed
+Archive once the owner's Hobbyist/Academic access is granted. Transitland's terms (`https://www.transit.land/terms`;
+wording supplied by the owner on 2026-11-21, because the page sits behind a Cloudflare challenge from the cloud
+environment) read: "Users of Transitland APIs, Transitland Feed Archive, and Transitland Datasets are required to
+provide attribution to Transitland. Attribution must include the name "Transitland" and/or the Transitland logo.
+Attribution must also include a link to this webpage or (if in print) the URL of this webpage:
+`https://www.transit.land/terms` This attribution must be clearly visible to end-users of a website, a webmap, an
+analysis, a report, etc. that was created using Transitland data and APIs. It doesn't have to be a giant banner
+crediting Transitland — just enough information so that end-users know they are encountering data provided by
+Transitland and can, if necessary, find their way to this webpage!" Results travel far from where data was read: a
+stop window overridden on GTFS evidence changes every wait and travel time at that stop, and a figure is shared without
+its page. CTA's Developer License Agreement (shipped in every GTFS feed as `developers_license_agreement.htm`) makes
+credit optional ("you have the option, but not the obligation, to credit CTA"; suggested lines "Data provided by Chicago
+Transit Authority", "Data provided by CTA", "Powered by CTA data") and says an application "must not express or imply any
+affiliation or relationship with or sponsorship or endorsement by CTA". The repo records no terms for the Mansueto
+StopWatch data or the Transit Alerts archive, and README.md credited only Mansueto.
+
+### Decision
+
+1. Every published output (an app page, a figure, a blog post, a report) credits the data sources it was built from,
+   in text its reader can see: the app in a footer or a data-sources page reachable from every page, a figure in its
+   caption or footer, a post or report in its text.
+2. Wherever Transitland data or APIs contributed, directly or through a derived value (a stop window or an override set
+   from an archived feed, a schedule-based metric), the credit names "Transitland" (and/or shows its logo) and links to
+   `https://www.transit.land/terms`, or prints that URL. The Phase 2 app shows it as long as anything it serves depends
+   on Transitland data.
+3. A value set from Transitland data records the sha1 of the feed version it came from where the value is stored (for a
+   stop window, in that row's review entry), so the outputs that depend on it can be found.
+4. CTA credit is optional; when given it reads "Data provided by Chicago Transit Authority". No output expresses or
+   implies affiliation with, sponsorship by or endorsement by CTA.
+5. Mansueto StopWatch and the Transit Alerts archive are credited by name with a link to their projects; their terms
+   are checked before the Phase 2 app publishes (TODO.md, Phase 2).
+6. README.md "Data sources and attribution" holds each source's credit and is the reference for writing one.
+
+### Consequences
+
+One table in README.md tells anyone writing a page, figure or post what to credit. Credits are fixed text a person
+wrote, so they sit alongside ADR-002 rather than under it. Every app page template and every published figure needs a
+credit slot, and values set from Transitland data must carry their feed version, which the stop-validity review field
+(TODO.md, "Historical pattern geometry from GTFS") has to include. Dated `docs/` notes are records, not outputs for end
+users; the README credit covers the repository, and a note holding Transitland data says so in a line. If Transitland's
+terms change, a new ADR quotes the new text and README.md follows. If a source's terms turn out to forbid a use, that
+source leaves the outputs it would appear in, and the ADR that adopted it gets a superseding entry.
+
+---
+
 ## ADR-012: One validated categorical palette for every figure, series 1 derived from the owner's blog purple
 Date: 2026-11-20
 Status: Accepted

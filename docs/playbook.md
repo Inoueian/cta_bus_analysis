@@ -265,7 +265,7 @@ Tags: `kind:gotcha stage:view topic:timezone`
 Tags: `kind:gotcha source:gtfs stage:fetch topic:network`
 - Symptom: `https://transit.land/api/v2/rest/feeds/f-dp3-cta` and `.../feed_versions` answer, but `feed_versions/<sha1>/download` and `feeds/f-dp3-cta/download_latest_feed_version` return 401 `{"error":"Unauthorized"}`; `routes?feed_version_sha1=<older sha1>` returns no routes.
 - Cause: the key in use (Explorer) covers the APIs, not the feed archive, and Transit.land imports only the latest version into its queryable API. Historical downloads need Hobbyist/Academic access (500 a month, Transit.land acknowledged in published work; per the owner, requested 2026-11-21) (`docs/2026-11-21-gtfs-history-access.md`).
-- Fix: none in code. The key is a network secret on the cloud environment, injected by the proxy for `transit.land`; never put it in `.env` or print it. Until archive access is granted, the current CTA feed comes from `www.transitchicago.com` and past versions are blocked (TODO item "Historical pattern geometry from GTFS").
+- Fix: none in code. The key is a network secret on the cloud environment, injected by the proxy for `transit.land`; never put it in `.env` or print it. Until archive access is granted, the current CTA feed comes from `www.transitchicago.com` and past versions are blocked (TODO item "Historical pattern geometry from GTFS"). The website pages (`www.transit.land/terms`, `/plans-pricing/`) answer curl with a Cloudflare challenge ("Just a moment..."): do not try to get past it; the attribution terms are quoted in ADR-013.
 
 ### The Wayback Machine resets connections from the cloud environment
 Tags: `kind:gotcha source:gtfs stage:fetch topic:network`

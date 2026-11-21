@@ -2,6 +2,9 @@
 
 Tags: `kind:measurement source:gtfs source:bustracker topic:identifiers topic:network`
 
+Contains data from [Transitland](https://www.transit.land/terms): the CTA feed version list below comes from its API.
+Its attribution terms, quoted in full, are in ADR-013.
+
 Historical GTFS stop lists could settle the stop-validity cases that the ping-distance method cannot see: Wells & Chicago
 and the two Blue Line stops at Halsted, Grand and Milwaukee, which sit at corners of the old routes
 (`docs/2026-11-21-stop-validity-windows.md`). They could also measure how promptly CTA's schedule follows a detour. This
