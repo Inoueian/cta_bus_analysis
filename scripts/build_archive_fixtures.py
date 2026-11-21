@@ -16,6 +16,7 @@ Two independent parts, each off by default:
 Examples:
   python scripts/build_archive_fixtures.py --day 2026-10-29 --day-file
   python scripts/build_archive_fixtures.py --getpatterns
+  python scripts/build_archive_fixtures.py --getpatterns --pids-file notebooks/routes_8_65_66_pids.json --pid-flag getpatterns_ok
   python scripts/build_archive_fixtures.py --getpatterns --refresh   # deliberate: overwrite every pid
 """
 
@@ -41,8 +42,9 @@ DEFAULT_PIDS_FILE = REPO_ROOT / "notebooks" / "michigan_ave_kept_pids.json"
 DEFAULT_RAW_DIR = REPO_ROOT / "data" / "archive" / "raw"
 
 
-def load_pids(path: Path) -> list[str]:
-    return [str(r["pid"]) for r in json.loads(path.read_text())["pids"]]
+def load_pids(path: Path, flag: str | None = None) -> list[str]:
+    """Pids of a committed pid list; with ``flag``, only the records where it is true (``getpatterns_ok``)."""
+    return [str(r["pid"]) for r in json.loads(path.read_text())["pids"] if flag is None or r.get(flag)]
 
 
 def build_day_fixture(day: str, index_location: str, raw_dir: Path, pids: list[str], label: str, pids_file: Path) -> None:
@@ -127,6 +129,7 @@ def main() -> None:
     ap.add_argument("--getpatterns", action="store_true", help="fetch/copy getpatterns JSON for the pids")
     ap.add_argument("--refresh", action="store_true", help="with --getpatterns: overwrite committed pattern files")
     ap.add_argument("--pids-file", type=Path, default=DEFAULT_PIDS_FILE)
+    ap.add_argument("--pid-flag", default=None, help="keep only pids whose record has this flag true (e.g. getpatterns_ok)")
     ap.add_argument("--label", default="michigan", help="fixture name suffix")
     ap.add_argument("--index", default=archive.INDEX_URL, help="archive index URL or pinned local copy")
     ap.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR)
@@ -135,7 +138,7 @@ def main() -> None:
         ap.error("nothing to do: pass --day-file and/or --getpatterns")
     if args.refresh and not args.getpatterns:
         ap.error("--refresh only applies to --getpatterns")
-    pids = load_pids(args.pids_file)
+    pids = load_pids(args.pids_file, args.pid_flag)
     if args.day_file:
         build_day_fixture(args.day, args.index, args.raw_dir, pids, args.label, args.pids_file)
     if args.getpatterns:
