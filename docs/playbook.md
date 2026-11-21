@@ -266,6 +266,24 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:thresholds`
 - Cause: a window rests on the distance from the stop to the nearest ping of its pattern on a sample day. That measures the distance to the street the buses used, so a stop within about 200 ft of the old route (Wells & Chicago, 155 and 172 ft) looks served. And a threshold taken from the largest distance over all served stops is set by one outlier (Halsted & 54th, 448 ft, made it 500 ft) (`docs/2026-11-21-stop-validity-windows.md`).
 - Fix: take the threshold from the gap between the candidates' served and unserved distances (`cta.stop_validity.MAX_STOP_PING_DISTANCE_FT`, 100 m) and let `write_validity` stop on any distance within `MARGIN_FACTOR` of it. Nothing catches a corner stop; read the note's distance table for stops under about 200 ft before trusting a window, and name them in the QA note.
 
+### pandas 3 turns None into NaN in a string column
+Tags: `kind:gotcha stage:clean topic:identifiers`
+- Symptom: a test asserting `value is None` fails on a nullable string column (an ISO day such as `valid_from`), or a column built from records with `None` comes back as dtype `str` holding NaN.
+- Cause: `requirements.txt` asks only for `pandas>=2.2`, so a fresh container installs pandas 3 (3.0.5 on 2026-11-21), which infers its `str` dtype for string columns and stores `None` as NaN. Code written against pandas 2's object columns keeps working until it checks for `None` (seen while implementing `specs/stop-validity-measurement.md`).
+- Fix: build such columns as object explicitly (`cta.stop_validity._object_frame`: `pd.Series(values, dtype="object")`), and test with `pd.isna(v)` rather than `v is None`. Pinning pandas is not decided.
+
+### DuckDB 2 relations have no fetchone()
+Tags: `kind:gotcha stage:view`
+- Symptom: `duckdb.sql("SELECT ...").fetchone()` raises `AttributeError: Relations no longer have fetchone()`.
+- Cause: in DuckDB 2.0 (2.0.1 on 2026-11-21) a relation keeps no result between calls, so the cursor-style methods are gone from it.
+- Fix: run queries on a connection, `duckdb.connect().execute(sql, params).fetchone()`, as everything in `cta/` and `scripts/` already does, or call `.fetchall()` on the relation.
+
+### A cloud session has no .env; the Bus Tracker key is an environment variable
+Tags: `kind:gotcha source:bustracker stage:fetch topic:process`
+- Symptom: a fresh cloud container has no `.env` in the repository root, so Rule 5 ("secrets come from `.env`") reads as if `CTA_API_KEY` were missing.
+- Cause: the cloud environment sets `CTA_API_KEY` as an environment variable. `cta.bustracker.load_dotenv` returns early when there is no `.env` and otherwise only sets variables that are not already set, so the variable is what `getpatterns` calls use (24 live calls on 2026-11-21 with no `.env`).
+- Fix: check `os.environ` before concluding the key is missing; never print it. Keys for other hosts (Transit.land) are network secrets the session proxy injects, not variables.
+
 ## Patterns
 
 Each entry: to do X, copy Y. Point at a file and function; the spec template's "Prior art to copy"
