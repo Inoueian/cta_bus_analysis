@@ -45,13 +45,13 @@ import pandas as pd  # noqa: E402
 
 from cta import bustracker, calendar, mansueto, mansueto_raw, views  # noqa: E402
 from cta.qa import stage_totals  # noqa: E402,F401  (kept name; specs/qa-helper.md)
+from cta.stop_validity import EPOCH_SLACK_DAYS, today_geometry_first_day  # noqa: E402,F401  (moved; specs/stop-validity-measurement.md)
 
 DEFAULT_PIDS_FILE = REPO_ROOT / "notebooks" / "routes_8_65_66_pids.json"
 DEFAULT_OUT_DIR = REPO_ROOT / "data" / "route_run_level"
 DEFAULT_PARQUET_DIR = REPO_ROOT / "data" / "mansueto"
 DEFAULT_RAW_DIR = REPO_ROOT / "data" / "mansueto_raw"
 
-EPOCH_SLACK_DAYS = 45  # notebooks/eda_routes_8_65_66.ipynb 6.1: a stop first seen later than this after the pid's first day was added
 MAX_PATTERN_LENGTH_DIFF_MI = 0.05  # playbook "A detour keeps the pid and changes its geometry": further apart means another geometry
 FEET_PER_MILE = 5280.0
 REASON_MISSING_DAY_FILE = calendar.REASON_MISSING_DAY_FILE
@@ -77,15 +77,6 @@ def pids_where(pid_file: dict, flag: str) -> list[str]:
 def retired_parquet_pids(pid_file: dict) -> list[str]:
     """Pids with a published parquet that getpatterns no longer serves: their rows cannot enter the view."""
     return [str(r["pid"]) for r in pid_file["pids"] if r.get("parquet_http_status") == 200 and not r.get("getpatterns_ok")]
-
-
-def today_geometry_first_day(pid_file: dict) -> dict[str, str]:
-    """Per pid, the first day of the geometry that is still current (the last ``geometry_changes`` entry)."""
-    out: dict[str, str] = {}
-    for change in pid_file.get("geometry_changes", []):
-        pid = str(change["pid"])
-        out[pid] = max(out.get(pid, ""), str(change["first_day_new"]))
-    return out
 
 
 def day_range(start: str, end: str) -> list[str]:
