@@ -68,16 +68,18 @@ point 3 records the decision).
 
 | Fixture | Built from (public file) | Cut | Rows / bytes | Builder |
 |---|---|---|---|---|
-| `tests/fixtures/mansueto_2025-10-14_routes8_65_66.parquet` | `trips_<pid>_full.parquet` for the 24 `getpatterns_ok` pids | `bus_stop_time` on Tuesday 2025-10-14, 11 columns verbatim | ~50,000 rows, ~0.55 MB (estimate; measure, then pin) | `scripts/build_mansueto_fixtures.py` `cut_one_day`, via `/fixture` |
-| `tests/fixtures/mansueto_2025-12-02_routes8_65_66.parquet` | the same 24 pids | Tuesday 2025-12-02 | ~50,000 rows, ~0.55 MB (estimate; measure, then pin) | same |
-| `tests/fixtures/getpatterns/getpatterns_<pid>.json` × 24 | Bus Tracker `getpatterns`, one pid per call | whole response | 24 files (add-only; needs `CTA_API_KEY`, 24 calls) | `/fixture` |
+| `tests/fixtures/mansueto_2025-10-14_routes8_65_66.parquet` | `trips_<pid>_full.parquet` for the 24 `getpatterns_ok` pids | `bus_stop_time` on Tuesday 2025-10-14, 11 columns verbatim | 57,074 rows, 659,079 bytes, sha256 `92b4a6aabc39…`; 23 of the 24 pids have rows (3258 none) (measured) | `scripts/build_mansueto_fixtures.py --stop-validity` (`cut_one_day`); manifest `tests/fixtures/mansueto_routes8_65_66.manifest.json` |
+| `tests/fixtures/mansueto_2025-12-02_routes8_65_66.parquet` | the same 24 pids | Tuesday 2025-12-02 | 58,464 rows, 686,549 bytes, sha256 `ad8248f21f58…`; 23 of the 24 pids have rows (3258 none) (measured) | same |
+| `tests/fixtures/getpatterns/getpatterns_<pid>.json` × 24 | Bus Tracker `getpatterns`, one pid per call | whole response | 24 files, 507,132 bytes, copied from the local cache (0 live calls) | `scripts/build_archive_fixtures.py --getpatterns --pids-file notebooks/routes_8_65_66_pids.json --pid-flag getpatterns_ok` |
 | `notebooks/routes_8_65_66_stop_validity.json` | from `specs/stop-validity-measurement.md` | — | 38 rows | already committed when this spec is implemented |
 
 Why these days: on 2025-10-14 route 66 eastbound is past its change, westbound between its two, and route 8 between its
 two (a valid, a split and two mostly invalid directions); 2025-12-02 is a week after the last change (9368, 2025-11-25),
 so every window is open. Both parquets hold the same 24 pids, and `cta.mansueto.parquet_files_for_pid` reads every
 parquet in the directory for a pid with no file of its own, so every view over them passes `start` and `end` for its
-day (naive Chicago time, `end` exclusive).
+day (naive Chicago time, `end` exclusive). Built 2026-11-21 by `/fixture`, byte-identical on a second build (pyarrow
+26.0.1). The builder's run-date check excuses 15 and 12 late-evening runs whose ids carry the next day's date, which
+`clean_trips` assigns to the next service day (`docs/2026-11-21-mansueto-next-day-run-ids.md`).
 
 ## Acceptance tests
 
