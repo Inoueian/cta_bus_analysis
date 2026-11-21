@@ -1,7 +1,7 @@
 # Spec: Dated stop validity in the Mansueto adapter (routes 8 and 66)
 
 Status: draft
-Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: measured windows, route 8 in the fixture; 2026-11-19: no separate analysis view, the window is applied in the Mansueto adapter's pattern join, ADR-011)  ·  TODO item: Phase 1, Now — "Dated stop validity in the Mansueto adapter for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18 and 2026-11-19)
+Owner: Satoru  ·  Date: 2026-11-17 (revised 2026-11-18: measured windows, route 8 in the fixture; 2026-11-19: no separate analysis view, the window is applied in the Mansueto adapter's pattern join, ADR-011; 2026-11-21: TODO section, route 66 windows start early, DuckDB gotcha cited)  ·  TODO item: Phase 1, Next — "Dated stop validity in the Mansueto adapter for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md; it replaces the item "Build the stop-level view for routes 8, 65, & 66", rescoped 2026-11-18 and 2026-11-19)
 Tags: `kind:spec source:mansueto stage:clean topic:pattern-catalog topic:qa-table`
 
 ## Question
@@ -51,7 +51,8 @@ stay there); the service-date rule at the end of `clean_trips` becomes `_service
 
 1. *Candidates*: on the four pids in `geometry_changes`, a stop whose first Mansueto `service_date` is more than
    `EPOCH_SLACK_DAYS` after the pid's first (the rule of `detour_stop_arrivals`): 11 / 13 / 8 / 6 on 6662 / 6665 /
-   9368 / 9376, 38 in all.
+   9368 / 9376, 38 in all. It reads days from `service_date` (a string), not `arrival_time`, which DuckDB's `.df()`
+   returns without its zone (playbook gotcha "DuckDB returns tz-aware view timestamps as naive").
 2. *Periods*: `geometry_periods` cuts a pid's history at each of its `first_day_new` (first period open at the start,
    last open at the end). Its `sample_day` is the latest of `VALIDITY_SAMPLE_DAYS` inside it; a period without one
    raises, naming pid and period. Today: 6662 2025-09-16 / 2026-09-15; 6665 2025-09-16 / 2025-10-14 / 2026-09-15;
@@ -64,7 +65,11 @@ stay there); the service-date rule at the end of `clean_trips` becomes `_service
    threshold or data fault). Served, then not, then again: only the last stretch counts; the QA note lists any.
 5. *Key*: a row applies to (`route`, `direction`, `stop_id`), so to every pattern of that direction (owner,
    2026-11-18; minor patterns are too sparse to bisect). A window starts on a geometry change, not on the day the
-   buses moved: up to 13 days late on route 8 (moved 2025-08-04, geometry 2025-08-17), 2 on route 66.
+   buses moved. On route 8 it starts 13 days late (moved Monday 2025-08-04, geometry 2025-08-17), so real arrivals
+   at the detour stops in those days are dropped. On route 66 it starts 1 to 2 days early (moved Monday 2025-09-29,
+   geometry Saturday 2025-09-27 on 6662 and Sunday 2025-09-28 on 6665), so if the buses moved on the Monday, up to
+   two weekend days of arrivals at stops not yet served are kept. Both move dates come from news coverage and
+   segment medians (TODO item "Confirm the closure dates").
 6. *Adapter*: in `pattern_join`, after the join gives each row its `rtdir`, a row whose (`route`, `rtdir`, `stpid`)
    has a window and whose run's `_service_date` (on the rows at this stage) is before `valid_from` is dropped as
    `stop_before_valid_from`. One reason per row; the stage's reasons sum to its `rows_in − rows_out`. Mansueto run
