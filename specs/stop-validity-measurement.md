@@ -1,7 +1,7 @@
 # Spec: Measured stop validity windows for routes 8 and 66
 
-Status: ready
-Owner: Satoru  ·  Date: 2026-11-21 (split out of `specs/mansueto-stop-validity.md`, which keeps the adapter half; the one-spec history is commits `61a2b4c`, `488b2bc`, `3887b46`; reviewed the same day: CLI shape, days without pings, gotcha cited)  ·  TODO item: Phase 1, Next — "Measure dated stop validity for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md)
+Status: done (implemented 2026-11-21 on branch `claude/charming-keller-vby8l5`; QA in `docs/2026-11-21-stop-validity-windows.md`; notes at the end)
+Owner: Satoru  ·  Date: 2026-11-21 (split out of `specs/mansueto-stop-validity.md`, which keeps the adapter half; the one-spec history is commits `61a2b4c`, `488b2bc`, `3887b46`; reviewed the same day: CLI shape, days without pings, gotcha cited; threshold set to 100 m by the owner after the first measurement)  ·  TODO item: Phase 1, Next — "Measure dated stop validity for routes 8 and 66 ([ADR-011](DECISIONS.md)): the parquet has an arrival at every stop of today's route 8 and 66 detours for every run from 2024-09-03 …" (full text in TODO.md)
 Tags: `kind:spec source:mansueto stage:clean topic:pattern-catalog topic:thresholds`
 
 ## Question
@@ -72,8 +72,8 @@ the adapter spec makes import `cta.stop_validity`). Both old modules import the 
 |---|---|---|---|
 | `EPOCH_SLACK_DAYS` | 45 (existing, moved) | `notebooks/eda_routes_8_65_66.ipynb` 6.1: 38 added stops, all first seen 2024-09-03 | unknown; it only picks candidates, Method 3 decides |
 | `VALIDITY_SAMPLE_DAYS` | `("2025-07-15", "2025-09-16", "2025-10-14", "2026-09-15")` | the notebook 6.2 Tuesdays from 2024-09-03 on; one inside every geometry period of the four pids | one weekday per period: a stop served only on some days of a period is judged by that day |
-| `MAX_STOP_PING_DISTANCE_FT` | unknown | measure on 2026-09-15 (today's geometry on all four pids): the largest `nearest_ping_ft` over every stop of the four dominant patterns, rounded up to the next 100 ft. If any candidate on any sample day lies between that value and twice it, stop and report rather than choose | sets which candidates count as served |
-| Validity windows | 38 candidates, ~30 to 36 with a window (estimate) | 2,127,091 arrivals at the candidates before each pid's last change | per stop, from the measurement |
+| `MAX_STOP_PING_DISTANCE_FT` | 328 ft (100 m; owner, 2026-11-21) | measured 2026-11-21: candidate distances in a served period reach 214 ft (59 ft on today's geometry), unserved ones start at 486 ft, none lie between; 100 m is the gap's log-scale middle (323 ft), 1.53× and 1.48× clear of the two sides. It replaces "the largest `nearest_ping_ft` over every stop of the four dominant patterns on 2026-09-15, rounded up to the next 100 ft", which one non-candidate stop (448 ft, Halsted & 54th Street) set to 500 ft, inside the unserved group. Stop and report when a candidate distance lies within `MARGIN_FACTOR` = 1.25 of the threshold either side (262 to 410 ft) | sets which candidates count as served; any value from 215 to 485 ft gives the same windows |
+| Validity windows | 38 candidates, 29 with a window (measured; the estimate was ~30 to 36) | 2,127,091 arrivals at the candidates before each pid's last change | per stop, from the measurement |
 
 ## Fixtures
 
@@ -95,8 +95,8 @@ The other tests are hand-built; the parquet and `getpatterns` fixtures are the a
       `straight_line_feet` over the points.
 - [ ] `test_stop_validity_snapshot`: the committed JSON has 38 rows (11, 13, 8, 6 by `from_pid` 6662, 6665, 9368,
       9376), every `source` is `mansueto`, every non-null `valid_from` is the start of one of its pid's periods, and
-      every row has a `nearest_ping_ft` per period. Expected from the ping map (estimate; measure, then pin): `18720`
-      and `18721` (6662) null, and the 6665 Wells stops (`18803`, `6613`, `6614`, `5020`) from 2025-11-24.
+      every row has a `nearest_ping_ft` per period. Measured and pinned 2026-11-21: 29 stops with a window; `18720` and
+      `18721` (6662) null; the 6665 Wells stops `6613`, `6614`, `5020` from 2025-11-24, and `18803` (Wells & Chicago) null.
 - [ ] `test_write_validity_refuses_windowed_view`: under `tmp_path`, a missing `qa_mansueto.csv`, or one with a
       `stop_before_valid_from` row, makes the guard raise `ValueError` naming the file; one without it passes.
 - [ ] `test_baseline_matches_fixtures` (existing, `tests/test_qa_baseline.py`): passes with no case re-recorded. This
@@ -117,7 +117,19 @@ The other tests are hand-built; the parquet and `getpatterns` fixtures are the a
   arrivals at the route 66 east stop-id swaps, Chicago & Menard and Chicago & Waller, and at 6665's stops from
   530 W Grand west from 2025-09-28); minor patterns take their direction's window.
 - 2026-11-21: split from the adapter spec, so a "stop and report" on the distances does not hold the adapter's spec.
+- 2026-11-21: after the first measurement stopped on 11 distances between 500 and 1,000 ft, `MAX_STOP_PING_DISTANCE_FT`
+  is 100 m, in the measured gap, with a 1.25× stop-and-report margin. Wells & Chicago (`18803`), 155 and 172 ft from
+  the old route at a corner of it, reads as served and keeps its earlier arrivals: a documented limit of the method.
 
 ## Open questions
 
-None. `MAX_STOP_PING_DISTANCE_FT` is unknown by design; Method 3 and the threshold table say how it is measured.
+None.
+
+## Implementation notes (2026-11-21)
+
+- Inputs: the Mansueto view rebuilt in a fresh container reproduced the 2026-11-15 detour counts (636,909 / 884,215 /
+  354,954 / 251,013); the four sample days were fetched (about 44 MB each, 1,851 to 2,653 fixes per pid and day).
+- Added beside the Outputs table: `ambiguous_distances`, `pattern_stop_distances`, `read_stop_validity_file` and
+  `MARGIN_FACTOR` in `cta/stop_validity.py`; `detour_candidates`, `check_unwindowed_view` and `write_validity` in the
+  script; `test_ambiguous_distances_hand_built` and `test_detour_candidates_hand_built`. QA note:
+  `docs/2026-11-21-stop-validity-windows.md`.
