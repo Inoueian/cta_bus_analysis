@@ -87,6 +87,19 @@ Additional directories (`backend/`, `frontend/`) will be added once the web-app 
 
 Historical bus arrival data comes from the Mansueto Institute's StopWatch project. See [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). Its published parquets run from ~2022 to 2026-07-28 and have not been updated since (measured 2026-11-04, [ADR-007](DECISIONS.md), `docs/2026-11-04-mansueto-data-edge.md`). The same bucket's raw 5-minute position CSVs continued to 2026-10-27 and are read through our own imputation as a bounded third source covering 2026-08-13 onward ([ADR-009](DECISIONS.md), `docs/2026-11-06-mansueto-raw-positions.md`). From 2026-09-28 onward, raw ~60-second bus positions come from the Chicago Transit Alerts archive collected by [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights); see [ADR-004](DECISIONS.md). The prior iteration of this project (which read the older Ghost Bus daily-CSV bucket) is preserved on the `legacy` branch.
 
+### Data sources and attribution
+
+Every published output (app page, figure, blog post, report) credits the sources it was built from, visibly: the app in a footer or data-sources page, a figure in its caption or footer ([ADR-013](DECISIONS.md)). Use these credits:
+
+| Source | Used for | Credit |
+|---|---|---|
+| Mansueto Institute StopWatch | imputed stop arrivals, ~2022 to 2026-07-28; raw 5-minute positions, 2026-08-13 to 2026-10-27 | "Mansueto Institute StopWatch" with a link to [github.com/mansueto-institute/cta-stop-watch](https://github.com/mansueto-institute/cta-stop-watch). Terms not yet checked (TODO.md, Phase 2) |
+| Chicago Transit Alerts position archive | raw ~60-second positions from 2026-09-28 | "Chicago Transit Alerts archive" with a link to [chicago-transit-insights](https://github.com/cailinpitt/chicago-transit-insights). Terms not yet checked (TODO.md, Phase 2) |
+| Chicago Transit Authority (Bus Tracker API, GTFS) | pattern stops and geometry, schedules | Optional: "Data provided by Chicago Transit Authority". Never express or imply affiliation with, sponsorship by or endorsement by CTA ([CTA Developer License Agreement](https://www.transitchicago.com/downloads/sch_data/developers_license_agreement.htm)) |
+| Transitland | past versions of CTA's GTFS feed and their metadata | Required wherever its data or APIs contributed: the name "Transitland" (and/or its logo) and a link to [https://www.transit.land/terms](https://www.transit.land/terms), or that URL in print, clearly visible to readers |
+
+This repository includes data from [Transitland](https://www.transit.land/terms): the CTA feed version list in `docs/2026-11-21-gtfs-history-access.md`.
+
 ### Data Model
 
 The app queries two views of the three position sources (ADR-004, ADR-009):
