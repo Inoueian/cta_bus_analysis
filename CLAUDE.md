@@ -43,7 +43,8 @@ docs/           dated measurement notes plus docs/playbook.md (tag vocabulary, n
 ```
 
 `cta/` is the only import surface (ADR-005): one module per data source, the views, the calendar, the
-shared QA helper (`cta/qa.py`), the fixture QA baseline (`cta/qa_baseline.py`, a development tool that reads `tests/fixtures/`)
+shared QA helper (`cta/qa.py`), the fixture QA baseline (`cta/qa_baseline.py`, a development tool that reads `tests/fixtures/`),
+the dated stop windows (`cta/stop_validity.py`), the distance helpers (`cta/geo.py`)
 and the migrated helpers; each module's docstring says what it holds. It imports from the repo root without
 installing (`tests/conftest.py`, scripts and notebook import cells put the root on `sys.path`) or via
 `pip install -e .`. The JSON snapshots the helpers read (`dlsd_boundaries_snapshot.json`,

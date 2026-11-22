@@ -16,6 +16,10 @@ Modules, one per data source plus the shared layers:
   from ``cta`` (specs/qa-helper.md).
 - ``qa_baseline``: the fixture QA cases, ``diff_qa`` and the baseline file behind ``scripts/qa.py`` and
   ``/qa``; a development tool tied to the checkout (specs/qa-skill.md).
+- ``stop_validity``: dated stop windows for patterns whose geometry changed under one pid: the dated
+  changes, the per-stop measurement against raw pings and the loader of the committed
+  ``notebooks/routes_8_65_66_stop_validity.json`` (specs/stop-validity-measurement.md).
+- ``geo``: great-circle distances in feet; imports nothing from ``cta`` (specs/stop-validity-measurement.md).
 - ``dlsd_run_quality``, ``michigan_ave_segment``: helpers migrated from ``notebooks/``
   (specs/package-migration.md); their JSON snapshots stay under ``notebooks/``.
 """

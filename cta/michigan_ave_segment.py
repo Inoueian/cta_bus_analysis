@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from cta.bustracker import batch_pattern_stops
+from cta.geo import EARTH_RADIUS_FEET, straight_line_feet  # noqa: F401  (moved; specs/stop-validity-measurement.md)
 from cta.mansueto import MANSUETO_TZ, RT_TO_PID_URL, qa_rows
 from cta.views import MANSUETO_QA_COLUMNS, legacy_trip_columns
 from cta.dlsd_run_quality import DEFAULT_PLOT_HOURS, PARQUET_COLS, local_parquet_path
@@ -1144,7 +1145,6 @@ def corridor_street_tick_positions(
 
 SPEED_BASIS_SEGMENT = "segment"  # ADR-010: speed over the road between consecutive corridor stops, not a ping interval
 MAX_HOP_DETOUR_RATIO = 1.5  # archive fixture day: 13,712 of 13,714 positive hops within 1.036x straight line; the other 2 (5.32x) leave Michigan on PID 25899's loop
-EARTH_RADIUS_FEET = 20_902_260.0  # mean earth radius 6,371,008.8 m; the detour ratio test is far coarser than the sphere error
 FEET_PER_MILE = 5280.0
 
 CORRIDOR_STOP_COLUMNS = [
@@ -1192,13 +1192,6 @@ def segment_minutes_from_view(view: pd.DataFrame, segment_or_record) -> pd.Serie
     legacy = legacy_trip_columns(view)
     legacy = legacy.loc[legacy["pid"].astype(str) == str(get("pid"))]
     return trip_segment_minutes(legacy, get("entry_stpid"), get("exit_stpid"))
-
-
-def straight_line_feet(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Haversine distance between two points, in feet."""
-    p1, p2 = np.radians(lat1), np.radians(lat2)
-    a = np.sin((p2 - p1) / 2) ** 2 + np.cos(p1) * np.cos(p2) * np.sin(np.radians(lon2 - lon1) / 2) ** 2
-    return float(2 * EARTH_RADIUS_FEET * np.arcsin(np.sqrt(a)))
 
 
 def _empty_qa() -> pd.DataFrame:
