@@ -34,6 +34,7 @@ One line per note, newest first. `/finding` adds a line when it writes a note.
 
 | Note | Tags | One line |
 |---|---|---|
+| `2026-11-21-mansueto-next-day-run-ids.md` | `kind:measurement source:mansueto stage:clean topic:identifiers topic:calendar` | 2.02% of Mansueto runs (20,185 of 997,563 on routes 8, 65, 66) carry the next day's date in `unique_trip_vehicle_day`, 97.9% of them starting at or after 22:00, so `clean_trips` puts them in the next service day; the route 3 fixture day (the last before the freeze) has none. The fixture builder now excuses them by name |
 | `2026-11-21-gtfs-history-access.md` | `kind:measurement source:gtfs source:bustracker topic:identifiers topic:network` | CTA GTFS joins Bus Tracker one to one on routes 8, 65, 66: `stop_id` is `stpid`, `shape_id` minus 68,200,000 is `pid` (24 listed pids plus 29292); the current feed carries the 2025 detours. Transit.land lists 184 past versions but an Explorer key cannot download them (Hobbyist/Academic requested); the Wayback Machine resets connections from the cloud environment |
 | `2026-11-21-stop-validity-windows.md` | `kind:qa source:mansueto stage:clean topic:pattern-catalog topic:thresholds` | Stop validity windows for routes 8 and 66: 29 of 38 detour stops get a window (6662 8 from 2025-09-27; 6665 6 from 2025-09-28 and 4 from 2025-11-24; 9368 6 from 2025-11-25; 9376 5 from 2025-11-23). Served and unserved distances split between 214 and 486 ft; threshold 100 m. Wells & Chicago, at a corner of the old route, reads as served |
 | `2026-11-20-routes-8-65-66-view-rebuild.md` | `kind:qa source:mansueto stage:view topic:qa-table topic:metrics` | Run-level view for routes 8, 65 and 66 rebuilt from public inputs: QA equal to 2026-11-15 in every figure (71,524,187 and 3,631,433 rows); the first-results table equal run for run from the view (845,785 runs). Bus Tracker API back the same day |
@@ -130,6 +131,12 @@ Tags: `kind:gotcha source:mansueto stage:view topic:calendar`
 - Symptom: late-night runs are cut in two, or a post-midnight trip carries the next day's date.
 - Cause: each `full_day_data/YYYY-MM-DD.csv` holds local 00:00 to 23:55 and has no scheduled start, so the run key's `data_date` is the calendar date. On 2026-10-22, 23 of 1,559 Michigan runs started by 00:05 and 31 ended after 23:50; route 66 had 4.6% of its fixes before 04:00.
 - Fix: none; accepted and documented (`specs/mansueto-raw-adapter.md`, Method 8). A file can also hold a few stale rows dated the evening before (4 on 2026-10-22); the adapter drops them as `other_data_date`. Stitching across files needs its own spec before late-night numbers for routes 8 and 66 are used.
+
+### Mansueto run ids date some late-evening runs to the next day
+Tags: `kind:gotcha source:mansueto stage:clean topic:calendar`
+- Symptom: in the Mansueto view a run that starts at 23:10 on a Thursday has `service_date` Friday; or a day cut's check that the run id's date is the Chicago date of the earliest row finds about 2% of runs failing.
+- Cause: the date at the end of `unique_trip_vehicle_day` is the next day for 2.02% of runs, 97.9% of them starting at or after 22:00 (a quarter of all runs starting that late), and `cta.mansueto.clean_trips` takes `service_date` from it. The last day before the freeze has none, because no run is dated 2026-07-28 (`docs/2026-11-21-mansueto-next-day-run-ids.md`).
+- Fix: the fixture builder excuses them by name (`LATE_EVENING_HOUR`, `late_evening_next_day` in the manifest). Day-type slices, holidays and windows still take the run id's date for them; whether `service_date` should follow the earliest row instead is the Phase 1 Later item "Service date of late-evening Mansueto runs".
 
 ### Mansueto imputed times can run backwards along a pattern
 Tags: `kind:gotcha source:mansueto stage:clean topic:qa-table`
@@ -279,6 +286,24 @@ Tags: `kind:gotcha source:mansueto stage:clean topic:thresholds`
 - Cause: a window rests on the distance from the stop to the nearest ping of its pattern on a sample day. That measures the distance to the street the buses used, so a stop within about 200 ft of the old route (Wells & Chicago, 155 and 172 ft) looks served. And a threshold taken from the largest distance over all served stops is set by one outlier (Halsted & 54th, 448 ft, made it 500 ft) (`docs/2026-11-21-stop-validity-windows.md`).
 - Fix: take the threshold from the gap between the candidates' served and unserved distances (`cta.stop_validity.MAX_STOP_PING_DISTANCE_FT`, 100 m) and let `write_validity` stop on any distance within `MARGIN_FACTOR` of it. Nothing catches a corner stop; read the note's distance table for stops under about 200 ft before trusting a window, and name them in the QA note.
 
+### pandas 3 turns None into NaN in a string column
+Tags: `kind:gotcha stage:clean topic:identifiers`
+- Symptom: a test asserting `value is None` fails on a nullable string column (an ISO day such as `valid_from`), or a column built from records with `None` comes back as dtype `str` holding NaN.
+- Cause: `requirements.txt` asks only for `pandas>=2.2`, so a fresh container installs pandas 3 (3.0.5 on 2026-11-21), which infers its `str` dtype for string columns and stores `None` as NaN. Code written against pandas 2's object columns keeps working until it checks for `None` (seen while implementing `specs/stop-validity-measurement.md`).
+- Fix: build such columns as object explicitly (`cta.stop_validity._object_frame`: `pd.Series(values, dtype="object")`), and test with `pd.isna(v)` rather than `v is None`. Pinning pandas is not decided.
+
+### DuckDB 2 relations have no fetchone()
+Tags: `kind:gotcha stage:view`
+- Symptom: `duckdb.sql("SELECT ...").fetchone()` raises `AttributeError: Relations no longer have fetchone()`.
+- Cause: in DuckDB 2.0 (2.0.1 on 2026-11-21) a relation keeps no result between calls, so the cursor-style methods are gone from it.
+- Fix: run queries on a connection, `duckdb.connect().execute(sql, params).fetchone()`, as everything in `cta/` and `scripts/` already does, or call `.fetchall()` on the relation.
+
+### A cloud session has no .env; the Bus Tracker key is an environment variable
+Tags: `kind:gotcha source:bustracker stage:fetch topic:process`
+- Symptom: a fresh cloud container has no `.env` in the repository root, so Rule 5 ("secrets come from `.env`") reads as if `CTA_API_KEY` were missing.
+- Cause: the cloud environment sets `CTA_API_KEY` as an environment variable. `cta.bustracker.load_dotenv` returns early when there is no `.env` and otherwise only sets variables that are not already set, so the variable is what `getpatterns` calls use (24 live calls on 2026-11-21 with no `.env`).
+- Fix: check `os.environ` before concluding the key is missing; never print it. Keys for other hosts (Transit.land) are network secrets the session proxy injects, not variables.
+
 ## Patterns
 
 Each entry: to do X, copy Y. Point at a file and function; the spec template's "Prior art to copy"
@@ -298,7 +323,7 @@ Tags: `kind:pattern topic:thresholds`
 
 ### Build a committed fixture from a public file
 Tags: `kind:pattern topic:fixtures stage:fetch`
-- Run `/fixture` (`.claude/skills/fixture/SKILL.md`): it picks the builder to copy by source (`scripts/build_archive_fixtures.py` for one archive day filtered to kept PIDs with an `index.json`-shaped manifest; `scripts/build_mansueto_fixtures.py` for parquet cuts, footer sample and `mansueto.manifest.json`), names the source-moved guard for each source (index SHA-256; `Last-Modified` on `MANSUETO_DATA_EDGE`; a recorded HEAD for the raw CSVs, which have no manifest), and prints the deviations from the spec's `~N` estimates. One archive day per fixture file and a 20 MB fixture budget (Rule 3); tests never write to `data/` (Rule 4); bytes deterministic (gzip mtime 0, sorted zstd parquet).
+- Run `/fixture` (`.claude/skills/fixture/SKILL.md`): it picks the builder to copy by source (`scripts/build_archive_fixtures.py` for one archive day filtered to kept PIDs with an `index.json`-shaped manifest; `scripts/build_mansueto_fixtures.py` for parquet cuts, footer sample and `mansueto.manifest.json`), names the source-moved guard for each source (index SHA-256; `Last-Modified` on `MANSUETO_DATA_EDGE`; a recorded HEAD for the raw CSVs, which have no manifest), and prints the deviations from the spec's `~N` estimates. One archive day per fixture file and a 20 MB fixture budget (Rule 3); tests never write to `data/` (Rule 4); bytes deterministic (gzip mtime 0, sorted zstd parquet). A new set of cuts gets its own manifest when tests pin counts of the shared one (`tests/test_calendar.py` counts `mansueto.manifest.json`'s sources; `--stop-validity` writes `mansueto_routes8_65_66.manifest.json`). A guard condition that protects only some cuts is scoped to them with the owner's agreement and the skipped values recorded, never dropped (the last-row check, 2026-11-21). Pid lists with flags are filtered at load (`build_archive_fixtures.py --pid-flag getpatterns_ok`), so retired pids spend no getpatterns calls.
 
 ### Probe a remote parquet without downloading it
 Tags: `kind:pattern source:mansueto stage:fetch topic:network`
