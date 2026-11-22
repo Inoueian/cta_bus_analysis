@@ -49,7 +49,7 @@ import duckdb  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from cta import bustracker, calendar, mansueto, mansueto_raw, stop_validity, views  # noqa: E402
-from cta.qa import stage_totals  # noqa: E402,F401  (kept name; specs/qa-helper.md)
+from cta.qa import QA_COLUMNS, stage_totals  # noqa: E402
 from cta.stop_validity import EPOCH_SLACK_DAYS, today_geometry_first_day  # noqa: E402,F401  (moved; specs/stop-validity-measurement.md)
 
 DEFAULT_PIDS_FILE = REPO_ROOT / "notebooks" / "routes_8_65_66_pids.json"
@@ -62,7 +62,7 @@ FEET_PER_MILE = 5280.0
 REASON_MISSING_DAY_FILE = calendar.REASON_MISSING_DAY_FILE
 REASON_STOP_BEFORE_VALID_FROM = "stop_before_valid_from"  # the adapter's window reason (specs/mansueto-stop-validity.md); a view that has it is windowed
 
-MANSUETO_QA_COLUMNS = ["pid", "year"] + mansueto.QA_COLUMNS
+MANSUETO_QA_COLUMNS = ["pid", "year"] + QA_COLUMNS
 ROWS_BY_MONTH_COLUMNS = ["pid", "month", "rows", "in_view"]
 DETOUR_COLUMNS = ["pid", "first_day_today_geometry", "added_stops", "arrivals_before_today_geometry", "rows_in_period", "share_pct"]
 LENGTH_COLUMNS = ["day", "pid", "pings", "max_pdist_mi", "pattern_mi", "diff_mi", "over_pattern_length"]
