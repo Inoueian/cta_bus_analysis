@@ -1,0 +1,547 @@
+{
+ "title": "Fixture manifest: Mansueto StopWatch day cuts of routes 8, 65 and 66 for specs/mansueto-stop-validity.md",
+ "built_at": "2026-11-21T20:24:22.585217+00:00",
+ "builder": "scripts/build_mansueto_fixtures.py --stop-validity",
+ "data_edge_constant": "2026-07-28",
+ "timezone": "America/Chicago",
+ "sources": {
+  "9368": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9368_full.parquet",
+   "bytes": 404673747,
+   "last_modified": "2026-07-28T10:22:49+00:00",
+   "fetched_at": "2026-11-21T07:07:30.008473+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9368_full.parquet",
+    "bytes": 404673747,
+    "last_modified": "2026-07-28T10:22:49+00:00",
+    "rows": 14886744,
+    "min_bus_stop_time": "2022-05-31T23:25:24.752072",
+    "max_bus_stop_time": "2026-07-28T00:45:16.063942953"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "9376": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9376_full.parquet",
+   "bytes": 379170903,
+   "last_modified": "2026-07-28T10:23:02+00:00",
+   "fetched_at": "2026-11-21T07:07:49.543110+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9376_full.parquet",
+    "bytes": 379170903,
+    "last_modified": "2026-07-28T10:23:02+00:00",
+    "rows": 13930491,
+    "min_bus_stop_time": "2022-05-31T23:01:22.536015",
+    "max_bus_stop_time": "2026-07-28T00:38:56.674106422"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "9345": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9345_full.parquet",
+   "bytes": 11138921,
+   "last_modified": "2026-07-28T10:22:45+00:00",
+   "fetched_at": "2026-11-21T07:07:50.704827+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9345_full.parquet",
+    "bytes": 11138921,
+    "last_modified": "2026-07-28T10:22:45+00:00",
+    "rows": 498414,
+    "min_bus_stop_time": "2022-06-01T06:36:09.626320",
+    "max_bus_stop_time": "2026-07-27T09:45:53.592041533"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "10949": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10949_full.parquet",
+   "bytes": 10132394,
+   "last_modified": "2026-07-28T10:09:31+00:00",
+   "fetched_at": "2026-11-21T07:07:51.791066+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10949_full.parquet",
+    "bytes": 10132394,
+    "last_modified": "2026-07-28T10:09:31+00:00",
+    "rows": 450982,
+    "min_bus_stop_time": "2022-06-01T16:12:12.482351",
+    "max_bus_stop_time": "2026-07-27T18:18:53.583470472"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "10951": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10951_full.parquet",
+   "bytes": 7662684,
+   "last_modified": "2026-07-28T10:09:32+00:00",
+   "fetched_at": "2026-11-21T07:07:52.737396+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10951_full.parquet",
+    "bytes": 7662684,
+    "last_modified": "2026-07-28T10:09:32+00:00",
+    "rows": 373860,
+    "min_bus_stop_time": "2022-06-01T13:24:59.322134",
+    "max_bus_stop_time": "2026-07-27T18:05:55.278998902"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "10954": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10954_full.parquet",
+   "bytes": 6248669,
+   "last_modified": "2026-07-28T10:09:32+00:00",
+   "fetched_at": "2026-11-21T07:07:53.681198+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_10954_full.parquet",
+    "bytes": 6248669,
+    "last_modified": "2026-07-28T10:09:32+00:00",
+    "rows": 265164,
+    "min_bus_stop_time": "2022-06-01T07:48:06.057386",
+    "max_bus_stop_time": "2026-07-27T10:50:39.804322446"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "9250": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9250_full.parquet",
+   "bytes": 4394720,
+   "last_modified": "2026-07-28T10:22:44+00:00",
+   "fetched_at": "2026-11-21T07:07:54.525771+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9250_full.parquet",
+    "bytes": 4394720,
+    "last_modified": "2026-07-28T10:22:44+00:00",
+    "rows": 222205,
+    "min_bus_stop_time": "2022-06-01T07:00:38.768504",
+    "max_bus_stop_time": "2026-07-27T09:05:52.789995547"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "8959": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_8959_full.parquet",
+   "bytes": 4312625,
+   "last_modified": "2026-07-28T10:22:34+00:00",
+   "fetched_at": "2026-11-21T07:07:55.346787+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_8959_full.parquet",
+    "bytes": 4312625,
+    "last_modified": "2026-07-28T10:22:34+00:00",
+    "rows": 216956,
+    "min_bus_stop_time": "2022-06-02T17:54:24.119291",
+    "max_bus_stop_time": "2026-07-27T19:15:30.934795950"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "9343": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9343_full.parquet",
+   "bytes": 3965419,
+   "last_modified": "2026-07-28T10:22:44+00:00",
+   "fetched_at": "2026-11-21T07:07:56.184922+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_9343_full.parquet",
+    "bytes": 3965419,
+    "last_modified": "2026-07-28T10:22:44+00:00",
+    "rows": 184363,
+    "min_bus_stop_time": "2022-06-01T15:08:14.853919",
+    "max_bus_stop_time": "2026-07-27T16:26:11.109579274"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6656": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6656_full.parquet",
+   "bytes": 162042286,
+   "last_modified": "2026-07-28T10:19:43+00:00",
+   "fetched_at": "2026-11-21T07:08:05.378281+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6656_full.parquet",
+    "bytes": 162042286,
+    "last_modified": "2026-07-28T10:19:43+00:00",
+    "rows": 6098623,
+    "min_bus_stop_time": "2022-06-01T04:45:25.955106",
+    "max_bus_stop_time": "2026-07-27T23:30:47.625466309"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6657": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6657_full.parquet",
+   "bytes": 157366474,
+   "last_modified": "2026-07-28T10:19:45+00:00",
+   "fetched_at": "2026-11-21T07:08:14.237863+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6657_full.parquet",
+    "bytes": 157366474,
+    "last_modified": "2026-07-28T10:19:45+00:00",
+    "rows": 5918417,
+    "min_bus_stop_time": "2022-06-01T05:35:42.614555",
+    "max_bus_stop_time": "2026-07-28T00:10:24.434079710"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6655": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6655_full.parquet",
+   "bytes": 9292371,
+   "last_modified": "2026-07-28T10:19:41+00:00",
+   "fetched_at": "2026-11-21T07:08:15.333174+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6655_full.parquet",
+    "bytes": 9292371,
+    "last_modified": "2026-07-28T10:19:41+00:00",
+    "rows": 408949,
+    "min_bus_stop_time": "2022-06-01T14:36:26.996645",
+    "max_bus_stop_time": "2026-07-27T23:57:17.847135693"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "3213": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_3213_full.parquet",
+   "bytes": 7130165,
+   "last_modified": "2026-07-28T10:13:29+00:00",
+   "fetched_at": "2026-11-21T07:08:16.238279+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_3213_full.parquet",
+    "bytes": 7130165,
+    "last_modified": "2026-07-28T10:13:29+00:00",
+    "rows": 302904,
+    "min_bus_stop_time": "2022-06-02T15:55:34.183010",
+    "max_bus_stop_time": "2026-07-26T09:38:59.999999999"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6652": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6652_full.parquet",
+   "bytes": 6291930,
+   "last_modified": "2026-07-28T10:19:41+00:00",
+   "fetched_at": "2026-11-21T07:08:17.091073+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6652_full.parquet",
+    "bytes": 6291930,
+    "last_modified": "2026-07-28T10:19:41+00:00",
+    "rows": 267902,
+    "min_bus_stop_time": "2022-06-01T04:56:15.211140",
+    "max_bus_stop_time": "2026-07-27T05:58:37.471175008"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6653": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6653_full.parquet",
+   "bytes": 2259664,
+   "last_modified": "2026-07-28T10:19:41+00:00",
+   "fetched_at": "2026-11-21T07:08:17.714790+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6653_full.parquet",
+    "bytes": 2259664,
+    "last_modified": "2026-07-28T10:19:41+00:00",
+    "rows": 103799,
+    "min_bus_stop_time": "2022-06-01T06:38:12.743409",
+    "max_bus_stop_time": "2026-07-27T16:23:59.999999999"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "3258": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_3258_full.parquet",
+   "bytes": 516614,
+   "last_modified": "2026-07-28T10:13:31+00:00",
+   "fetched_at": "2026-11-21T07:08:18.317231+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_3258_full.parquet",
+    "bytes": 516614,
+    "last_modified": "2026-07-28T10:13:31+00:00",
+    "rows": 33480,
+    "min_bus_stop_time": "2022-06-01T07:58:35.971605",
+    "max_bus_stop_time": "2026-07-26T20:29:10.959628700"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6665": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6665_full.parquet",
+   "bytes": 397834976,
+   "last_modified": "2026-07-28T10:19:57+00:00",
+   "fetched_at": "2026-11-21T07:08:40.245582+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6665_full.parquet",
+    "bytes": 397834976,
+    "last_modified": "2026-07-28T10:19:57+00:00",
+    "rows": 14198038,
+    "min_bus_stop_time": "2022-05-31T23:26:08.730840",
+    "max_bus_stop_time": "2026-07-28T01:08:57.086083775"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6662": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6662_full.parquet",
+   "bytes": 386631813,
+   "last_modified": "2026-07-28T10:19:51+00:00",
+   "fetched_at": "2026-11-21T07:09:01.426428+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6662_full.parquet",
+    "bytes": 386631813,
+    "last_modified": "2026-07-28T10:19:51+00:00",
+    "rows": 13790170,
+    "min_bus_stop_time": "2022-05-31T23:08:07.582262",
+    "max_bus_stop_time": "2026-07-28T00:25:14.068342086"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6982": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6982_full.parquet",
+   "bytes": 12248718,
+   "last_modified": "2026-07-28T10:20:05+00:00",
+   "fetched_at": "2026-11-21T07:09:02.574521+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6982_full.parquet",
+    "bytes": 12248718,
+    "last_modified": "2026-07-28T10:20:05+00:00",
+    "rows": 535318,
+    "min_bus_stop_time": "2022-06-01T00:10:05.918139",
+    "max_bus_stop_time": "2026-07-27T19:25:38.484326955"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6661": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6661_full.parquet",
+   "bytes": 11398645,
+   "last_modified": "2026-07-28T10:19:47+00:00",
+   "fetched_at": "2026-11-21T07:09:03.823750+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6661_full.parquet",
+    "bytes": 11398645,
+    "last_modified": "2026-07-28T10:19:47+00:00",
+    "rows": 526114,
+    "min_bus_stop_time": "2022-06-01T00:15:40.019223",
+    "max_bus_stop_time": "2026-07-27T04:29:59.999999999"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "6658": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6658_full.parquet",
+   "bytes": 10956078,
+   "last_modified": "2026-07-28T10:19:47+00:00",
+   "fetched_at": "2026-11-21T07:09:04.948795+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_6658_full.parquet",
+    "bytes": 10956078,
+    "last_modified": "2026-07-28T10:19:47+00:00",
+    "rows": 504852,
+    "min_bus_stop_time": "2022-06-01T03:38:27.913915",
+    "max_bus_stop_time": "2026-07-27T05:39:09.037590761"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "4357": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4357_full.parquet",
+   "bytes": 11283731,
+   "last_modified": "2026-07-28T10:14:20+00:00",
+   "fetched_at": "2026-11-21T07:09:06.072303+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4357_full.parquet",
+    "bytes": 11283731,
+    "last_modified": "2026-07-28T10:14:20+00:00",
+    "rows": 491898,
+    "min_bus_stop_time": "2022-06-01T12:37:43.226160",
+    "max_bus_stop_time": "2026-07-28T00:03:01.767930069"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "4601": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4601_full.parquet",
+   "bytes": 8231439,
+   "last_modified": "2026-07-28T10:14:59+00:00",
+   "fetched_at": "2026-11-21T07:09:07.039693+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4601_full.parquet",
+    "bytes": 8231439,
+    "last_modified": "2026-07-28T10:14:59+00:00",
+    "rows": 341344,
+    "min_bus_stop_time": "2022-06-01T04:10:57.716023",
+    "max_bus_stop_time": "2026-07-27T21:01:51.202299376"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  },
+  "4355": {
+   "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4355_full.parquet",
+   "bytes": 5704330,
+   "last_modified": "2026-07-28T10:14:19+00:00",
+   "fetched_at": "2026-11-21T07:09:08.072664+00:00",
+   "data_edge": {
+    "url": "https://d2v7z51jmtm0iq.cloudfront.net/cta-stop-watch/processed_by_pid/trips_4355_full.parquet",
+    "bytes": 5704330,
+    "last_modified": "2026-07-28T10:14:19+00:00",
+    "rows": 241900,
+    "min_bus_stop_time": "2022-06-01T07:05:51.730407",
+    "max_bus_stop_time": "2026-07-27T09:34:03.725971400"
+   },
+   "null_bus_stop_time": 0,
+   "null_run_id_or_stpid": 0
+  }
+ },
+ "files": {
+  "mansueto_2025-10-14_routes8_65_66.parquet": {
+   "pids": [
+    "9368",
+    "9376",
+    "9345",
+    "10949",
+    "10951",
+    "10954",
+    "9250",
+    "8959",
+    "9343",
+    "6656",
+    "6657",
+    "6655",
+    "3213",
+    "6652",
+    "6653",
+    "3258",
+    "6665",
+    "6662",
+    "6982",
+    "6661",
+    "6658",
+    "4357",
+    "4601",
+    "4355"
+   ],
+   "rows": 57074,
+   "bytes": 659079,
+   "sha256": "92b4a6aabc39a8e0095c4fd0ceb536a6f3587c4155f4584fa431629e000abd0c",
+   "window": {
+    "date": "2025-10-14",
+    "timezone": "America/Chicago"
+   },
+   "pids_with_rows": [
+    "3213",
+    "4355",
+    "4357",
+    "4601",
+    "6652",
+    "6653",
+    "6655",
+    "6656",
+    "6657",
+    "6658",
+    "6661",
+    "6662",
+    "6665",
+    "6982",
+    "8959",
+    "9250",
+    "9343",
+    "9345",
+    "9368",
+    "9376",
+    "10949",
+    "10951",
+    "10954"
+   ],
+   "guards": {
+    "last_modified_on_data_edge": true,
+    "footer_rows_equal_scan": true,
+    "last_row_within_edge_lag": "not applied to a dated cut (owner, 2026-11-21)",
+    "sources_ending_before_edge_lag": {
+     "3213": "2026-07-26T09:38:59.999999999",
+     "3258": "2026-07-26T20:29:10.959628700"
+    }
+   },
+   "service_date_check": {
+    "runs": 778,
+    "embedded_date_matches_earliest_row": 748,
+    "post_midnight_continuations": 15,
+    "late_evening_next_day": 15,
+    "unexplained": 0
+   }
+  },
+  "mansueto_2025-12-02_routes8_65_66.parquet": {
+   "pids": [
+    "9368",
+    "9376",
+    "9345",
+    "10949",
+    "10951",
+    "10954",
+    "9250",
+    "8959",
+    "9343",
+    "6656",
+    "6657",
+    "6655",
+    "3213",
+    "6652",
+    "6653",
+    "3258",
+    "6665",
+    "6662",
+    "6982",
+    "6661",
+    "6658",
+    "4357",
+    "4601",
+    "4355"
+   ],
+   "rows": 58464,
+   "bytes": 686549,
+   "sha256": "ad8248f21f58ef8a457b7dbe3d70568cb08c68307510f529f437d7a3531c35ae",
+   "window": {
+    "date": "2025-12-02",
+    "timezone": "America/Chicago"
+   },
+   "pids_with_rows": [
+    "3213",
+    "4355",
+    "4357",
+    "4601",
+    "6652",
+    "6653",
+    "6655",
+    "6656",
+    "6657",
+    "6658",
+    "6661",
+    "6662",
+    "6665",
+    "6982",
+    "8959",
+    "9250",
+    "9343",
+    "9345",
+    "9368",
+    "9376",
+    "10949",
+    "10951",
+    "10954"
+   ],
+   "guards": {
+    "last_modified_on_data_edge": true,
+    "footer_rows_equal_scan": true,
+    "last_row_within_edge_lag": "not applied to a dated cut (owner, 2026-11-21)",
+    "sources_ending_before_edge_lag": {
+     "3213": "2026-07-26T09:38:59.999999999",
+     "3258": "2026-07-26T20:29:10.959628700"
+    }
+   },
+   "service_date_check": {
+    "runs": 807,
+    "embedded_date_matches_earliest_row": 779,
+    "post_midnight_continuations": 16,
+    "late_evening_next_day": 12,
+    "unexplained": 0
+   }
+  }
+ }
+}
