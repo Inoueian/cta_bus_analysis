@@ -98,7 +98,7 @@ Every published output (app page, figure, blog post, report) credits the sources
 | Chicago Transit Authority (Bus Tracker API, GTFS) | pattern stops and geometry, schedules | Optional: "Data provided by Chicago Transit Authority". Never express or imply affiliation with, sponsorship by or endorsement by CTA ([CTA Developer License Agreement](https://www.transitchicago.com/downloads/sch_data/developers_license_agreement.htm)) |
 | Transitland | past versions of CTA's GTFS feed and their metadata | Required wherever its data or APIs contributed: the name "Transitland" (and/or its logo) and a link to [https://www.transit.land/terms](https://www.transit.land/terms), or that URL in print, clearly visible to readers |
 
-This repository includes data from [Transitland](https://www.transit.land/terms): the CTA feed version list in `docs/2026-11-21-gtfs-history-access.md`, and the stop lists, dates and figure taken from archived feed versions in `docs/2026-11-22-gtfs-history-routes-8-66.md` and `notebooks/gtfs_history_routes_8_66.ipynb`.
+This repository includes data from [Transitland](https://www.transit.land/terms): the CTA feed version list in `docs/2026-11-21-gtfs-history-access.md`, and the stop lists, paths, dates and figures taken from archived feed versions in `docs/2026-11-22-gtfs-history-routes-8-66.md`, `docs/2026-11-23-stop-validity-review-driving-and-corners.md`, `notebooks/gtfs_history_routes_8_66.ipynb` and `notebooks/corner_stops_routes_8_66.ipynb`.
 
 ### Data Model
 
