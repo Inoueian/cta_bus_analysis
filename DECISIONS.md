@@ -10,6 +10,100 @@ Statuses:
 
 ---
 
+## ADR-015: Arrivals the pings did not observe are dropped
+Date: 2026-11-28
+Status: Accepted (amends ADR-014; does not supersede it)
+
+### Context
+
+ADR-014 dates a stop's service by where the buses drove, read from ping positions. It left open the days when the pings
+cannot show that. Before three of the 2025 changes, Bus Tracker did not report the buses while they crossed the closed
+section: route 8 from 2025-08-04 to 08-16 and from 2025-11-07 to 11-22, and route 66 west from 2025-10-31 to 11-22.
+Every day of those periods has 32 to 102 consecutive ping pairs of one trip jumping the section, 10 to 20 minutes
+apart, against 0 to 22 on other days (`docs/2026-11-27-corner-map-and-unreported-days.md`). One route 8 south trip on
+2025-11-24 (vehicle 1286, 18:19 to 19:49) was measured along the old pattern while every other trip that day was on
+today's, and it was unreported across the section (`docs/2026-11-23-longest-pdist-dating.md`). Arrivals at stops
+inside such a gap are interpolations, not observations. The owner chose to drop them on 2026-11-28, over flagging or
+keeping them.
+
+### Decision
+
+1. On a day when the pings skip part of a pattern, arrivals at the stops they skipped are dropped. A stop is skipped
+   when no trip of the day has a ping within `cta.stop_validity.MAX_STOP_PING_DISTANCE_FT` (100 m) of it, while
+   normal days have some (`notebooks/corner_stops_routes_8_66.ipynb` section 1c). For routes 8 and 66 every such stop
+   is a stop of today's detour whose reviewed window (ADR-014) already drops those days, so no stop-day is added.
+2. A run measured along a pattern other than the one it drove, and unreported where they differ, is dropped whole. The
+   one case is route 8 south (9368), vehicle 1286, 2025-11-24, first arrival between 18:15 and 19:55 Chicago time.
+3. It is applied through `specs/mansueto-stop-validity.md`: a `dropped_runs` list in the windows file's review, and the
+   pattern-join reason `run_unobserved`.
+
+### Consequences
+
+The Mansueto view keeps only arrivals some ping observed, and one rule covers both the windows and the unreported days.
+Mansueto's arrival times past a detour follow the bus, not Bus Tracker's pattern (2025-10-14: within 11 s of the GPS
+passes at the median), so nothing more is dropped on days whose pings are complete. Finding these days needs a
+section-jump count per pattern and day; nothing in `cta/` computes it yet, and the Phase 2 extension to all routes
+will need it. Fallback: if a later check finds partly observed stops (some trips seen, others not), flagging rather than
+dropping is a new decision.
+
+---
+
+## ADR-014: A stop's dated service follows where the buses drove; a corner served under any stop id is served
+Date: 2026-11-23
+Status: Accepted (amends ADR-011 point 3; does not supersede it)
+
+### Context
+
+ADR-011 point 3 dates a stop's membership in a pattern "against raw pings", and the committed windows
+(`notebooks/routes_8_65_66_stop_validity.json`) open on the day the pid's longest reported `pdist` changed, which is the
+day Bus Tracker switched the pattern. The archived CTA schedule (`docs/2026-11-22-gtfs-history-routes-8-66.md`)
+disagreed with 26 of the 38 windows. 18 were the same change one or two days apart, 5 were a corner the old pattern
+served under another stop id 86 to 269 ft away, and 3 were corners the schedule left without a stop for a while. The
+owner set two rules for the review on 2026-11-23. Applying the first showed that the committed dates do not measure
+driving. Read from ping positions, the buses changed route on the schedule's date in all seven changes, while Bus
+Tracker's pattern switched a day early (6662) or one to two days late (6665, 9368). Before three of the changes, Bus
+Tracker stopped reporting buses on the closed section for 13 to 23 days. Pings jump it 10 to 20 minutes apart (route 8,
+2025-08-04 to 08-16 and 2025-11-07 to 11-22; route 66 west, 2025-10-31 to 11-22;
+`docs/2026-11-23-stop-validity-review-driving-and-corners.md`, `notebooks/corner_stops_routes_8_66.ipynb`).
+
+### Decision
+
+1. **Driving decides the date.** Where the schedule (an archived GTFS version) and the pings put a change on different
+   service days, the pings are ground truth: the route the buses drove is the schedule in effect that day. Driving is
+   read from ping positions: the share of a day's pings that lie on one path's streets and on no other's (within
+   100 ft; `notebooks/corner_stops_routes_8_66.ipynb` section 1). It is not read from the day Bus Tracker's pattern
+   switched (the longest `pdist`), which can differ by days. Where the pings cannot show the route because Bus Tracker
+   did not report the buses there, this rule does not decide; such days need their own decision (Consequences).
+2. **A corner is one stop place.** A corner served at different spots under different stop ids, by pattern or by date,
+   is served, and a stop id at that corner keeps its arrivals for those dates. A corner is identified by its street
+   names (`notebooks/gtfs_history_routes_8_66.ipynb` section 8, `streets`); the measured cases are 86 to 269 ft apart.
+   The difference in walking and riding time between the spots is not treated as consequential, since arrival times
+   resolve to about a minute.
+3. Whether buses stopped at a corner the schedule left without a stop is measured from where buses spend time
+   (pings weighted by time, mean seconds per trip within 150 ft of the corner), against a signal-only control where the
+   corner is a signalled intersection.
+
+### Consequences
+
+The review's changes to the committed windows are known. They are not applied by this ADR: changing a window is Rule 2
+(spec, QA table) and re-pins `specs/mansueto-stop-validity.md`'s fixture tests.
+- 18 windows move by one or two days to the driving date, which is also the schedule's date: 6662's eight stops to
+  2025-09-28, 6665's `6613`, `6614`, `5020`, `769` to 2025-11-23, and 9368's six Division and Milwaukee stops to
+  2025-11-23.
+- The 5 same-corner rows keep their windows.
+- Orleans & Chicago (6662 `6714`) gets a window from 2025-09-28, and Wells & Chicago (6665 `18803`) one from
+  2025-11-23.
+- `15341` on 9376 is not served from 2025-08-17 to 2025-11-22. Before that it was served as `15274`; the time measure
+  is weaker there, and the owner confirms the verdict. The windows file holds only `valid_from`, so a period not served
+  inside a served stop needs a schema change.
+- The days Bus Tracker did not report the buses on the closed section have no rule yet. Mansueto's arrivals at stops
+  there are interpolated across the gap.
+
+The dated pattern stop tables (TODO.md) follow both rules: schedule dates from GTFS, checked against driving where pings
+exist. Fallback: a change with no pings on either side keeps the schedule's date.
+
+---
+
 ## ADR-013: Every published output credits its data sources; Transitland's attribution terms bind wherever its data contributed
 Date: 2026-11-21
 Status: Proposed

@@ -61,6 +61,8 @@ installing (`tests/conftest.py`, scripts and notebook import cells put the root 
 - Every new pipeline stage emits a QA table (rows in, rows out, reason counts). Tests assert on it.
 - Figures: `notebooks/cta_analysis.mplstyle` (palette: ADR-012; series colors from the cycle, never ad hoc hexes); minutes-per-mile on the y axis for corridor speed.
 - Holiday / outage exclusions live in one calendar file (`cta/calendar.py`), never inline.
+- When sources disagree, state each value's provenance (who produced it, how it reached us; observed, derived or
+  planned) before preferring one, in notes, notebooks and reports: playbook pattern "Weigh two sources that disagree".
 
 ## Commands
 
