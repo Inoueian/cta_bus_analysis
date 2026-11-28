@@ -3,7 +3,7 @@
 Status: draft
 Owner: Satoru  ·  Date: 2026-11-17. Revised 2026-11-18 to 11-21 (measured windows, fixtures, the measurement split out;
 history in git). Revised 2026-11-27: the owner's review of the windows (ADR-014) is applied as reviewed entries in the
-windows file.  ·  TODO item: Phase 1, Next — "Dated stop validity in the Mansueto adapter for routes 8 and 66
+windows file. 2026-11-28: unobserved arrivals dropped (ADR-015), one run.  ·  TODO item: Phase 1, Next — "Dated stop validity in the Mansueto adapter for routes 8 and 66
 ([ADR-011](DECISIONS.md), [ADR-014](DECISIONS.md)): have `cta.mansueto.clean_trips` drop arrivals dated before a stop's
 reviewed `valid_from` …" (full text in TODO.md)
 Tags: `kind:spec source:mansueto stage:clean topic:pattern-catalog topic:qa-table`
@@ -22,7 +22,7 @@ earlier arrivals, as it already drops stops not in the pattern (ADR-011).
 
 | Input | Where | Schema / keys | Notes |
 |---|---|---|---|
-| Stop validity | `notebooks/routes_8_65_66_stop_validity.json` via `cta.stop_validity.load_stop_validity()` | `rows` (measured, `stop_validity.ROW_COLUMNS`) and the new `review` list (below) | committed; 38 measured rows |
+| Stop validity | `notebooks/routes_8_65_66_stop_validity.json` via `cta.stop_validity.load_stop_validity()` | `rows` (measured, `stop_validity.ROW_COLUMNS`) and the new `review` and `dropped_runs` lists (below) | committed; 38 measured rows |
 | Mansueto trips | `cta.mansueto.read_trips`; the fixtures below | `cta.mansueto.TRIP_COLUMNS` | |
 | Pattern stops | `cta.bustracker.pattern_stops_table` | `pid`, `stpid`, `seq`, `rtdir` | `getpatterns` fixtures in tests; the local cache for the rebuild |
 | Full-history parquets | `data/mansueto/` (2.0 GB), local | `trips_<pid>_full.parquet` | the rebuild only |
@@ -31,10 +31,11 @@ earlier arrivals, as it already drops stops not in the pattern (ADR-011).
 
 | Output | Path / function | Schema | Grain |
 |---|---|---|---|
-| Review entries | the JSON's top-level `review`: `route`, `direction`, `stop_id`, `from_pid`, `valid_from` (ISO day or null), `not_served` (list of `[from, to]` ISO days, inclusive; empty unless Open questions 1 or 2 add one), `rule` ("ADR-014 point 1" or "point 3"), `evidence` (a `docs/` path), `schedule_sha1` (the GTFS version that first carried the change, ADR-013 point 3), `decided` (ISO day); all strings | one per reviewed (pid, stop) |
+| Dropped runs | the JSON's top-level `dropped_runs`: `route`, `pid`, `vehicle_id`, `service_date`, `first_arrival_from`, `first_arrival_to` (Chicago clock times), `rule` ("ADR-015 point 2"), `evidence`, `decided`; all strings. One entry: 8, 9368, 1286, 2025-11-24, 18:15, 19:55, evidence `docs/2026-11-23-longest-pdist-dating.md` | one per run |
+| Review entries | the JSON's top-level `review`: `route`, `direction`, `stop_id`, `from_pid`, `valid_from` (ISO day or null), `not_served` (list of `[from, to]` ISO days, inclusive; empty unless Open question 1 adds one), `rule` ("ADR-014 point 1" or "point 3"), `evidence` (a `docs/` path), `schedule_sha1` (the GTFS version that first carried the change, ADR-013 point 3), `decided` (ISO day); all strings | one per reviewed (pid, stop) |
 | Loader | `load_stop_validity()` returns the applied windows: `ROW_COLUMNS` with `valid_from` the reviewed value where an entry exists, plus `measured_valid_from` and `not_served`; only keys with a window or an interval | object columns (`_object_frame`) | one per key |
-| Writer | `cta.stop_validity.write_validity_file(rows, path)`: writes the measured rows and keeps the file's existing `review`; raises when an entry names a (pid, stop) not among the rows. `scripts/route_run_level.py --write-validity` calls it | — | — |
-| Adapter | `cta.mansueto.clean_trips(trips, pattern_stops, stop_validity=None)`: stage `pattern_join` gains `REASON_STOP_BEFORE_VALID_FROM = "stop_before_valid_from"`, and `REASON_STOP_NOT_SERVED = "stop_not_served"` if an interval is decided. `mansueto_view_from_trips` and `run_level_from_mansueto[_with_qa]` gain `stop_validity=None`, which loads the committed table (an empty frame applies none) | `CLEAN_COLUMNS`, `STAGES`, `RUN_LEVEL_COLUMNS` unchanged | one row per kept (run, stop) |
+| Writer | `cta.stop_validity.write_validity_file(rows, path)`: writes the measured rows and keeps the file's existing `review` and `dropped_runs`; raises when an entry names a (pid, stop) not among the rows. `scripts/route_run_level.py --write-validity` calls it | — | — |
+| Adapter | `cta.mansueto.clean_trips(trips, pattern_stops, stop_validity=None)`: stage `pattern_join` gains `REASON_STOP_BEFORE_VALID_FROM = "stop_before_valid_from"`, `REASON_RUN_UNOBSERVED = "run_unobserved"`, and `REASON_STOP_NOT_SERVED = "stop_not_served"` if an interval is decided. A loader `cta.stop_validity.load_dropped_runs()` returns the dropped runs, passed as `dropped_runs=None` (loads the committed list) beside `stop_validity`. `mansueto_view_from_trips` and `run_level_from_mansueto[_with_qa]` gain `stop_validity=None`, which loads the committed table (an empty frame applies none) | `CLEAN_COLUMNS`, `STAGES`, `RUN_LEVEL_COLUMNS` unchanged | one row per kept (run, stop) |
 | CLI | `scripts/route_run_level.py --source mansueto` applies the table; `--no-validity` builds without windows, for re-measuring; `detour_stop_arrivals.csv` then counts the arrivals the windows kept | — | — |
 | `/qa` case | `cta.qa_baseline.FIXTURE_CASES["mansueto_2025_10_14_routes8_65_66"]`: the 24 `getpatterns_ok` pids of `notebooks/routes_8_65_66_pids.json`; `_mansueto_case` gains `day=None` (`start=day`, `end` the next day); recorded in `tests/fixtures/qa_baseline.csv` | baseline rows | a new case; route 3 and 6410 rows do not move |
 | QA note | `docs/<date>-routes-8-65-66-stop-validity-qa.md` (`/finding`) | route 8, 65 and 66 `pattern_join` totals against the 2026-11-15 note. Per dominant pid, `stop_before_valid_from` plus the rebuild's `arrivals_before_today_geometry` against that note's unwindowed counts (6662 636,909; 6665 884,215; 9368 354,954; 9376 251,013). Per review entry, the arrivals its date moved against the measured window. Runs whose `run_id` has no trailing date (expected 0) | — |
@@ -66,7 +67,8 @@ end of `clean_trips` becomes `_service_date(df)`, and the JSON writing in `scrip
 2. *Adapter*: in `pattern_join`, after the join gives each row its `rtdir`, a row whose (`route`, `rtdir`, `stpid`) has a
    window and whose run's `_service_date` is before `valid_from` is dropped as `stop_before_valid_from`. A row whose
    date falls in a `not_served` interval is dropped as `stop_not_served`. One reason per row; the stage's reasons sum to
-   its `rows_in − rows_out`. The service date is the run id's trailing date, as Mansueto builds it; otherwise the
+   its `rows_in − rows_out`. Every row of a run whose `vid`, `pid` and service date match a `dropped_runs` entry, and
+   whose earliest arrival falls in its clock window, is dropped as `run_unobserved` first (ADR-015). The service date is the run id's trailing date, as Mansueto builds it; otherwise the
    Chicago date of the run's earliest row (the QA note counts such runs).
 3. *Defaults*: `clean_trips` applies windows only when given them. The view functions load the committed table when
    `stop_validity` is `None`; `--no-validity` passes an empty frame.
@@ -78,8 +80,8 @@ end of `clean_trips` becomes `_service_date(df)`, and the JSON writing in `scrip
 |---|---|---|---|
 | Validity windows | each key's applied `valid_from`: measured, or reviewed where an entry exists | `specs/stop-validity-measurement.md`; ADR-014 and the review table | per stop; the QA note counts each entry's effect |
 
-New exclusions: `stop_before_valid_from`, and `stop_not_served` if decided (Rule 2; this spec, the QA table and the
-`/qa` baseline carry them; ADR-011 point 3 and ADR-014 record the decisions).
+New exclusions: `stop_before_valid_from`, `run_unobserved` (one run), and `stop_not_served` if decided (Rule 2; this
+spec, the QA table and the `/qa` baseline carry them; ADR-011 point 3, ADR-014 and ADR-015 record the decisions).
 
 ## Fixtures
 
@@ -96,7 +98,8 @@ between its two, and route 8 between its two. 2025-12-02 is after every window a
       `stop_before_valid_from`: c on runs dated 2025-09-26, one at 00:30 Chicago on 09-27. Kept: c on 09-27, c on `p3`
       and `r2`, every other stop. If an interval is decided, (`r1`, Eastbound, b) not served 2025-09-10 to 09-12 drops
       b on 09-11 as `stop_not_served` and keeps it on 09-13. `pattern_join` reasons sum to `rows_in − rows_out`;
-      `stop_validity=None` gives the output without this spec.
+      `stop_validity=None` gives the output without this spec. A `dropped_runs` entry for one vehicle, pid, date and
+      clock window drops all of that run's rows as `run_unobserved` and nothing of the vehicle's other runs that day.
 - [ ] `test_load_stop_validity_applies_review` (`tests/test_stop_validity.py`, a hand-built file in `tmp_path`): a
       review `valid_from` replaces the measured one, kept in `measured_valid_from`; an entry gives a window to a row
       with none; `not_served` comes back as pairs; an entry naming a stop not among the rows raises; and
@@ -110,7 +113,7 @@ between its two, and route 8 between its two. 2025-12-02 is after every window a
 - [ ] `test_mansueto_view_fixture_2025_10_14`. A key whose applied `valid_from` is after 2025-10-14 has no arrival,
       including Wells & Chicago (6665 `18803`). Other keys keep every arrival of the build with an empty table.
       `stop_before_valid_from` is ~4,000 on routes 8 and 66 together (estimate; measure, then pin) and 0 on route 65.
-- [ ] `test_mansueto_view_fixture_2025_12_02`: no `stop_before_valid_from` or `stop_not_served` on any of the 24 pids;
+- [ ] `test_mansueto_view_fixture_2025_12_02`: no `stop_before_valid_from`, `run_unobserved` or `stop_not_served` on any of the 24 pids;
       the view equals the build with an empty table.
 - [ ] `test_baseline_matches_fixtures` (existing): passes with the new case recorded and the `mansueto_route3` and
       `mansueto_6410` rows not re-recorded.
@@ -121,7 +124,7 @@ between its two, and route 8 between its two. 2025-12-02 is after every window a
   editing the measured rows or `specs/stop-validity-measurement.md`'s method.
 - One source per day and the reader (`specs/run-level-reader.md`); the raw-CSV and archive adapters, which impute
   against today's geometry.
-- A flag column on the view for doubtful days (an ADR-003 schema change, its own spec if Open question 2 chooses it).
+- A section-jump count in `cta/` for finding unreported days on other routes (Phase 2), and a flag column on the view.
 - Routes beyond 8, 65 and 66; route 65 (no geometry change); waits, headways and event days.
 
 ## Decisions (owner)
@@ -131,16 +134,16 @@ between its two, and route 8 between its two. 2025-12-02 is after every window a
 - 2026-11-23: dates follow where the buses drove; a corner served under any stop id is served (ADR-014).
 - 2026-11-27: the 18 date moves, the windows for `6714` and `18803`, and the five same-corner rows kept, all
   confirmed. The review is recorded in the JSON, with evidence, and applied by this spec, not re-measured in code.
+- 2026-11-28: the unreported days are dropped (ADR-015). Measured, every stop the pings skipped is already windowed, so
+  the decision adds one run (`docs/2026-11-28-intersection-centre-and-drop.md`).
 
 ## Open questions
 
-1. **`15341` on 9376, 2025-08-17 to 2025-11-22.** The schedule had no stop between Hubbard and Grand & Union, and no
-   50 ft stretch of the band holds more than 5 s, against 14 s at the old far-side stop and 27 s at today's
-   (`notebooks/corner_stops_routes_8_66.ipynb` section 2b; `docs/2026-11-27-corner-map-and-unreported-days.md`). Yes
-   adds an entry with `not_served` `[["2025-08-17", "2025-11-22"]]`, rule "ADR-014 point 3", and the schedule
-   versions `e3ebf32877de205c8bf930c77bfb366c19901d48` and `14d83314…`. No adds nothing.
-2. **Days Bus Tracker did not report the buses on the closed section:** route 8 2025-08-04 to 08-16 and 2025-11-07 to
-   11-22, route 66 west 2025-10-31 to 11-22 (every day confirmed 2026-11-27), and the 9368 trip of vehicle 1286 on
-   2025-11-24. Drop: `not_served` entries for the stops of today's patterns inside each section that no window covers
-   on those days, listed in the QA note first. Flag: its own spec. Keep: nothing. If both questions are answered no,
-   `not_served` and `stop_not_served` leave this spec.
+1. **`15341` on 9376, 2025-08-17 to 2025-11-22.** `15341` itself was not served: the first detour turned onto Grand
+   before reaching it. Under ADR-014 rule 2 the question is whether any stop served the intersection then. The
+   schedule had none between Hubbard (323 ft before the centre) and Grand & Union (361 ft after). Within 100 ft of the
+   centre no 50 ft stretch holds more than 3 s, against 14 to 27 s where a stop exists
+   (`notebooks/corner_stops_routes_8_66.ipynb` section 2b; `docs/2026-11-28-intersection-centre-and-drop.md`). Yes
+   adds an entry with `not_served` `[["2025-08-17", "2025-11-22"]]`, rule "ADR-014 point 3", and the schedule versions
+   `e3ebf32877de205c8bf930c77bfb366c19901d48` and `14d83314…`. No adds nothing, and `not_served` and `stop_not_served`
+   leave this spec.

@@ -10,6 +10,44 @@ Statuses:
 
 ---
 
+## ADR-015: Arrivals the pings did not observe are dropped
+Date: 2026-11-28
+Status: Accepted (amends ADR-014; does not supersede it)
+
+### Context
+
+ADR-014 dates a stop's service by where the buses drove, read from ping positions. It left open the days when the pings
+cannot show that. Before three of the 2025 changes, Bus Tracker did not report the buses while they crossed the closed
+section: route 8 from 2025-08-04 to 08-16 and from 2025-11-07 to 11-22, and route 66 west from 2025-10-31 to 11-22.
+Every day of those periods has 32 to 102 consecutive ping pairs of one trip jumping the section, 10 to 20 minutes
+apart, against 0 to 22 on other days (`docs/2026-11-27-corner-map-and-unreported-days.md`). One route 8 south trip on
+2025-11-24 (vehicle 1286, 18:19 to 19:49) was measured along the old pattern while every other trip that day was on
+today's, and it was unreported across the section (`docs/2026-11-23-longest-pdist-dating.md`). Arrivals at stops
+inside such a gap are interpolations, not observations. The owner chose to drop them on 2026-11-28, over flagging or
+keeping them.
+
+### Decision
+
+1. On a day when the pings skip part of a pattern, arrivals at the stops they skipped are dropped. A stop is skipped
+   when no trip of the day has a ping within `cta.stop_validity.MAX_STOP_PING_DISTANCE_FT` (100 m) of it, while
+   normal days have some (`notebooks/corner_stops_routes_8_66.ipynb` section 1c). For routes 8 and 66 every such stop
+   is a stop of today's detour whose reviewed window (ADR-014) already drops those days, so no stop-day is added.
+2. A run measured along a pattern other than the one it drove, and unreported where they differ, is dropped whole. The
+   one case is route 8 south (9368), vehicle 1286, 2025-11-24, first arrival between 18:15 and 19:55 Chicago time.
+3. It is applied through `specs/mansueto-stop-validity.md`: a `dropped_runs` list in the windows file's review, and the
+   pattern-join reason `run_unobserved`.
+
+### Consequences
+
+The Mansueto view keeps only arrivals some ping observed, and one rule covers both the windows and the unreported days.
+Mansueto's arrival times past a detour follow the bus, not Bus Tracker's pattern (2025-10-14: within 11 s of the GPS
+passes at the median), so nothing more is dropped on days whose pings are complete. Finding these days needs a
+section-jump count per pattern and day; nothing in `cta/` computes it yet, and the Phase 2 extension to all routes
+will need it. Fallback: if a later check finds partly observed stops (some trips seen, others not), flagging rather than
+dropping is a new decision.
+
+---
+
 ## ADR-014: A stop's dated service follows where the buses drove; a corner served under any stop id is served
 Date: 2026-11-23
 Status: Accepted (amends ADR-011 point 3; does not supersede it)
