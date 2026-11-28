@@ -10,7 +10,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 
-from cta import archive, bustracker, calendar, mansueto, mansueto_raw
+from cta import archive, bustracker, calendar, mansueto, mansueto_raw, stop_validity as _stop_validity
 from cta.qa import QA_COLUMNS
 
 SOURCE_ARCHIVE = "archive"
@@ -121,8 +121,19 @@ def _empty_mansueto_qa() -> pd.DataFrame:
     return qa
 
 
+def _validity_inputs(stop_validity: pd.DataFrame | None) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+    """The windows and dropped runs the Mansueto view applies (specs/mansueto-stop-validity.md).
+
+    ``None`` loads the committed windows (reviewed, ADR-014) and dropped runs (ADR-015). A frame is the windows alone,
+    with no dropped runs, so an empty frame builds the view without either, as ``--no-validity`` does.
+    """
+    if stop_validity is None:
+        return _stop_validity.load_stop_validity(), _stop_validity.load_dropped_runs()
+    return stop_validity, None
+
+
 def mansueto_view_from_trips(
-    trips: pd.DataFrame, pattern_stops: pd.DataFrame, *, pids: list[str] | None = None
+    trips: pd.DataFrame, pattern_stops: pd.DataFrame, *, pids: list[str] | None = None, stop_validity: pd.DataFrame | None = None
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Run-level view and QA table from ``cta.mansueto.read_trips`` output (any number of pids).
 
@@ -131,7 +142,9 @@ def mansueto_view_from_trips(
     ``bracket_gap_s`` is NaN: Mansueto does not publish ping times, so downstream code must treat NaN
     as unknown, not zero. ``calendar_flag`` carries holidays and ``coverage_gap`` (a run dated on or after
     ``MANSUETO_DATA_EDGE``), never ``known_gap_day``: archive ``known_gaps`` are Transit Alerts outages.
+    ``stop_validity`` is the windows frame (``_validity_inputs``): ``None`` loads the committed table, an empty frame applies none.
     """
+    windows, dropped = _validity_inputs(stop_validity)
     pattern_stops = bustracker.with_stop_rank(pattern_stops)
     wanted = list(dict.fromkeys(str(p) for p in (pids or [])))
     present = list(dict.fromkeys(trips["pid"].astype(str))) if len(trips) else []
@@ -140,7 +153,7 @@ def mansueto_view_from_trips(
     for pid in wanted + [p for p in present if p not in wanted]:
         part = trips[trips["pid"].astype(str) == pid].copy() if len(trips) else trips.copy()
         part.attrs[mansueto.ATTR_NULL_TIME_ROWS] = null_time.get(pid, 0) if isinstance(null_time, dict) else null_time
-        clean, qa = mansueto.clean_trips(part, pattern_stops)
+        clean, qa = mansueto.clean_trips(part, pattern_stops, stop_validity=windows, dropped_runs=dropped)
         qa.insert(0, "pid", pid)
         qas.append(qa)
         if len(clean):
@@ -177,6 +190,7 @@ def run_level_from_mansueto_with_qa(
     pattern_cache_dir: Path | None = None,
     start=None,
     end=None,
+    stop_validity: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """``run_level_from_mansueto`` plus its QA table (one row per pid, stage, reason).
 
@@ -200,7 +214,7 @@ def run_level_from_mansueto_with_qa(
     else:
         trips = pd.DataFrame({c: pd.Series(dtype="object") for c in mansueto.TRIP_COLUMNS})
     trips.attrs[mansueto.ATTR_NULL_TIME_ROWS] = null_time
-    return mansueto_view_from_trips(trips, pattern_stops, pids=pids)
+    return mansueto_view_from_trips(trips, pattern_stops, pids=pids, stop_validity=stop_validity)
 
 
 def run_level_from_mansueto(
@@ -211,10 +225,12 @@ def run_level_from_mansueto(
     pattern_cache_dir: Path | None = None,
     start=None,
     end=None,
+    stop_validity: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """One row per (run, stop) from the Mansueto StopWatch parquets (ADR-003 run-level view, ``source='mansueto'``)."""
     view, _ = run_level_from_mansueto_with_qa(
-        pids, parquet_dir=parquet_dir, pattern_stops=pattern_stops, pattern_cache_dir=pattern_cache_dir, start=start, end=end
+        pids, parquet_dir=parquet_dir, pattern_stops=pattern_stops, pattern_cache_dir=pattern_cache_dir, start=start, end=end,
+        stop_validity=stop_validity,
     )
     return view
 

@@ -115,8 +115,13 @@ def split_by_run_year(files: list[Path], pid: str, dest: Path) -> dict[str, Path
     return {p.name.split("=", 1)[1]: p for p in sorted(Path(dest).glob("run_year=*")) if p.is_dir()}
 
 
-def build_mansueto(pids: list[str], *, parquet_dir: Path, pattern_stops: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
-    """Write the view per pid and year under ``out_dir/source=mansueto`` and return the QA table (pid, year, stage rows)."""
+def build_mansueto(
+    pids: list[str], *, parquet_dir: Path, pattern_stops: pd.DataFrame, out_dir: Path, stop_validity: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """Write the view per pid and year under ``out_dir/source=mansueto`` and return the QA table (pid, year, stage rows).
+
+    ``stop_validity`` is passed to the view: ``None`` applies the committed windows and dropped run, an empty frame none.
+    """
     target = Path(out_dir) / f"source={views.SOURCE_MANSUETO}"
     qas = []
     for pid in pids:
@@ -128,7 +133,7 @@ def build_mansueto(pids: list[str], *, parquet_dir: Path, pattern_stops: pd.Data
         with tempfile.TemporaryDirectory(dir=target) as tmp:
             pieces = split_by_run_year(mansueto.parquet_files_for_pid(parquet_dir, pid), pid, Path(tmp) / "cut")
             for year, piece in pieces.items():
-                view, qa = views.run_level_from_mansueto_with_qa([pid], parquet_dir=piece, pattern_stops=stops)
+                view, qa = views.run_level_from_mansueto_with_qa([pid], parquet_dir=piece, pattern_stops=stops, stop_validity=stop_validity)
                 qa.insert(1, "year", year)
                 qas.append(qa)
                 if len(view):
@@ -392,6 +397,10 @@ def main() -> None:
         help="with --source mansueto: skip the build, measure the stop windows from the view under --out-dir and the raw sample "
              "days, and write notebooks/routes_8_65_66_stop_validity.json",
     )
+    ap.add_argument(
+        "--no-validity", action="store_true",
+        help="with --source mansueto: build the view without the stop windows and the dropped run (to re-measure the windows)",
+    )
     args = ap.parse_args()
 
     pid_file = load_pid_file(args.pids_file)
@@ -412,7 +421,8 @@ def main() -> None:
                 if not mansueto.local_parquet_path(pid, args.parquet_dir).is_file():
                     mansueto.fetch_parquet(pid, args.parquet_dir)
                     print(f"  fetched pid {pid}", flush=True)
-        qa = build_mansueto(pids, parquet_dir=args.parquet_dir, pattern_stops=stops, out_dir=args.out_dir)
+        no_windows = stop_validity.load_stop_validity().iloc[0:0] if args.no_validity else None  # None: the committed windows
+        qa = build_mansueto(pids, parquet_dir=args.parquet_dir, pattern_stops=stops, out_dir=args.out_dir, stop_validity=no_windows)
         qa.to_csv(args.out_dir / "qa_mansueto.csv", index=False)
         rows_by_month(pids + retired, pids, args.parquet_dir).to_csv(args.out_dir / "mansueto_rows_by_month.csv", index=False)
         detour = detour_stop_arrivals(args.out_dir, today_geometry_first_day(pid_file))

@@ -34,6 +34,7 @@ ARCHIVE_DAY_FILE = FIXTURES / f"archive_{ARCHIVE_DAY}_michigan.ndjson.gz"
 ARCHIVE_DAY_INDEX = FIXTURES / f"archive_{ARCHIVE_DAY}_michigan.index.json"
 ROUTE3_PIDS = ["18414", "18415"]  # on mansueto_2026-07-27_route3.parquet
 PID_6410 = ["6410"]  # on mansueto_6410_last30d.parquet
+ROUTES_8_65_66_PIDS = REPO_ROOT / "notebooks" / "routes_8_65_66_pids.json"
 RAW_DAY = "2026-10-22"  # mansueto_raw_2026-10-22_michigan.csv.gz
 
 BASELINE_COLUMNS = ["case", "key"] + QA_COLUMNS
@@ -65,9 +66,11 @@ def _archive_case() -> pd.DataFrame:
         con.close()
 
 
-def _mansueto_case(pids: list[str]) -> pd.DataFrame:
+def _mansueto_case(pids: list[str], day: str | None = None) -> pd.DataFrame:
+    """QA of the Mansueto view on the fixtures; ``day`` (Chicago, ISO) keeps that day only (``start=day``, ``end`` the next day)."""
     stops = bustracker.pattern_stops_table(pids, GETPATTERNS_DIR)
-    _, qa = views.run_level_from_mansueto_with_qa(pids, parquet_dir=FIXTURES, pattern_stops=stops)
+    bounds = {} if day is None else {"start": day, "end": str(pd.Timestamp(day).date() + pd.Timedelta(days=1))}
+    _, qa = views.run_level_from_mansueto_with_qa(pids, parquet_dir=FIXTURES, pattern_stops=stops, **bounds)
     return qa.rename(columns={"pid": "key"})
 
 
@@ -82,11 +85,18 @@ def _mansueto_raw_case() -> pd.DataFrame:
     return qa.rename(columns={"day": "key"})
 
 
+def _routes_8_65_66_pids() -> list[str]:
+    """The 24 ``getpatterns_ok`` pids of ``notebooks/routes_8_65_66_pids.json`` (the Mansueto stop-validity fixtures)."""
+    data = json.loads(ROUTES_8_65_66_PIDS.read_text())
+    return [str(p["pid"]) for p in data["pids"] if p.get("getpatterns_ok")]
+
+
 FIXTURE_CASES = {
     "archive": _archive_case,
     "mansueto_route3": functools.partial(_mansueto_case, ROUTE3_PIDS),
     "mansueto_6410": functools.partial(_mansueto_case, PID_6410),
     "mansueto_raw": _mansueto_raw_case,
+    "mansueto_2025_10_14_routes8_65_66": lambda: _mansueto_case(_routes_8_65_66_pids(), day="2025-10-14"),  # specs/mansueto-stop-validity.md
 }
 
 

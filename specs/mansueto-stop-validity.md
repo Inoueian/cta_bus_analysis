@@ -1,6 +1,6 @@
 # Spec: Dated stop validity in the Mansueto adapter (routes 8 and 66)
 
-Status: draft
+Status: ready
 Owner: Satoru  ·  Date: 2026-11-17. Revised 2026-11-18 to 11-21 (measured windows, fixtures, the measurement split out;
 history in git). Revised 2026-11-27: the owner's review of the windows (ADR-014) is applied as reviewed entries in the
 windows file. 2026-11-28: unobserved arrivals dropped (ADR-015), one run; `15341` on 9376 not served in the first detour.  ·  TODO item: Phase 1, Next — "Dated stop validity in the Mansueto adapter for routes 8 and 66

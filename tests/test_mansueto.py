@@ -276,3 +276,101 @@ def test_fetch_parquet_refuses_empty_file(monkeypatch: pytest.MonkeyPatch, tmp_p
     with pytest.raises(ValueError):
         mansueto.fetch_parquet("18414", tmp_path)
     assert not (tmp_path / "trips_18414_full.parquet").exists()
+
+
+# --- stop validity (specs/mansueto-stop-validity.md) ------------------------------------------------
+
+
+def _validity_stops() -> pd.DataFrame:
+    rows = []
+    for pid, direction, stops in (("p1", "Eastbound", "abc"), ("p2", "Eastbound", "bcd"), ("p3", "Westbound", "c"), ("p4", "Eastbound", "c")):
+        rows += [{"pid": pid, "rtdir": direction, "seq": 10 * (i + 1), "stpid": s, "stpnm": s.upper(), "lat": 41.8, "lon": -87.6, "pdist_ft": 100.0 * i}
+                 for i, s in enumerate(stops)]
+    return pd.DataFrame(rows)
+
+
+def _run(run_id: str, route: str, pid: str, vehicle: str, arrivals: list[tuple[str, str]]) -> list[tuple]:
+    return [(run_id, route, pid, vehicle, stop, seq, pd.Timestamp(when)) for seq, (stop, when) in enumerate(arrivals, start=1)]
+
+
+def _validity_trips() -> pd.DataFrame:
+    rows = (
+        _run("r1-p1-v1-2025-09-26", "r1", "p1", "v1", [("a", "2025-09-26 12:00"), ("b", "2025-09-26 12:05"), ("c", "2025-09-26 12:10")])
+        # a late-evening run dated 09-26 that passes c at 00:30 on 09-27: the run id's date counts, not the clock
+        + _run("r1-p2-v2-2025-09-26", "r1", "p2", "v2", [("b", "2025-09-27 00:20"), ("c", "2025-09-27 00:30"), ("d", "2025-09-27 00:40")])
+        + _run("r1-p1-v3-2025-09-27", "r1", "p1", "v3", [("a", "2025-09-27 12:00"), ("b", "2025-09-27 12:05"), ("c", "2025-09-27 12:10")])
+        + _run("r1-p3-v4-2025-09-26", "r1", "p3", "v4", [("c", "2025-09-26 13:00")])
+        + _run("r2-p4-v5-2025-09-26", "r2", "p4", "v5", [("c", "2025-09-26 14:00")])
+        + _run("r1-p1-v6-2025-09-11", "r1", "p1", "v6", [("a", "2025-09-11 12:00"), ("b", "2025-09-11 12:05"), ("c", "2025-09-11 12:10")])
+        + _run("r1-p1-v7-2025-09-13", "r1", "p1", "v7", [("a", "2025-09-13 12:00"), ("b", "2025-09-13 12:05"), ("c", "2025-09-13 12:10")])
+    )
+    return pd.DataFrame(rows, columns=mansueto.TRIP_COLUMNS)
+
+
+def _windows() -> pd.DataFrame:
+    rows = [
+        {"route": "r1", "direction": "Eastbound", "stop_id": "c", "valid_from": "2025-09-27", "not_served": []},
+        {"route": "r1", "direction": "Eastbound", "stop_id": "b", "valid_from": None, "not_served": [("2025-09-10", "2025-09-12")]},
+    ]
+    return pd.DataFrame({k: pd.Series([r[k] for r in rows], dtype="object") for k in rows[0]})
+
+
+def _dropped(**changes) -> pd.DataFrame:
+    row = {"route": "r1", "pid": "p1", "vehicle_id": "vX", "service_date": "2025-09-26", "first_arrival_from": "18:15", "first_arrival_to": "19:55"}
+    return pd.DataFrame([{**row, **changes}])
+
+
+def _counts(qa: pd.DataFrame) -> dict:
+    return {(r.stage, r.reason): r.count for r in qa.itertuples(index=False) if r.reason is not None}
+
+
+def test_clean_trips_stop_validity_hand_built():
+    trips, stops = _validity_trips(), _validity_stops()
+    base, base_qa = mansueto.clean_trips(trips, stops)
+    clean, qa = mansueto.clean_trips(trips, stops, stop_validity=_windows())
+    by = _counts(qa)
+    assert by[("pattern_join", mansueto.REASON_STOP_BEFORE_VALID_FROM)] == 4  # c on the two runs dated 09-26 (one at 00:30 on 09-27), 09-11 and 09-13
+    assert by[("pattern_join", mansueto.REASON_STOP_NOT_SERVED)] == 1  # b on 09-11
+    assert ("pattern_join", mansueto.REASON_RUN_UNOBSERVED) not in by
+    kept = set(zip(clean["run_id"], clean["stpid"]))
+    assert ("r1-p1-v1-2025-09-26", "c") not in kept and ("r1-p2-v2-2025-09-26", "c") not in kept
+    assert ("r1-p1-v6-2025-09-11", "b") not in kept and ("r1-p1-v7-2025-09-13", "b") in kept  # kept on 09-13
+    assert ("r1-p1-v3-2025-09-27", "c") in kept  # c on 09-27
+    assert ("r1-p3-v4-2025-09-26", "c") in kept and ("r2-p4-v5-2025-09-26", "c") in kept  # other direction, other route
+    assert {("r1-p1-v1-2025-09-26", "a"), ("r1-p1-v1-2025-09-26", "b"), ("r1-p2-v2-2025-09-26", "d")} <= kept  # every other stop
+    assert len(base) - len(clean) == 5
+    for stage, part in qa.groupby("stage", sort=False):
+        assert part["count"].sum() == part["rows_in"].iloc[0] - part["rows_out"].iloc[0], stage
+    assert list(dict.fromkeys(qa["stage"])) == list(mansueto.STAGES)
+    # stop_validity=None is the output without this spec
+    none_clean, none_qa = mansueto.clean_trips(trips, stops, stop_validity=None)
+    pd.testing.assert_frame_equal(none_clean, base)
+    pd.testing.assert_frame_equal(none_qa, base_qa)
+    assert mansueto.REASON_STOP_BEFORE_VALID_FROM not in set(base_qa["reason"])
+
+
+def test_clean_trips_dropped_runs_hand_built():
+    stops = _validity_stops()
+    trips = pd.DataFrame(
+        _run("T1-vX-2025-09-26", "r1", "p1", "vX", [("a", "2025-09-26 18:20"), ("b", "2025-09-26 18:25"), ("c", "2025-09-26 18:30")])
+        + _run("T2-vX-2025-09-26", "r1", "p1", "vX", [("a", "2025-09-26 08:00"), ("b", "2025-09-26 08:05"), ("c", "2025-09-26 08:10")])  # same vehicle, other run that day
+        + _run("T3-vY-2025-09-26", "r1", "p1", "vY", [("a", "2025-09-26 18:20"), ("b", "2025-09-26 18:25")])  # other vehicle
+        + _run("T4-vX-2025-09-26", "r1", "p2", "vX", [("b", "2025-09-26 18:20"), ("c", "2025-09-26 18:25")])  # other pid
+        + _run("T5-vX-2025-09-27", "r1", "p1", "vX", [("a", "2025-09-27 18:20")])  # other date
+        + _run("T6-vX-2025-09-26", "r1", "p1", "vX", [("a", "2025-09-26 19:55"), ("b", "2025-09-26 20:30")]),  # earliest arrival on the window's last minute
+        columns=mansueto.TRIP_COLUMNS,
+    )
+    clean, qa = mansueto.clean_trips(trips, stops, dropped_runs=_dropped())
+    assert _counts(qa)[("pattern_join", mansueto.REASON_RUN_UNOBSERVED)] == 5  # all of T1 and T6, nothing of the vehicle's other runs
+    assert set(clean["run_id"]) == {"T2-vX-2025-09-26", "T3-vY-2025-09-26", "T4-vX-2025-09-26", "T5-vX-2025-09-27"}
+    assert len(clean) == 3 + 2 + 2 + 1
+    # one reason per row, so the two rules together still sum
+    windows = pd.DataFrame([{"route": "r1", "direction": "Eastbound", "stop_id": "c", "valid_from": "2025-09-27", "not_served": []}])
+    _, both = mansueto.clean_trips(trips, stops, stop_validity=windows, dropped_runs=_dropped())
+    by = _counts(both)
+    assert by[("pattern_join", mansueto.REASON_RUN_UNOBSERVED)] == 5
+    assert by[("pattern_join", mansueto.REASON_STOP_BEFORE_VALID_FROM)] == 2  # c of T2 and T4 (T1's c is already gone as unobserved)
+    part = both[both["stage"] == "pattern_join"]
+    assert part["count"].sum() == part["rows_in"].iloc[0] - part["rows_out"].iloc[0]
+    none_clean, _ = mansueto.clean_trips(trips, stops)
+    assert len(none_clean) == len(trips)

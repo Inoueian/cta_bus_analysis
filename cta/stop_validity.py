@@ -156,19 +156,66 @@ def read_stop_validity_file(path: Path | None = None) -> dict:
     return json.loads(Path(path or DEFAULT_PATH).read_text())
 
 
+REVIEW_COLUMNS = ["measured_valid_from", "not_served"]  # added by the review (ADR-014): the measured date and the intervals not served
+DROPPED_RUN_COLUMNS = ["route", "pid", "vehicle_id", "service_date", "first_arrival_from", "first_arrival_to", "rule", "evidence", "decided"]
+
+
+def _review_key(entry: dict) -> tuple[str, str]:
+    return str(entry["from_pid"]), str(entry["stop_id"])
+
+
+def _check_review_keys(review: list[dict], rows: list[dict]) -> None:
+    """Raise ``ValueError`` when a review entry names a (pid, stop) that is not among the measured rows."""
+    known = {(str(r["from_pid"]), str(r["stop_id"])) for r in rows}
+    unknown = [f"{pid}/{stop}" for pid, stop in (_review_key(e) for e in review) if (pid, stop) not in known]
+    if unknown:
+        raise ValueError(f"review entries name stops that are not among the measured rows: {', '.join(unknown)}")
+
+
 def load_stop_validity(path: Path | None = None) -> pd.DataFrame:
-    """The committed rows that have a ``valid_from`` (``ROW_COLUMNS``): the stops whose earlier arrivals are not real."""
-    rows = read_stop_validity_file(path)["rows"]
-    frame = pd.DataFrame(rows, columns=ROW_COLUMNS)
-    return frame[frame["valid_from"].notna()].reset_index(drop=True)
+    """The applied windows: ``ROW_COLUMNS`` plus ``measured_valid_from`` and ``not_served`` (list of ``(from, to)`` ISO days, inclusive).
+
+    ``valid_from`` is the owner's reviewed date where a review entry has one, else the measured one (ADR-014; the
+    measured rows stay as measured). Only keys with a window or an interval come back: the stops whose earlier
+    arrivals, or arrivals inside an interval, are not real.
+    """
+    data = read_stop_validity_file(path)
+    rows, review = data["rows"], data.get("review", [])
+    _check_review_keys(review, rows)
+    by_key = {_review_key(e): e for e in review}
+    out = []
+    for row in rows:
+        entry = by_key.get(_review_key(row), {})
+        applied = {c: row.get(c) for c in ROW_COLUMNS}
+        applied["measured_valid_from"] = row.get("valid_from")
+        applied["valid_from"] = entry.get("valid_from") or row.get("valid_from")
+        applied["not_served"] = [(str(a), str(b)) for a, b in entry.get("not_served", [])]
+        if applied["valid_from"] is not None or applied["not_served"]:
+            out.append(applied)
+    frame = _object_frame(out, ROW_COLUMNS + REVIEW_COLUMNS)
+    if frame.duplicated(["route", "direction", "stop_id"]).any():
+        raise ValueError("two applied windows share a (route, direction, stop_id) key")
+    return frame
+
+
+def load_dropped_runs(path: Path | None = None) -> pd.DataFrame:
+    """The committed ``dropped_runs`` (``DROPPED_RUN_COLUMNS``): runs whose arrivals the pings did not observe (ADR-015)."""
+    return _object_frame(read_stop_validity_file(path).get("dropped_runs", []), DROPPED_RUN_COLUMNS)
 
 
 def write_validity_file(
     rows: pd.DataFrame, path: Path | None = None, *, title: str = VALIDITY_TITLE,
     max_ft: float = MAX_STOP_PING_DISTANCE_FT, sample_days=VALIDITY_SAMPLE_DAYS,
 ) -> Path:
-    """Write the committed JSON: the header, the threshold and sample days it was measured with, and ``rows``."""
-    out = {"title": title, "max_stop_ping_distance_ft": max_ft, "sample_days": list(sample_days), "rows": rows.to_dict("records")}
+    """Write the committed JSON: the header, the threshold and sample days it was measured with, and ``rows``.
+
+    The file's existing ``review`` and ``dropped_runs`` are kept. Raises ``ValueError``, writing nothing, when a review
+    entry names a (pid, stop) that is not among ``rows``.
+    """
     path = Path(path or DEFAULT_PATH)
+    records = rows.to_dict("records")
+    kept = {k: v for k, v in (read_stop_validity_file(path) if path.is_file() else {}).items() if k in ("review", "dropped_runs")}
+    _check_review_keys(kept.get("review", []), records)
+    out = {"title": title, "max_stop_ping_distance_ft": max_ft, "sample_days": list(sample_days), "rows": records, **kept}
     path.write_text(json.dumps(out, indent=1) + "\n")
     return path

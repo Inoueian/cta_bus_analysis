@@ -63,6 +63,9 @@ REASON_NULL_KEY_OR_TIME = "null_key_or_time"
 REASON_DST_AMBIGUOUS = "dst_ambiguous_time"
 REASON_DUPLICATE_STOP_VISIT = "duplicate_stop_visit"
 REASON_STOP_NOT_IN_PATTERN = "stop_not_in_pattern"
+REASON_STOP_BEFORE_VALID_FROM = "stop_before_valid_from"  # ADR-011 point 3, ADR-014: the buses did not serve the stop yet
+REASON_STOP_NOT_SERVED = "stop_not_served"  # ADR-014 point 3: a dated interval in which no stop served the corner
+REASON_RUN_UNOBSERVED = "run_unobserved"  # ADR-015 point 2: a run measured along a pattern it did not drive
 REASON_NONMONOTONE_TIME = "nonmonotone_time"
 
 # read_trips records how many source rows had a null bus_stop_time here, so clean_trips can tell them
@@ -359,7 +362,47 @@ def _service_date(df: pd.DataFrame) -> pd.Series:
     return embedded.where(valid, earliest).astype(str)
 
 
-def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _clock_minute(ts: pd.Series) -> pd.Series:
+    """``HH:MM`` of an instant on the America/Chicago clock."""
+    return ts.dt.tz_convert(MANSUETO_TZ).dt.strftime("%H:%M")
+
+
+def _unobserved_runs(df: pd.DataFrame, dropped_runs: pd.DataFrame) -> pd.Series:
+    """Rows of the runs a ``dropped_runs`` entry names (ADR-015): route, pid, vehicle, service date, and the run's earliest
+    arrival in the entry's inclusive Chicago clock window (minutes). ``df`` carries ``_service_date``."""
+    earliest = _clock_minute(df.groupby("run_id")["bus_stop_time"].transform("min"))
+    gone = pd.Series(False, index=df.index)
+    for entry in dropped_runs.to_dict("records"):
+        gone |= (
+            (df["route"] == str(entry["route"])) & (df["pid"] == str(entry["pid"])) & (df["vehicle_id"] == str(entry["vehicle_id"]))
+            & (df["_service_date"] == str(entry["service_date"]))
+            & (earliest >= str(entry["first_arrival_from"])) & (earliest <= str(entry["first_arrival_to"]))
+        )
+    return gone
+
+
+def _outside_windows(df: pd.DataFrame, stop_validity: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Rows dated before their key's ``valid_from``, and rows dated inside one of the key's ``not_served`` intervals.
+
+    The key is (``route``, ``rtdir``, ``stpid``) against the window's (``route``, ``direction``, ``stop_id``); ISO days
+    compare as strings. A row is in at most one of the two masks: the earlier rule wins. ``df`` carries ``_service_date``
+    and ``rtdir``.
+    """
+    early = pd.Series(False, index=df.index)
+    interval = pd.Series(False, index=df.index)
+    for w in stop_validity.to_dict("records"):
+        key = (df["route"] == str(w["route"])) & (df["rtdir"] == str(w["direction"])) & (df["stpid"] == str(w["stop_id"]))
+        valid_from = w.get("valid_from")
+        if valid_from is not None and not pd.isna(valid_from):
+            early |= key & (df["_service_date"] < str(valid_from))
+        for first, last in w.get("not_served") or []:
+            interval |= key & (df["_service_date"] >= str(first)) & (df["_service_date"] <= str(last))
+    return early, interval & ~early
+
+
+def clean_trips(
+    trips: pd.DataFrame, pattern_stops: pd.DataFrame, stop_validity: pd.DataFrame | None = None, dropped_runs: pd.DataFrame | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """The four cleaning stages on ``read_trips`` output (or a hand-built frame with ``TRIP_COLUMNS``).
 
     read          null run_id / stpid / bus_stop_time (``null_key_or_time``); DST-ambiguous or nonexistent
@@ -370,6 +413,12 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
     order         within a run sorted by seq, a time earlier than the running maximum of the preceding
                   rows is dropped (``nonmonotone_time``; owner decision 2026-11-04, drop not flag).
     service_date  trailing YYYY-MM-DD of run_id; else the America/Chicago date of the run's earliest time.
+    ``stop_validity`` (``cta.stop_validity.load_stop_validity`` output) and ``dropped_runs`` (``load_dropped_runs``) are
+    applied inside ``pattern_join`` only when given (``None`` applies none; the view functions load the committed
+    ones, specs/mansueto-stop-validity.md). One reason per row, in this order: ``run_unobserved`` (every row of a run
+    whose vehicle, pid, service date and earliest arrival's Chicago clock minute match a ``dropped_runs`` entry),
+    ``stop_not_in_pattern``, ``stop_before_valid_from`` (the key's (route, rtdir, stpid) window opens after the run's
+    service date), ``stop_not_served`` (the service date is inside one of the key's inclusive intervals).
     Returns (clean rows with ``CLEAN_COLUMNS``, QA table with ``cta.qa.QA_COLUMNS``).
     """
     missing = [c for c in TRIP_COLUMNS if c not in trips.columns]
@@ -403,12 +452,34 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
 
     # pattern_join
     n_in = len(df)
+    has_windows = stop_validity is not None and len(stop_validity) > 0
+    has_dropped = dropped_runs is not None and len(dropped_runs) > 0
+    unobserved = 0
+    if (has_windows or has_dropped) and len(df):
+        df = df.assign(_service_date=_service_date(df))  # the run id's date, as for the output column; fallback rows read the pre-join frame
+    if has_dropped and len(df):
+        gone = _unobserved_runs(df, dropped_runs)
+        unobserved = int(gone.sum())
+        df = df[~gone]
+    n_unobserved_out = len(df)
     stops = _with_stop_rank(pattern_stops)[["pid", "stpid", "seq", "rtdir", "stop_rank"]].copy()
     stops["pid"] = stops["pid"].map(_id_str)
     stops["stpid"] = stops["stpid"].map(_id_str)
     stops = stops.sort_values(["pid", "seq"], kind="stable").drop_duplicates(["pid", "stpid"], keep="first")
     df = df.merge(stops, on=["pid", "stpid"], how="inner")
-    qa += _qa.qa_rows("pattern_join", n_in, len(df), {REASON_STOP_NOT_IN_PATTERN: n_in - len(df)})
+    not_in_pattern = n_unobserved_out - len(df)
+    before_valid = not_served = 0
+    if has_windows and len(df):
+        early, interval = _outside_windows(df, stop_validity)
+        before_valid, not_served = int(early.sum()), int(interval.sum())
+        df = df[~(early | interval)]
+    if "_service_date" in df.columns:
+        df = df.drop(columns="_service_date")
+    qa += _qa.qa_rows(
+        "pattern_join", n_in, len(df),
+        {REASON_RUN_UNOBSERVED: unobserved, REASON_STOP_NOT_IN_PATTERN: not_in_pattern,
+         REASON_STOP_BEFORE_VALID_FROM: before_valid, REASON_STOP_NOT_SERVED: not_served},
+    )
 
     # order
     n_in = len(df)

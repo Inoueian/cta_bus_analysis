@@ -215,3 +215,95 @@ def test_views_pass_source_to_calendar_flag(monkeypatch: pytest.MonkeyPatch):
     view = views.run_level_from_mansueto(["6410"], parquet_dir=FIXTURES, pattern_stops=stops)
     assert len(view) > 0
     assert view["calendar_flag"].str.endswith(calendar.FLAG_COVERAGE_GAP).all()
+
+
+# --- stop validity (specs/mansueto-stop-validity.md) ------------------------------------------------
+
+from cta import stop_validity as sv  # noqa: E402
+
+ROUTES_8_65_66_PIDS = Path(__file__).resolve().parent.parent / "notebooks" / "routes_8_65_66_pids.json"
+FIXTURE_2025_10_14 = FIXTURES / "mansueto_2025-10-14_routes8_65_66.parquet"
+FIXTURE_2025_12_02 = FIXTURES / "mansueto_2025-12-02_routes8_65_66.parquet"
+KEY = ["route", "direction", "stop_id"]
+# measured on the 2025-10-14 fixture (the spec's estimates were ~4,000 and ~270; both were high)
+EXPECTED_BEFORE_VALID_FROM = {"8": 1338, "66": 853, "65": 0}
+EXPECTED_NOT_SERVED_15341 = 118
+
+needs_validity_fixtures = pytest.mark.skipif(
+    not (FIXTURE_2025_10_14.is_file() and FIXTURE_2025_12_02.is_file()), reason="routes 8/65/66 fixtures missing; see specs/mansueto-stop-validity.md"
+)
+
+
+def _routes_8_65_66() -> tuple[list[str], dict[str, str], pd.DataFrame]:
+    pids = json.loads(ROUTES_8_65_66_PIDS.read_text())["pids"]
+    ok = [p for p in pids if p.get("getpatterns_ok")]
+    ids = [str(p["pid"]) for p in ok]
+    return ids, {str(p["pid"]): str(p["route"]) for p in ok}, bustracker.pattern_stops_table(ids, GETPATTERNS_DIR)
+
+
+def _build(day: str, validity: pd.DataFrame | None):
+    pids, route_of, stops = _routes_8_65_66()
+    end = str((pd.Timestamp(day) + pd.Timedelta(days=1)).date())
+    view, qa = views.run_level_from_mansueto_with_qa(pids, parquet_dir=FIXTURES, pattern_stops=stops, start=day, end=end, stop_validity=validity)
+    return view, qa.assign(route=qa["pid"].map(route_of))
+
+
+def _reason_total(qa: pd.DataFrame, reason: str, route: str | None = None) -> int:
+    part = qa[qa["reason"] == reason]
+    return int((part if route is None else part[part["route"] == route])["count"].sum())
+
+
+def test_view_stop_validity_default_and_empty():
+    loaded = sv.load_stop_validity()
+    first = loaded[loaded["valid_from"].notna()].iloc[0]
+    day = str((pd.Timestamp(first["valid_from"]) - pd.Timedelta(days=1)).date())
+    stops = pd.DataFrame([{"pid": "p1", "rtdir": first["direction"], "seq": 1, "stpid": first["stop_id"], "stpnm": "S", "lat": 41.8, "lon": -87.6, "pdist_ft": 0.0}])
+    trips = pd.DataFrame(
+        {"run_id": [f"r-{day}"], "route": [first["route"]], "pid": ["p1"], "vehicle_id": ["v"], "stpid": [first["stop_id"]],
+         "stop_sequence": [1], "bus_stop_time": pd.to_datetime([f"{day} 12:00:00"])}
+    )
+    for given in (None, loaded):
+        view, qa = views.mansueto_view_from_trips(trips, stops, stop_validity=given)
+        assert len(view) == 0
+        assert _reason_total(qa, mansueto.REASON_STOP_BEFORE_VALID_FROM) == 1
+    view, qa = views.mansueto_view_from_trips(trips, stops, stop_validity=loaded.iloc[0:0])
+    assert len(view) == 1
+    assert _reason_total(qa, mansueto.REASON_STOP_BEFORE_VALID_FROM) == 0
+
+
+@needs_validity_fixtures
+def test_mansueto_view_fixture_2025_10_14():
+    base, base_qa = _build("2025-10-14", sv.load_stop_validity().iloc[0:0])
+    view, qa = _build("2025-10-14", None)
+    loaded = sv.load_stop_validity()
+    # a key whose applied window opens after the day has no arrival, Wells & Chicago (6665 18803) among them
+    after = loaded[loaded["valid_from"].fillna("0") > "2025-10-14"][KEY]
+    assert len(after) == 16 and ("66", "Westbound", "18803") in set(map(tuple, after.to_numpy()))
+    assert len(view.merge(after, on=KEY)) == 0 and len(base.merge(after, on=KEY)) > 0
+    # 15341 on route 8 northbound (9376): not served then, dropped as stop_not_served
+    northbound_15341 = lambda v: v[(v["route"] == "8") & (v["direction"] == "Northbound") & (v["stop_id"] == "15341")]  # noqa: E731
+    assert len(northbound_15341(view)) == 0 and len(northbound_15341(base)) == EXPECTED_NOT_SERVED_15341
+    assert _reason_total(qa, mansueto.REASON_STOP_NOT_SERVED) == EXPECTED_NOT_SERVED_15341
+    # every other key keeps every arrival of the build with an empty table
+    others = pd.concat([after, northbound_15341(base)[KEY].drop_duplicates()])
+    def rest(v):
+        merged = v.merge(others, on=KEY, how="left", indicator=True)
+        return merged[merged["_merge"] == "left_only"].drop(columns="_merge").reset_index(drop=True)
+    pd.testing.assert_frame_equal(rest(view), rest(base))
+    for route, expected in EXPECTED_BEFORE_VALID_FROM.items():
+        assert _reason_total(qa, mansueto.REASON_STOP_BEFORE_VALID_FROM, route) == expected, route
+    assert _reason_total(qa, mansueto.REASON_RUN_UNOBSERVED) == 0
+    assert len(base) - len(view) == sum(EXPECTED_BEFORE_VALID_FROM.values()) + EXPECTED_NOT_SERVED_15341
+    # the QA table is additive per pid and stage
+    for (_, stage), part in qa.groupby(["pid", "stage"], sort=False):
+        assert part["count"].sum() == part["rows_in"].iloc[0] - part["rows_out"].iloc[0]
+
+
+@needs_validity_fixtures
+def test_mansueto_view_fixture_2025_12_02():
+    base, _ = _build("2025-12-02", sv.load_stop_validity().iloc[0:0])
+    view, qa = _build("2025-12-02", None)
+    assert qa["pid"].nunique() == 24
+    for reason in (mansueto.REASON_STOP_BEFORE_VALID_FROM, mansueto.REASON_RUN_UNOBSERVED, mansueto.REASON_STOP_NOT_SERVED):
+        assert _reason_total(qa, reason) == 0, reason
+    pd.testing.assert_frame_equal(view, base)

@@ -567,5 +567,320 @@
    },
    "valid_from": "2025-11-23"
   }
+ ],
+ "review": [
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "17834",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "5500",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "739",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "741",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "742",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "14762",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6712",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6713",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Eastbound",
+   "stop_id": "6714",
+   "from_pid": "6662",
+   "valid_from": "2025-09-28",
+   "not_served": [],
+   "rule": "ADR-014 point 3",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "a664d63ce34554f88476278df6a5b66c873db9ee"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "6613",
+   "from_pid": "6665",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "6614",
+   "from_pid": "6665",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "5020",
+   "from_pid": "6665",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "769",
+   "from_pid": "6665",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "66",
+   "direction": "Westbound",
+   "stop_id": "18803",
+   "from_pid": "6665",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 3",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "15368",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "2051",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "15369",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "5496",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "17834",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Southbound",
+   "stop_id": "5500",
+   "from_pid": "9368",
+   "valid_from": "2025-11-23",
+   "not_served": [],
+   "rule": "ADR-014 point 1",
+   "evidence": "docs/2026-11-23-stop-validity-review-driving-and-corners.md",
+   "schedule_sha1": [
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-27"
+  },
+  {
+   "route": "8",
+   "direction": "Northbound",
+   "stop_id": "15341",
+   "from_pid": "9376",
+   "valid_from": null,
+   "not_served": [
+    [
+     "2025-08-17",
+     "2025-11-22"
+    ]
+   ],
+   "rule": "ADR-014 point 3",
+   "evidence": "docs/2026-11-28-intersection-centre-and-drop.md",
+   "schedule_sha1": [
+    "e3ebf32877de205c8bf930c77bfb366c19901d48",
+    "14d83314a4f56f375d6336a4bb7528df4487b055"
+   ],
+   "decided": "2026-11-28"
+  }
+ ],
+ "dropped_runs": [
+  {
+   "route": "8",
+   "pid": "9368",
+   "vehicle_id": "1286",
+   "service_date": "2025-11-24",
+   "first_arrival_from": "18:15",
+   "first_arrival_to": "19:55",
+   "rule": "ADR-015 point 2",
+   "evidence": "docs/2026-11-23-longest-pdist-dating.md",
+   "decided": "2026-11-28"
+  }
  ]
 }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -153,9 +154,9 @@ def test_stop_validity_snapshot():
             assert list(dist) == periods["sample_day"].tolist()  # one distance per period
         # the last period's stops are all served: a window never starts after today's geometry
         assert (group["valid_from"].dropna() <= periods["start"].iloc[-1]).all()
-    # the loader keeps the stops that have a window
+    # the loader keeps every measured window (it also holds the reviewed keys: test_stop_validity_review_snapshot)
     loaded = sv.load_stop_validity()
-    assert len(loaded) == rows["valid_from"].notna().sum() and loaded["valid_from"].notna().all()
+    assert loaded["measured_valid_from"].notna().sum() == rows["valid_from"].notna().sum()
     assert {"route", "direction", "stop_id", "valid_from"} <= set(loaded.columns)
     # measured 2026-11-21 at 100 m (the spec's estimates, pinned): 29 stops with a window
     assert int(rows["valid_from"].notna().sum()) == 29
@@ -178,3 +179,87 @@ def test_write_validity_refuses_windowed_view(tmp_path: Path):
     with pytest.raises(ValueError, match="qa_mansueto.csv"):
         rrl.check_unwindowed_view(tmp_path)
     assert not list(tmp_path.glob("*.json"))  # nothing written, and nothing under data/ from a test
+
+
+# --- the owner's review (specs/mansueto-stop-validity.md) -------------------------------------------
+
+
+def _row(route, direction, stop, pid, valid_from):
+    return {"route": route, "direction": direction, "stop_id": stop, "stop_name": stop, "from_pid": pid, "source": "mansueto",
+            "first_arrival_day": "2024-09-03", "nearest_ping_ft": {"2025-07-15": 1.0}, "valid_from": valid_from}
+
+
+def _entry(stop, pid, valid_from, not_served=(), route="r", direction="Eastbound"):
+    return {"route": route, "direction": direction, "stop_id": stop, "from_pid": pid, "valid_from": valid_from,
+            "not_served": [list(p) for p in not_served], "rule": "ADR-014 point 1", "evidence": "docs/x.md",
+            "schedule_sha1": ["a" * 40], "decided": "2026-11-27"}
+
+
+def _file(tmp_path: Path, review, rows=None, dropped=None) -> Path:
+    rows = rows or [_row("r", "Eastbound", "s1", "1", "2025-09-27"), _row("r", "Eastbound", "s2", "1", None),
+                    _row("r", "Eastbound", "s3", "1", None), _row("r", "Eastbound", "s4", "1", None)]
+    path = tmp_path / "validity.json"
+    path.write_text(json.dumps({"title": "t", "max_stop_ping_distance_ft": 328.0, "sample_days": ["2025-07-15"], "rows": rows,
+                                "review": review, "dropped_runs": dropped or []}))
+    return path
+
+
+def test_load_stop_validity_applies_review(tmp_path: Path):
+    path = _file(tmp_path, [
+        _entry("s1", "1", "2025-09-28"),  # replaces the measured date
+        _entry("s2", "1", "2025-11-23"),  # gives a window to a row with none
+        _entry("s3", "1", None, not_served=[("2025-08-17", "2025-11-22")]),  # an interval, no window
+    ])
+    loaded = sv.load_stop_validity(path).set_index("stop_id")
+    assert list(sv.load_stop_validity(path).columns) == sv.ROW_COLUMNS + ["measured_valid_from", "not_served"]
+    assert loaded.loc["s1", "valid_from"] == "2025-09-28" and loaded.loc["s1", "measured_valid_from"] == "2025-09-27"
+    assert loaded.loc["s2", "valid_from"] == "2025-11-23" and loaded.loc["s2", "measured_valid_from"] is None
+    assert loaded.loc["s3", "valid_from"] is None and loaded.loc["s3", "not_served"] == [("2025-08-17", "2025-11-22")]
+    assert loaded.loc["s1", "not_served"] == []
+    assert "s4" not in loaded.index  # neither a window nor an interval
+    # an entry for a stop that is not among the rows raises
+    with pytest.raises(ValueError, match="s9"):
+        sv.load_stop_validity(_file(tmp_path, [_entry("s9", "1", "2025-09-28")]))
+    # no review: the measured windows, as before
+    assert sv.load_stop_validity(_file(tmp_path, []))["stop_id"].tolist() == ["s1"]
+    # the writer keeps review and dropped_runs when it rewrites the rows
+    dropped = [{"route": "r", "pid": "1", "vehicle_id": "v", "service_date": "2025-11-24", "first_arrival_from": "18:15",
+                "first_arrival_to": "19:55", "rule": "ADR-015 point 2", "evidence": "docs/x.md", "decided": "2026-11-28"}]
+    path = _file(tmp_path, [_entry("s1", "1", "2025-09-28")], dropped=dropped)
+    sv.write_validity_file(pd.DataFrame([_row("r", "Eastbound", "s1", "1", "2025-09-27"), _row("r", "Eastbound", "s2", "1", None)]), path)
+    after = json.loads(path.read_text())
+    assert after["review"] == [_entry("s1", "1", "2025-09-28")] and after["dropped_runs"] == dropped
+    assert len(after["rows"]) == 2
+    with pytest.raises(ValueError, match="s1"):  # the rewritten rows no longer hold the reviewed stop
+        sv.write_validity_file(pd.DataFrame([_row("r", "Eastbound", "s2", "1", None)]), path)
+    assert len(json.loads(path.read_text())["rows"]) == 2  # nothing written on the refusal
+    assert sv.load_dropped_runs(path)["vehicle_id"].tolist() == ["v"]
+
+
+def test_stop_validity_review_snapshot():
+    data = sv.read_stop_validity_file()
+    review = data["review"]
+    assert len(review) == 21
+    for e in review:
+        assert e["rule"] in ("ADR-014 point 1", "ADR-014 point 3") and e["evidence"].startswith("docs/") and e["decided"]
+        assert e["schedule_sha1"] and all(re.fullmatch(r"[0-9a-f]{40}", h) for h in e["schedule_sha1"])
+        assert (Path(__file__).resolve().parent.parent / e["evidence"]).is_file()
+    loaded = sv.load_stop_validity()
+    windows = loaded[loaded["valid_from"].notna()]
+    assert len(windows) == 31
+    assert int((loaded["not_served"].map(len) > 0).sum()) == 1 and len(loaded) == 32
+    by = loaded.set_index(["from_pid", "stop_id"])
+    assert by.loc[("9376", "15341"), "not_served"] == [("2025-08-17", "2025-11-22")] and by.loc[("9376", "15341"), "valid_from"] is None
+    assert by.loc[("6665", "18803"), "valid_from"] == "2025-11-23" and by.loc[("6665", "18803"), "measured_valid_from"] is None
+    assert by.loc[("6662", "6714"), "valid_from"] == "2025-09-28"
+    assert by.loc[("6662", "17834"), "valid_from"] == "2025-09-28" and by.loc[("6662", "17834"), "measured_valid_from"] == "2025-09-27"
+    assert by.loc[("9368", "5500"), "valid_from"] == "2025-11-23" and by.loc[("9368", "5500"), "measured_valid_from"] == "2025-11-25"
+    assert by.loc[("6665", "769"), "valid_from"] == "2025-11-23"
+    assert by.loc[("6665", "771"), "valid_from"] == "2025-09-28"  # not reviewed: measured date kept
+    assert not loaded.duplicated(["route", "direction", "stop_id"]).any()
+    assert len(data["rows"]) == 38 and sum(r["valid_from"] is not None for r in data["rows"]) == 29  # the measured rows are unchanged
+    dropped = sv.load_dropped_runs()
+    assert dropped.to_dict("records") == [{
+        "route": "8", "pid": "9368", "vehicle_id": "1286", "service_date": "2025-11-24", "first_arrival_from": "18:15",
+        "first_arrival_to": "19:55", "rule": "ADR-015 point 2", "evidence": "docs/2026-11-23-longest-pdist-dating.md", "decided": "2026-11-28",
+    }]
