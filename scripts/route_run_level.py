@@ -293,13 +293,7 @@ def write_validity(
     order = {(str(r.pid), str(r.stpid)): r.seq for r in stops.itertuples()}
     rows = rows.assign(_seq=[order[(p, s)] for p, s in zip(rows["from_pid"], rows["stop_id"])])
     rows = rows.sort_values(["from_pid", "_seq"]).drop(columns="_seq").reset_index(drop=True)
-    out = {
-        "title": "Measured stop validity windows for routes 8 and 66 (specs/stop-validity-measurement.md)",
-        "max_stop_ping_distance_ft": pinned,
-        "sample_days": list(stop_validity.VALIDITY_SAMPLE_DAYS),
-        "rows": rows.to_dict("records"),
-    }
-    Path(path or stop_validity.DEFAULT_PATH).write_text(json.dumps(out, indent=1) + "\n")
+    stop_validity.write_validity_file(rows, path, max_ft=pinned)
     print(f"{len(rows)} candidate stops, {int(rows['valid_from'].notna().sum())} with a window")
     return rows
 

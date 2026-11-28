@@ -351,6 +351,14 @@ def _empty_clean() -> pd.DataFrame:
     return df
 
 
+def _service_date(df: pd.DataFrame) -> pd.Series:
+    """Per row: the trailing YYYY-MM-DD of ``run_id``; else the America/Chicago date of the run's earliest time."""
+    embedded = df["run_id"].astype(str).str.extract(_TRAILING_DATE)[0]
+    valid = pd.to_datetime(embedded, format="%Y-%m-%d", errors="coerce").notna()
+    earliest = df.groupby("run_id")["bus_stop_time"].transform("min").dt.tz_convert(MANSUETO_TZ).dt.strftime("%Y-%m-%d")
+    return embedded.where(valid, earliest).astype(str)
+
+
 def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """The four cleaning stages on ``read_trips`` output (or a hand-built frame with ``TRIP_COLUMNS``).
 
@@ -418,10 +426,7 @@ def clean_trips(trips: pd.DataFrame, pattern_stops: pd.DataFrame) -> tuple[pd.Da
     if df.empty:
         return _empty_clean(), qa_df
 
-    embedded = df["run_id"].astype(str).str.extract(_TRAILING_DATE)[0]
-    valid = pd.to_datetime(embedded, format="%Y-%m-%d", errors="coerce").notna()
-    earliest = df.groupby("run_id")["bus_stop_time"].transform("min").dt.tz_convert(MANSUETO_TZ).dt.strftime("%Y-%m-%d")
-    df["service_date"] = embedded.where(valid, earliest).astype(str)
+    df["service_date"] = _service_date(df)
     df["seq"] = df["seq"].astype("int64")
     df["stop_rank"] = df["stop_rank"].astype("int64")
     df["rtdir"] = df["rtdir"].astype(str)

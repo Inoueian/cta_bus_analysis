@@ -22,6 +22,7 @@ REFERENCE_DAY = max(VALIDITY_SAMPLE_DAYS)  # today's geometry on all four pids, 
 MARGIN_FACTOR = 1.25  # a candidate distance within this factor of the threshold on either side (262 to 410 ft at 100 m) is too close to call: stop and report
 
 SOURCE = "mansueto"
+VALIDITY_TITLE = "Measured stop validity windows for routes 8 and 66 (specs/stop-validity-measurement.md)"
 DEFAULT_PATH = Path(__file__).resolve().parent.parent / "notebooks" / "routes_8_65_66_stop_validity.json"
 PERIOD_COLUMNS = ["pid", "start", "end_exclusive", "sample_day"]
 ROW_COLUMNS = ["route", "direction", "stop_id", "stop_name", "from_pid", "source", "first_arrival_day", "nearest_ping_ft", "valid_from"]
@@ -160,3 +161,14 @@ def load_stop_validity(path: Path | None = None) -> pd.DataFrame:
     rows = read_stop_validity_file(path)["rows"]
     frame = pd.DataFrame(rows, columns=ROW_COLUMNS)
     return frame[frame["valid_from"].notna()].reset_index(drop=True)
+
+
+def write_validity_file(
+    rows: pd.DataFrame, path: Path | None = None, *, title: str = VALIDITY_TITLE,
+    max_ft: float = MAX_STOP_PING_DISTANCE_FT, sample_days=VALIDITY_SAMPLE_DAYS,
+) -> Path:
+    """Write the committed JSON: the header, the threshold and sample days it was measured with, and ``rows``."""
+    out = {"title": title, "max_stop_ping_distance_ft": max_ft, "sample_days": list(sample_days), "rows": rows.to_dict("records")}
+    path = Path(path or DEFAULT_PATH)
+    path.write_text(json.dumps(out, indent=1) + "\n")
+    return path
